@@ -293,8 +293,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **📖 Documentation** - [CLI Reference](docs/user-guide/cli-reference.md)
 - **🐛 Bug Reports** - [GitHub Issues](https://github.com/nimdy/njordscan/issues)
-- **💬 Community** - [Discord](https://discord.gg/njordscan)
-- **📧 Email** - support@njordscan.dev
 
 ---
 
