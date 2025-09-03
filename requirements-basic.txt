@@ -1,0 +1,82 @@
+# ============================================================================
+# NjordScan v1.0.0 - Basic Installation Requirements
+# Core dependencies for basic security scanning functionality
+# ============================================================================
+
+# Core CLI and Terminal UI
+click>=8.0.0,<9.0.0
+rich>=13.0.0,<15.0.0
+colorama>=0.4.4,<1.0.0
+
+# HTTP and Async Networking
+aiohttp>=3.8.0,<4.0.0
+requests>=2.28.0,<3.0.0
+httpx>=0.24.0,<1.0.0
+
+# Configuration and Data Parsing
+pyyaml>=6.0,<7.0.0
+toml>=0.10.2,<1.0.0
+python-dotenv>=1.0.0,<2.0.0
+
+# Web Scraping and HTML/XML Processing
+beautifulsoup4>=4.11.0,<5.0.0
+lxml>=4.9.0,<5.0.0
+
+# Template Engine and Reporting
+jinja2>=3.1.0,<4.0.0
+markdown>=3.4.0,<4.0.0
+
+# Database and Caching
+# sqlite3 is part of Python standard library
+sqlalchemy>=1.4.0,<2.0.0
+diskcache>=5.6.0,<6.0.0
+
+# Cryptography and Security
+cryptography>=40.0.0,<42.0.0
+bcrypt>=4.0.0,<5.0.0
+pyjwt>=2.7.0,<3.0.0
+
+# AI and Machine Learning (Core)
+numpy>=1.24.0,<2.0.0
+pandas>=2.0.0,<3.0.0
+
+# Rate Limiting and Concurrency
+aiofiles>=23.0.0,<24.0.0
+
+# Compression and Performance
+lz4>=4.3.0,<5.0.0
+websocket-client>=1.6.0,<2.0.0
+
+# Type Hints and Compatibility
+typing-extensions>=4.5.0,<5.0.0
+pydantic>=2.0.0,<3.0.0
+
+# Security Vulnerability Scanning
+safety>=3.0.0,<4.0.0
+bandit>=1.7.0,<4.0.0
+
+# Package Management Integration
+packaging>=23.0,<24.0
+
+# Network Security and Protocol Analysis
+dnspython>=2.4.0,<3.0.0
+
+# Image and Media Processing (for report generation)
+pillow>=10.0.0,<11.0.0
+
+# Development and Testing (optional but recommended)
+pytest>=7.4.0,<8.0.0
+pytest-asyncio>=0.21.0,<1.0.0
+
+# Monitoring and Telemetry
+psutil>=5.9.0,<6.0.0
+
+# Plugin System Dependencies
+importlib-metadata>=6.8.0,<7.0.0
+stevedore>=5.1.0,<6.0.0
+pluggy>=1.2.0,<1.0.0
+
+# Additional Utilities
+tqdm>=4.65.0,<5.0.0
+tabulate>=0.9.0,<1.0.0
+watchdog>=3.0.0,<4.0.0

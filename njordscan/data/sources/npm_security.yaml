@@ -1,0 +1,25 @@
+name: "NPM Security Advisories"
+description: "Official npm security advisories and vulnerability database"
+url: "https://api.npmjs.org/advisories"
+api_version: "v1"
+update_frequency: 6  # hours
+enabled: true
+rate_limit: 100  # requests per hour
+authentication:
+  required: false
+  type: "none"
+data_format: "json"
+supported_ecosystems:
+  - "npm"
+  - "javascript"
+  - "typescript"
+filters:
+  severity_levels:
+    - "critical"
+    - "high" 
+    - "moderate"
+    - "low"
+  package_types:
+    - "framework"
+    - "library"
+    - "build-tool"

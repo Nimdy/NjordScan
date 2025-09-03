@@ -1,0 +1,250 @@
+# 🛡️ NjordScan Default Security Rules
+# Core security rules for Next.js, React, and Vite applications
+
+rules:
+  # Cross-Site Scripting (XSS) Rules
+  - id: "NJORD-XSS-001"
+    name: "Dangerous HTML Rendering"
+    description: "Detects dangerous HTML rendering that could lead to XSS"
+    severity: "high"
+    confidence: "high"
+    category: "xss"
+    frameworks: ["nextjs", "react", "vite"]
+    pattern:
+      type: "regex"
+      value: "dangerouslySetInnerHTML\\s*=\\s*\\{\\{\\s*__html:\\s*[^}]+\\}\\}"
+    remediation:
+      description: "Use proper input sanitization before rendering HTML"
+      code_example: |
+        // Vulnerable
+        <div dangerouslySetInnerHTML={{__html: userInput}} />
+        
+        // Secure
+        import DOMPurify from 'dompurify';
+        <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(userInput)}} />
+    references:
+      - "https://owasp.org/www-community/attacks/xss/"
+      - "https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html"
+
+  - id: "NJORD-XSS-002"
+    name: "Direct DOM Manipulation"
+    description: "Direct DOM manipulation with user input"
+    severity: "high"
+    confidence: "medium"
+    category: "xss"
+    frameworks: ["nextjs", "react", "vite"]
+    pattern:
+      type: "regex"
+      value: "\\.innerHTML\\s*=\\s*[^;]+;"
+    remediation:
+      description: "Use textContent instead of innerHTML or sanitize input"
+      code_example: |
+        // Vulnerable
+        element.innerHTML = userInput;
+        
+        // Secure
+        element.textContent = userInput;
+
+  # SQL Injection Rules
+  - id: "NJORD-SQL-001"
+    name: "SQL Injection in Query"
+    description: "Potential SQL injection vulnerability"
+    severity: "critical"
+    confidence: "high"
+    category: "injection"
+    frameworks: ["nextjs"]
+    pattern:
+      type: "regex"
+      value: "SELECT\\s+.*\\+.*|INSERT\\s+.*\\+.*|UPDATE\\s+.*\\+.*"
+    remediation:
+      description: "Use parameterized queries instead of string concatenation"
+
+  # Next.js Specific Rules
+  - id: "NJORD-NEXT-001"
+    name: "Unrestricted Image Domains"
+    description: "Image optimization allows any domain"
+    severity: "medium"
+    confidence: "high"
+    category: "ssrf"
+    frameworks: ["nextjs"]
+    pattern:
+      type: "regex"
+      value: "domains:\\s*\\[\\s*['\"]\\*['\"]\\s*\\]"
+    file_patterns: ["next.config.js", "next.config.mjs"]
+    remediation:
+      description: "Restrict image domains to trusted sources"
+      code_example: |
+        // Vulnerable
+        module.exports = {
+          images: {
+            domains: ['*']
+          }
+        }
+        
+        // Secure
+        module.exports = {
+          images: {
+            domains: ['trusted-cdn.com', 'images.example.com']
+          }
+        }
+
+  - id: "NJORD-NEXT-002"
+    name: "Exposed API Route"
+    description: "API route without authentication"
+    severity: "high"
+    confidence: "medium"
+    category: "authorization"
+    frameworks: ["nextjs"]
+    pattern:
+      type: "regex"
+      value: "export\\s+default\\s+function\\s+handler\\s*\\("
+    file_patterns: ["pages/api/**/*.js", "pages/api/**/*.ts", "app/api/**/*.js", "app/api/**/*.ts"]
+    remediation:
+      description: "Add authentication checks to API routes"
+
+  # React Specific Rules
+  - id: "NJORD-REACT-001"
+    name: "Unsafe State Update"
+    description: "Direct state mutation instead of using setState"
+    severity: "medium"
+    confidence: "high"
+    category: "logic"
+    frameworks: ["react"]
+    pattern:
+      type: "regex"
+      value: "this\\.state\\.[\\w]+\\s*="
+    remediation:
+      description: "Use setState or state setter functions"
+
+  # Configuration Security Rules
+  - id: "NJORD-CONFIG-001"
+    name: "Hardcoded API Key"
+    description: "API key hardcoded in configuration"
+    severity: "critical"
+    confidence: "high"
+    category: "secrets"
+    frameworks: ["nextjs", "react", "vite"]
+    pattern:
+      type: "regex"
+      value: "(?:api[_-]?key|apikey|access[_-]?token|secret[_-]?key)\\s*[=:]\\s*['\"][a-zA-Z0-9_-]{16,}['\"]"
+    file_patterns: ["*.js", "*.ts", "*.json", "*.env*"]
+    remediation:
+      description: "Use environment variables for sensitive data"
+
+  - id: "NJORD-CONFIG-002"
+    name: "Exposed Environment Variables"
+    description: "Sensitive data in environment variables"
+    severity: "high"
+    confidence: "medium"
+    category: "secrets"
+    frameworks: ["nextjs", "react", "vite"]
+    pattern:
+      type: "regex"
+      value: "(?:password|secret|key|token)\\s*=\\s*[^\\s]+"
+    file_patterns: [".env*"]
+    remediation:
+      description: "Ensure .env files are in .gitignore"
+
+  # Dependency Security Rules
+  - id: "NJORD-DEP-001"
+    name: "Vulnerable Dependency"
+    description: "Package with known security vulnerabilities"
+    severity: "high"
+    confidence: "high"
+    category: "dependencies"
+    frameworks: ["nextjs", "react", "vite"]
+    # This would be populated by vulnerability database
+    pattern:
+      type: "dependency_check"
+    file_patterns: ["package.json", "yarn.lock", "package-lock.json"]
+
+  # AI Security Rules
+  - id: "NJORD-AI-001"
+    name: "Exposed OpenAI API Key"
+    description: "OpenAI API key exposed in client-side code"
+    severity: "critical"
+    confidence: "high"
+    category: "secrets"
+    frameworks: ["nextjs", "react", "vite"]
+    pattern:
+      type: "regex"
+      value: "sk-[a-zA-Z0-9]{48}"
+    remediation:
+      description: "Move API keys to server-side environment variables"
+
+  - id: "NJORD-AI-002"
+    name: "Unsafe AI Code Execution"
+    description: "Direct execution of AI-generated code"
+    severity: "critical"
+    confidence: "high"
+    category: "injection"
+    frameworks: ["nextjs", "react", "vite"]
+    pattern:
+      type: "regex"
+      value: "eval\\s*\\(.*(?:openai|ai|gpt|claude).*\\)"
+    remediation:
+      description: "Never execute AI-generated code directly"
+
+# Rule Categories
+categories:
+  xss:
+    name: "Cross-Site Scripting"
+    description: "XSS vulnerabilities and prevention"
+    severity_default: "high"
+  
+  injection:
+    name: "Injection Attacks"
+    description: "SQL, NoSQL, Command injection vulnerabilities"
+    severity_default: "critical"
+  
+  ssrf:
+    name: "Server-Side Request Forgery"
+    description: "SSRF vulnerabilities and prevention"
+    severity_default: "high"
+  
+  authorization:
+    name: "Authorization Issues"
+    description: "Authentication and authorization flaws"
+    severity_default: "high"
+  
+  secrets:
+    name: "Secrets Exposure"
+    description: "Hardcoded secrets and sensitive data exposure"
+    severity_default: "critical"
+  
+  dependencies:
+    name: "Dependency Security"
+    description: "Vulnerable dependencies and supply chain issues"
+    severity_default: "medium"
+  
+  logic:
+    name: "Business Logic"
+    description: "Business logic and application flow issues"
+    severity_default: "medium"
+
+# Severity Levels
+severity_levels:
+  info:
+    score: 0.0
+    color: "blue"
+    description: "Informational finding"
+  
+  low:
+    score: 3.0
+    color: "green"
+    description: "Low severity issue"
+  
+  medium:
+    score: 6.0
+    color: "yellow"
+    description: "Medium severity issue"
+  
+  high:
+    score: 8.0
+    color: "orange"
+    description: "High severity issue"
+  
+  critical:
+    score: 10.0
+    color: "red"
+    description: "Critical security issue"

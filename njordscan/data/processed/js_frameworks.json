@@ -1,0 +1,1163 @@
+{
+  "nextjs": [
+    {
+      "id": "GHSA-r2fc-ccr8-96c4",
+      "cve_id": "CVE-2025-49005",
+      "summary": "Cache poisoning due to omission of Vary header",
+      "severity": "low",
+      "published_at": "2025-07-03T19:37:40Z",
+      "updated_at": "2025-07-03T19:37:40Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">= 15.3.0 < 15.3.3",
+          "patched_versions": "15.3.3",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-67rr-84xm-4c7r",
+      "cve_id": "CVE-2025-49826",
+      "summary": "DoS via cache poisoning ",
+      "severity": "high",
+      "published_at": "2025-07-03T19:25:20Z",
+      "updated_at": "2025-07-03T19:25:20Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">15.0.4 and <15.2.0",
+          "patched_versions": "\u226415.0.4 and \u226515.2.0",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-223j-4rm8-mrmf",
+      "cve_id": "CVE-2025-30218",
+      "summary": "x-middleware-subrequest-id may be leaked to external hosts",
+      "severity": "low",
+      "published_at": "2025-04-02T17:25:20Z",
+      "updated_at": "2025-04-03T02:01:07Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "12.3.5, 13.5.9, 14.2.25, 15.2.3",
+          "patched_versions": "12.3.6, 13.5.10, 14.2.26, 15.2.4",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-qpjv-v59x-3qc4",
+      "cve_id": "CVE-2025-32421",
+      "summary": "Race condition to Cache Poisoning ",
+      "severity": "low",
+      "published_at": "2025-05-14T21:54:58Z",
+      "updated_at": "2025-05-14T21:54:58Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "",
+            "name": "next"
+          },
+          "vulnerable_version_range": "<14.2.24, >15.0.0 and <15.1.6",
+          "patched_versions": "\u226514.2.24 <15.0.0, \u226515.1.6",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-f82v-jwr5-mffw",
+      "cve_id": "CVE-2025-29927",
+      "summary": "Authorization Bypass in Next.js Middleware",
+      "severity": "critical",
+      "published_at": "2025-03-21T10:17:21Z",
+      "updated_at": "2025-03-24T14:47:42Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "> 11.1.4 < 12.3.5",
+          "patched_versions": "12.3.5",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">14.0 <14.2.25",
+          "patched_versions": "14.2.25",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">15.0 <15.2.3",
+          "patched_versions": "15.2.3",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">= 13.0.0, < 13.5.9",
+          "patched_versions": "13.5.9",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-3h52-269p-cp9r",
+      "cve_id": "CVE-2025-48068",
+      "summary": "Information exposure in Next.js dev server due to lack of origin verification",
+      "severity": "low",
+      "published_at": "2025-05-28T21:42:07Z",
+      "updated_at": "2025-06-12T09:56:28Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">=13.0.0 <14.2.30, >=15.0.0 <15.2.2",
+          "patched_versions": "14.2.30, >= 15.2.2",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-7m27-7ghc-44w9",
+      "cve_id": "CVE-2024-56332",
+      "summary": "Denial of Service (DoS) with Server Actions",
+      "severity": "medium",
+      "published_at": "2025-01-03T20:07:18Z",
+      "updated_at": "2025-01-03T20:07:18Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">= 13.0.0 < 14.2.21, >= 15.0.0 < 15.1.1",
+          "patched_versions": "15.1.2, 14.2.21, 13.5.8",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-7gfc-8cq8-jh5f",
+      "cve_id": "CVE-2024-51479",
+      "summary": "Authorization bypass in Next.js",
+      "severity": "high",
+      "published_at": "2024-12-17T14:18:11Z",
+      "updated_at": "2024-12-19T14:16:37Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">=9.5.5 <=14.2.14",
+          "patched_versions": "14.2.15",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-g77x-44xx-532m",
+      "cve_id": "CVE-2024-47831",
+      "summary": "Denial of Service condition in Next.js image optimization",
+      "severity": "medium",
+      "published_at": "2024-10-14T08:46:56Z",
+      "updated_at": "2024-10-14T08:46:56Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "10.x",
+          "patched_versions": "",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "11.x",
+          "patched_versions": "",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "12.x",
+          "patched_versions": "",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "13.x",
+          "patched_versions": "",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "<14.2.7",
+          "patched_versions": ">=14.2.7",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-gp8f-8m3g-qvj9",
+      "cve_id": "CVE-2024-46982",
+      "summary": "Cache Poisoning",
+      "severity": "high",
+      "published_at": "2024-09-17T20:37:13Z",
+      "updated_at": "2024-09-17T20:37:13Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">=13.5.1",
+          "patched_versions": "13.5.7",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "<14.2.10",
+          "patched_versions": "14.2.10",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-fq54-2j52-jc42",
+      "cve_id": "CVE-2024-39693",
+      "summary": "Denial of Service (DoS) condition",
+      "severity": "high",
+      "published_at": "2024-07-10T09:29:38Z",
+      "updated_at": "2024-11-06T08:41:00Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">=13.3.1 <13.5",
+          "patched_versions": ">=13.5",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-77r5-gw3j-2mpf",
+      "cve_id": "CVE-2024-34350",
+      "summary": "HTTP Request Smuggling",
+      "severity": "high",
+      "published_at": "2024-05-09T15:50:30Z",
+      "updated_at": "2024-05-09T15:50:30Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">=13.4 <13.5.1",
+          "patched_versions": ">=13.5.1",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-fr5h-rqp8-mj6g",
+      "cve_id": "CVE-2024-34351",
+      "summary": "Server-Side Request Forgery in Server Actions",
+      "severity": "high",
+      "published_at": "2024-05-09T15:47:01Z",
+      "updated_at": "2024-05-09T15:47:01Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": ">=13.4 <14.1.1",
+          "patched_versions": "14.1.1",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-wff4-fpwg-qqv3",
+      "cve_id": "CVE-2022-36046",
+      "summary": "Unexpected server crash in Next.js version 12.2.3",
+      "severity": "medium",
+      "published_at": "2022-08-24T17:10:11Z",
+      "updated_at": "2022-08-24T17:14:49Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "12.2.3",
+          "patched_versions": "12.2.4",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-fmvm-x8mv-47mj",
+      "cve_id": "CVE-2022-23646",
+      "summary": "Improper CSP in Image Optimization API for Next.js versions between 10.0.0 and 12.0.10",
+      "severity": "medium",
+      "published_at": "2022-02-17T17:08:06Z",
+      "updated_at": "2022-02-17T17:08:06Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "10.0.0 <= 12.0.10",
+          "patched_versions": "12.1.0",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-wr66-vrwm-5g5x",
+      "cve_id": "CVE-2022-21721",
+      "summary": "DOS Vulnerability for self-hosted next.js apps using i18n",
+      "severity": "medium",
+      "published_at": "2022-01-28T15:30:16Z",
+      "updated_at": "2022-01-28T15:30:16Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "12.0.0 <= 12.0.8",
+          "patched_versions": "12.0.9",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-25mp-g6fv-mqxx",
+      "cve_id": "CVE-2021-43803",
+      "summary": "Unexpected server crash in Next.js versions above 11.1.0 and below 12.0.5",
+      "severity": "high",
+      "published_at": "2021-12-06T10:53:03Z",
+      "updated_at": "2021-12-06T18:03:48Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "< 12.0.5",
+          "patched_versions": "12.0.5,11.1.3",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-9gr3-7897-pp7m",
+      "cve_id": "CVE-2021-39178",
+      "summary": "XSS in Image Optimization API for Next.js versions between 10.0.0 and 11.1.0",
+      "severity": "medium",
+      "published_at": "2021-08-30T22:14:41Z",
+      "updated_at": "2021-08-30T22:14:41Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "10.0.0 <= 11.1.0",
+          "patched_versions": "11.1.1",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-vxf5-wxwp-m7g9",
+      "cve_id": "CVE-2021-37699",
+      "summary": "Open Redirect in Next.js versions below 11.1.0",
+      "severity": "medium",
+      "published_at": "2021-08-11T16:11:59Z",
+      "updated_at": "2021-08-11T17:36:09Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "<=11.0.1",
+          "patched_versions": "11.1.0",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-x56p-c8cg-q435",
+      "cve_id": "CVE-2020-15242",
+      "summary": "Open Redirect in Next.js versions between 9.5.0 and 9.5.3",
+      "severity": "medium",
+      "published_at": "2020-10-08T09:04:06Z",
+      "updated_at": "2020-10-08T20:40:55Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "9.5.0 <= 9.5.3",
+          "patched_versions": "9.5.4",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-fq77-7p7r-83rj",
+      "cve_id": "CVE-2020-5284",
+      "summary": "Directory Traversal in Next.js versions below 9.3.2",
+      "severity": "medium",
+      "published_at": "2020-03-30T08:36:57Z",
+      "updated_at": "2020-03-30T08:36:57Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "next"
+          },
+          "vulnerable_version_range": "< 9.3.2",
+          "patched_versions": "9.3.2",
+          "vulnerable_functions": []
+        }
+      ]
+    }
+  ],
+  "react": [],
+  "vite": [
+    {
+      "id": "GHSA-859w-5945-r5v3",
+      "cve_id": "CVE-2025-46565",
+      "summary": "`server.fs.deny` bypassed with `/.` for files under project `root`",
+      "severity": "medium",
+      "published_at": "2025-04-30T08:11:08Z",
+      "updated_at": "2025-04-30T19:40:16Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.3.0, <=6.3.3",
+          "patched_versions": ">=6.3.4",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.2.0, <=6.2.6",
+          "patched_versions": ">=6.2.7, <6.3.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.0.0, <=6.1.5",
+          "patched_versions": ">=6.1.6, <6.2.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0, <=5.4.18",
+          "patched_versions": ">=5.4.19, <6.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": "<=4.5.13",
+          "patched_versions": ">=4.5.14, <5.0.0",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-356w-63v5-8wf4",
+      "cve_id": "CVE-2025-32395",
+      "summary": "`server.fs.deny` bypassed with an invalid `request-target`",
+      "severity": "medium",
+      "published_at": "2025-04-10T07:07:20Z",
+      "updated_at": "2025-04-10T12:51:12Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.2.0, <=6.2.5",
+          "patched_versions": ">=6.2.6",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.1.0, <=6.1.4",
+          "patched_versions": ">=6.1.5, <6.2.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.0.0, <=6.0.14",
+          "patched_versions": ">=6.0.15, <6.1.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0, <=5.4.17",
+          "patched_versions": ">=5.4.18, <6.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": "<=4.5.12",
+          "patched_versions": ">=4.5.13, <5.0.0",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-xcj6-pq6g-qj4x",
+      "cve_id": "CVE-2025-31486",
+      "summary": "`server.fs.deny` bypassed with `.svg` or relative paths",
+      "severity": "medium",
+      "published_at": "2025-04-03T10:01:21Z",
+      "updated_at": "2025-04-30T02:45:28Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.2.0, <=6.2.4",
+          "patched_versions": ">=6.2.5",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.1.0, <=6.1.3",
+          "patched_versions": ">=6.1.4, <6.2.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.0.0, <=6.0.13",
+          "patched_versions": ">=6.0.14, <6.1.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0, <=5.4.16",
+          "patched_versions": ">=5.4.17, <6.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": "<=4.5.11",
+          "patched_versions": ">=4.5.12, <5.0.0",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-4r4m-qw57-chr8",
+      "cve_id": "CVE-2025-31125",
+      "summary": "`server.fs.deny` bypassed for `inline` and `raw` with `?import` query",
+      "severity": "medium",
+      "published_at": "2025-03-31T10:12:27Z",
+      "updated_at": "2025-03-31T14:26:49Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.2.0, <=6.2.3",
+          "patched_versions": ">=6.2.4",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.1.0, <=6.1.2",
+          "patched_versions": ">=6.1.3, <6.2.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.0.0, <=6.0.12",
+          "patched_versions": ">=6.0.13, <6.1.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0, <=5.4.15",
+          "patched_versions": ">=5.4.16, <6.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": "<=4.5.10",
+          "patched_versions": ">=4.5.11, <5.0.0",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-x574-m823-4x7w",
+      "cve_id": "CVE-2025-30208",
+      "summary": " server.fs.deny bypassed when using `?raw??`",
+      "severity": "medium",
+      "published_at": "2025-03-24T10:24:13Z",
+      "updated_at": "2025-03-24T15:38:51Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.2.0, <=6.2.2",
+          "patched_versions": ">=6.2.3",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.1.0, <=6.1.1",
+          "patched_versions": ">=6.1.2, <6.2.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.0.0, <=6.0.11",
+          "patched_versions": ">=6.0.12, <6.1.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0, <=5.4.14",
+          "patched_versions": ">=5.4.15, <6.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": "<=4.5.9",
+          "patched_versions": ">=4.5.10, <5.0.0",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-vg6x-rcgg-rjx6",
+      "cve_id": "CVE-2025-24010",
+      "summary": "Any websites were able to send any requests to the development server and read the response",
+      "severity": "medium",
+      "published_at": "2025-01-20T10:10:42Z",
+      "updated_at": "2025-02-07T03:27:06Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=6.0.0, <=6.0.8",
+          "patched_versions": ">=6.0.9",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0, <=5.4.11",
+          "patched_versions": ">=5.4.12, <6.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": "<=4.5.5",
+          "patched_versions": ">=4.5.6, <5.0.0",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-64vr-g452-qvp3",
+      "cve_id": "CVE-2024-45812",
+      "summary": "DOM Clobbering gadget found in vite bundled scripts that leads to XSS",
+      "severity": "medium",
+      "published_at": "2024-09-17T09:12:49Z",
+      "updated_at": "2024-09-17T17:38:59Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.4.0, <=5.4.5",
+          "patched_versions": ">=5.4.6",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.3.0, <=5.3.5",
+          "patched_versions": ">=5.3.6, <5.4.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.1.0, <=5.2.13",
+          "patched_versions": ">=5.2.14, <5.3.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0, <=5.1.7",
+          "patched_versions": ">=5.1.8, <5.2.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=4.0.0, <=4.5.3",
+          "patched_versions": ">=4.5.5, <5.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": "<=3.2.10",
+          "patched_versions": ">=3.2.11, <4.0.0",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-9cwx-2883-4wfx",
+      "cve_id": "CVE-2024-45811",
+      "summary": "server.fs.deny bypassed when using ?import&raw",
+      "severity": "medium",
+      "published_at": "2024-09-17T09:12:39Z",
+      "updated_at": "2024-09-17T17:38:50Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.4.0, <=5.4.5",
+          "patched_versions": ">=5.4.6",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.3.0, <=5.3.5",
+          "patched_versions": ">=5.3.6, <5.4.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0, <=5.2.13",
+          "patched_versions": ">=5.2.14, <5.3.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0, <=5.1.7",
+          "patched_versions": ">=5.1.8, <5.2.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=4.0.0, <=4.5.3",
+          "patched_versions": ">=4.5.5, <5.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": "<=3.2.10",
+          "patched_versions": ">=3.2.11, <4.0.0",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-8jhw-289h-jh2g",
+      "cve_id": "CVE-2024-31207",
+      "summary": "`server.fs.deny` did not deny requests for patterns with directories.",
+      "severity": "medium",
+      "published_at": "2024-04-03T11:28:40Z",
+      "updated_at": "2024-04-03T20:27:25Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=2.7.0, <= 2.9.17",
+          "patched_versions": "2.9.18",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=3.0.0, <=3.2.8",
+          "patched_versions": "3.2.10",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=4.0.0, <=4.5.2",
+          "patched_versions": "4.5.3",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0, <=5.0.12",
+          "patched_versions": "5.0.13",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.1.0, <=5.1.6",
+          "patched_versions": "5.1.7",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.2.0, <=5.2.5",
+          "patched_versions": "5.2.6",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-c24v-8rfc-w8vw",
+      "cve_id": "CVE-2024-23331",
+      "summary": "Vite dev server option `server.fs.deny` can be bypassed when hosted on case-insensitive filesystem",
+      "severity": "high",
+      "published_at": "2024-01-19T14:22:35Z",
+      "updated_at": "2024-01-19T19:21:25Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=2.7.0 <=2.9.16",
+          "patched_versions": ">=2.9.17 <3.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=3.0.0 <=3.2.7",
+          "patched_versions": ">=3.2.8 <4.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=4.0.0 <=4.5.1",
+          "patched_versions": ">=4.5.2 <5.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0 <=5.0.11",
+          "patched_versions": ">=5.0.12",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-92r3-m2mg-pj97",
+      "cve_id": "CVE-2023-49293",
+      "summary": "XSS vulnerability in `server.transformIndexHtml` via URL payload",
+      "severity": "medium",
+      "published_at": "2023-12-04T22:07:59Z",
+      "updated_at": "2023-12-04T22:07:59Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=4.4.0 <=4.4.11",
+          "patched_versions": ">=4.4.12 <4.5.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": "4.5.0",
+          "patched_versions": ">=4.5.1 <5.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=5.0.0 <=5.0.4",
+          "patched_versions": ">=5.0.5",
+          "vulnerable_functions": []
+        }
+      ]
+    },
+    {
+      "id": "GHSA-353f-5xf4-qw67",
+      "cve_id": "CVE-2023-34092",
+      "summary": "Vite Server Options (server.fs.deny) can be bypassed using double forward-slash (//)",
+      "severity": "high",
+      "published_at": "2023-06-01T11:09:57Z",
+      "updated_at": "2023-06-01T15:17:43Z",
+      "references": [],
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": "2.9.15",
+          "patched_versions": ">=2.9.16 <3.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=3.0.2 <=3.2.6",
+          "patched_versions": ">=3.2.7 <4.0.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=4.0.0 <=4.0.4",
+          "patched_versions": ">=4.0.5 <4.1.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=4.1.0 <=4.1.4",
+          "patched_versions": ">=4.1.5 <4.2.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=4.2.0 <=4.2.2",
+          "patched_versions": ">=4.2.3 <4.3.0",
+          "vulnerable_functions": []
+        },
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "vite"
+          },
+          "vulnerable_version_range": ">=4.3.0 <=4.3.8",
+          "patched_versions": ">=4.3.9",
+          "vulnerable_functions": []
+        }
+      ]
+    }
+  ],
+  "last_updated": "2025-08-29T10:21:27.185151"
+}

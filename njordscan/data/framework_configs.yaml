@@ -1,0 +1,259 @@
+# 🛡️ Framework-Specific Configuration Templates
+# Optimized security configurations for different frameworks
+
+frameworks:
+  nextjs:
+    name: "Next.js"
+    description: "React framework with server-side rendering"
+    version_support: ["12.x", "13.x", "14.x"]
+    
+    security_headers:
+      recommended:
+        - "X-Frame-Options: DENY"
+        - "X-Content-Type-Options: nosniff"
+        - "X-XSS-Protection: 1; mode=block"
+        - "Strict-Transport-Security: max-age=31536000"
+        - "Content-Security-Policy: default-src 'self'"
+        - "Referrer-Policy: strict-origin-when-cross-origin"
+    
+    file_patterns:
+      config: ["next.config.js", "next.config.mjs", "next.config.ts"]
+      pages: ["pages/**/*.{js,jsx,ts,tsx}", "app/**/*.{js,jsx,ts,tsx}"]
+      api: ["pages/api/**/*.{js,ts}", "app/api/**/*.{js,ts}"]
+      middleware: ["middleware.{js,ts}"]
+      components: ["components/**/*.{js,jsx,ts,tsx}"]
+    
+    security_checks:
+      image_optimization:
+        enabled: true
+        check_domains: true
+        check_remote_patterns: true
+      
+      api_routes:
+        enabled: true
+        check_authentication: true
+        check_cors: true
+        check_rate_limiting: true
+      
+      middleware:
+        enabled: true
+        check_security_headers: true
+        check_authentication: true
+      
+      ssr_security:
+        enabled: true
+        check_data_fetching: true
+        check_server_components: true
+    
+    common_vulnerabilities:
+      - "SSRF in image optimization"
+      - "Exposed API routes"
+      - "Server-side XSS in SSR"
+      - "Information disclosure in getServerSideProps"
+      - "Authentication bypass in middleware"
+    
+    best_practices:
+      - "Use environment variables for secrets"
+      - "Implement proper CORS policies"
+      - "Add authentication to API routes"
+      - "Validate all user inputs"
+      - "Use Content Security Policy"
+
+  react:
+    name: "React"
+    description: "JavaScript library for building user interfaces"
+    version_support: ["16.x", "17.x", "18.x"]
+    
+    security_headers:
+      recommended:
+        - "X-Frame-Options: DENY"
+        - "X-Content-Type-Options: nosniff"
+        - "X-XSS-Protection: 1; mode=block"
+        - "Content-Security-Policy: default-src 'self'"
+    
+    file_patterns:
+      components: ["src/**/*.{js,jsx,ts,tsx}", "components/**/*.{js,jsx,ts,tsx}"]
+      hooks: ["src/hooks/**/*.{js,ts}", "hooks/**/*.{js,ts}"]
+      utils: ["src/utils/**/*.{js,ts}", "utils/**/*.{js,ts}"]
+      config: ["src/config/**/*.{js,ts}", "config/**/*.{js,ts}"]
+    
+    security_checks:
+      jsx_injection:
+        enabled: true
+        check_dangerous_props: true
+        check_user_input_rendering: true
+      
+      state_management:
+        enabled: true
+        check_sensitive_data: true
+        check_state_mutations: true
+      
+      component_security:
+        enabled: true
+        check_prop_validation: true
+        check_ref_usage: true
+      
+      hooks_security:
+        enabled: true
+        check_effect_dependencies: true
+        check_callback_dependencies: true
+    
+    common_vulnerabilities:
+      - "XSS via dangerouslySetInnerHTML"
+      - "Sensitive data in client state"
+      - "Unvalidated props rendering"
+      - "Memory leaks in useEffect"
+      - "Insecure ref forwarding"
+    
+    best_practices:
+      - "Sanitize all user inputs"
+      - "Validate props with PropTypes or TypeScript"
+      - "Avoid storing sensitive data in state"
+      - "Use proper dependency arrays in hooks"
+      - "Implement error boundaries"
+
+  vite:
+    name: "Vite"
+    description: "Fast build tool and development server"
+    version_support: ["3.x", "4.x", "5.x"]
+    
+    security_headers:
+      recommended:
+        - "X-Frame-Options: DENY"
+        - "X-Content-Type-Options: nosniff"
+        - "Content-Security-Policy: default-src 'self'"
+    
+    file_patterns:
+      config: ["vite.config.{js,ts,mjs}", "vitest.config.{js,ts}"]
+      src: ["src/**/*.{js,jsx,ts,tsx,vue}"]
+      public: ["public/**/*"]
+      env: [".env*"]
+    
+    security_checks:
+      build_security:
+        enabled: true
+        check_source_maps: true
+        check_minification: true
+        check_bundle_analysis: true
+      
+      dev_server:
+        enabled: true
+        check_cors: true
+        check_host_binding: true
+        check_https: true
+      
+      plugin_security:
+        enabled: true
+        check_plugin_sources: true
+        check_plugin_permissions: true
+      
+      asset_handling:
+        enabled: true
+        check_public_assets: true
+        check_dynamic_imports: true
+    
+    common_vulnerabilities:
+      - "Source maps in production"
+      - "Insecure dev server configuration"
+      - "Malicious plugins"
+      - "Exposed environment variables"
+      - "Unsafe dynamic imports"
+    
+    best_practices:
+      - "Disable source maps in production"
+      - "Use HTTPS in development"
+      - "Validate all plugins"
+      - "Secure environment variable handling"
+      - "Implement proper CSP"
+
+# Security Level Configurations
+security_levels:
+  basic:
+    description: "Basic security checks for getting started"
+    enabled_checks:
+      - "hardcoded_secrets"
+      - "basic_xss"
+      - "insecure_dependencies"
+    
+  standard:
+    description: "Standard security analysis for most applications"
+    enabled_checks:
+      - "hardcoded_secrets"
+      - "xss_vulnerabilities"
+      - "injection_attacks"
+      - "insecure_dependencies"
+      - "configuration_issues"
+    
+  advanced:
+    description: "Advanced security analysis with AI enhancement"
+    enabled_checks:
+      - "all_standard_checks"
+      - "business_logic_flaws"
+      - "advanced_injection"
+      - "framework_specific"
+      - "ai_security"
+    ai_features:
+      - "behavioral_analysis"
+      - "anomaly_detection"
+      - "threat_intelligence"
+    
+  enterprise:
+    description: "Enterprise-grade security analysis"
+    enabled_checks:
+      - "all_advanced_checks"
+      - "compliance_validation"
+      - "supply_chain_analysis"
+      - "zero_day_detection"
+    ai_features:
+      - "all_ai_features"
+      - "custom_model_training"
+      - "threat_hunting"
+    compliance:
+      - "SOC2"
+      - "PCI-DSS"
+      - "GDPR"
+      - "NIST"
+
+# Scan Mode Configurations
+scan_modes:
+  quick:
+    description: "Fast scan for CI/CD pipelines"
+    timeout: 60
+    modules:
+      - "headers"
+      - "configs"
+      - "dependencies"
+    skip_modules:
+      - "runtime"
+    
+  standard:
+    description: "Balanced scan for regular security checks"
+    timeout: 300
+    modules:
+      - "headers"
+      - "static"
+      - "configs"
+      - "dependencies"
+    
+  deep:
+    description: "Comprehensive scan with AI analysis"
+    timeout: 900
+    modules:
+      - "headers"
+      - "static"
+      - "configs"
+      - "dependencies"
+      - "runtime"
+      - "ai_endpoints"
+    ai_features:
+      - "behavioral_analysis"
+      - "threat_intelligence"
+    
+  enterprise:
+    description: "Full enterprise scan with all features"
+    timeout: 1800
+    modules:
+      - "all"
+    ai_features:
+      - "all"
+    compliance_checks: true

@@ -1,0 +1,213 @@
+# ============================================================================
+# NjordScan Package Manifest
+# Specifies additional files to include in the distribution package
+# ============================================================================
+
+# Core Documentation
+include README.md
+include CHANGELOG.md
+include CONTRIBUTING.md
+include SECURITY.md
+include LICENSE
+
+# Configuration Files
+include pyproject.toml
+include setup.py
+include requirements.txt
+include requirements-dev.txt
+include MANIFEST.in
+
+# Documentation Directory
+recursive-include docs *.md
+recursive-include docs *.rst
+recursive-include docs *.txt
+recursive-include docs *.yaml
+recursive-include docs *.yml
+recursive-include docs *.json
+
+# Data Files
+recursive-include njordscan/data *.yaml
+recursive-include njordscan/data *.yml
+recursive-include njordscan/data *.json
+recursive-include njordscan/data *.txt
+recursive-include njordscan/data *.csv
+recursive-include njordscan/data *.xml
+
+# Templates and Static Files
+recursive-include njordscan/templates *.j2
+recursive-include njordscan/templates *.html
+recursive-include njordscan/templates *.txt
+recursive-include njordscan/templates *.md
+recursive-include njordscan/static *.css
+recursive-include njordscan/static *.js
+recursive-include njordscan/static *.png
+recursive-include njordscan/static *.jpg
+recursive-include njordscan/static *.svg
+recursive-include njordscan/static *.ico
+
+# Plugin Templates and Examples
+recursive-include plugins *.py
+recursive-include plugins *.yaml
+recursive-include plugins *.yml
+recursive-include plugins *.json
+recursive-include plugins *.md
+recursive-include plugins *.txt
+
+# Configuration Examples
+recursive-include examples *.py
+recursive-include examples *.yaml
+recursive-include examples *.yml
+recursive-include examples *.json
+recursive-include examples *.md
+recursive-include examples *.txt
+
+# Security Rules and Patterns
+recursive-include security_rules *.yaml
+recursive-include security_rules *.yml
+recursive-include security_rules *.json
+recursive-include security_rules *.txt
+
+# Type Stubs
+recursive-include njordscan *.pyi
+include njordscan/py.typed
+
+# Test Data (for package validation)
+recursive-include tests/fixtures *.js
+recursive-include tests/fixtures *.jsx
+recursive-include tests/fixtures *.ts
+recursive-include tests/fixtures *.tsx
+recursive-include tests/fixtures *.json
+recursive-include tests/fixtures *.yaml
+recursive-include tests/fixtures *.yml
+
+# Test Files (organized in tests/ directory)
+recursive-include tests *.py
+recursive-include tests/validation *.py
+
+# CI/CD Templates
+recursive-include .github *.yml
+recursive-include .github *.yaml
+recursive-include .github *.md
+include .gitlab-ci.yml
+include azure-pipelines.yml
+include Jenkinsfile
+
+# Docker Files
+include Dockerfile
+include docker-compose.yml
+include .dockerignore
+
+# IDE Configuration
+include .vscode/*.json
+include .idea/*.xml
+include .vim/*
+
+# Git Configuration
+include .gitignore
+include .gitattributes
+
+# Pre-commit Configuration
+include .pre-commit-config.yaml
+
+# Linting and Formatting Configuration
+include .flake8
+include .bandit
+include .mypy.ini
+include .isort.cfg
+include .black
+include pyproject.toml
+
+# Dependency Management
+include Pipfile
+include Pipfile.lock
+include poetry.lock
+include yarn.lock
+include package.json
+include package-lock.json
+
+# Documentation Build Files
+include mkdocs.yml
+include readthedocs.yml
+include .readthedocs.yml
+
+# Changelog and Version Files
+include VERSION
+include HISTORY.md
+include RELEASES.md
+
+# Legal and Compliance
+include COPYRIGHT
+include NOTICE
+include AUTHORS
+include CREDITS
+
+# Localization Files
+recursive-include njordscan/locale *.po
+recursive-include njordscan/locale *.pot
+recursive-include njordscan/locale *.mo
+
+# Database Migrations (if any)
+recursive-include njordscan/migrations *.py
+recursive-include njordscan/migrations *.sql
+
+# API Specifications
+recursive-include api *.yaml
+recursive-include api *.yml
+recursive-include api *.json
+recursive-include api *.md
+
+# Exclude Development and Build Files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude __pycache__
+global-exclude .pytest_cache
+global-exclude .mypy_cache
+global-exclude .coverage
+global-exclude htmlcov
+global-exclude .tox
+global-exclude .nox
+global-exclude build
+global-exclude dist
+global-exclude *.egg-info
+global-exclude .DS_Store
+global-exclude Thumbs.db
+global-exclude .env
+global-exclude .env.local
+global-exclude .env.*.local
+global-exclude *.log
+global-exclude *.tmp
+global-exclude *.temp
+global-exclude .cache
+global-exclude node_modules
+
+# Exclude Editor Files
+global-exclude *.swp
+global-exclude *.swo
+global-exclude *~
+global-exclude .#*
+global-exclude \#*#
+
+# Exclude OS Files
+global-exclude .DS_Store
+global-exclude .DS_Store?
+global-exclude ._*
+global-exclude .Spotlight-V100
+global-exclude .Trashes
+global-exclude ehthumbs.db
+global-exclude Thumbs.db
+
+# Exclude Version Control
+global-exclude .git
+global-exclude .gitignore
+global-exclude .gitmodules
+global-exclude .gitattributes
+global-exclude .hg
+global-exclude .hgignore
+global-exclude .svn
+
+# Exclude IDE Files
+global-exclude .vscode
+global-exclude .idea
+global-exclude *.sublime-*
+global-exclude .vim

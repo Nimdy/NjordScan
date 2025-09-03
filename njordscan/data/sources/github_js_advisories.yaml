@@ -1,0 +1,27 @@
+name: "GitHub JavaScript Security Advisories"
+description: "GitHub's security advisory database for JavaScript packages"
+url: "https://api.github.com/advisories"
+api_version: "v4"
+update_frequency: 12  # hours
+enabled: true
+rate_limit: 5000  # requests per hour (with auth)
+authentication:
+  required: true
+  type: "token"
+  env_var: "GITHUB_TOKEN"
+data_format: "json"
+query_parameters:
+  ecosystem: "npm"
+  severity: "low,moderate,high,critical"
+supported_frameworks:
+  - "nextjs"
+  - "react" 
+  - "vite"
+filters:
+  keywords:
+    - "next.js"
+    - "nextjs"
+    - "react"
+    - "vite"
+    - "javascript"
+    - "typescript"

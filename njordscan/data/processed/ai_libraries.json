@@ -1,0 +1,14 @@
+{
+  "libraries": {
+    "openai": [],
+    "anthropic": [],
+    "langchain": [],
+    "huggingface": []
+  },
+  "patterns": {
+    "api_key_exposure": [],
+    "prompt_injection": [],
+    "unsafe_execution": []
+  },
+  "last_updated": "2025-08-29T10:21:27.186943"
+}

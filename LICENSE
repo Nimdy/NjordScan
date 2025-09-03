@@ -1,0 +1,233 @@
+MIT License
+
+Copyright (c) 2024 NjordScan Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## 🙏 **Acknowledgments**
+
+This project is built upon the shoulders of giants and wouldn't be possible without:
+
+### 🛡️ **Security Community**
+- **OWASP Foundation** - For security standards, guidelines, and the Top 10 project
+- **MITRE Corporation** - For the ATT&CK framework and CVE program
+- **National Vulnerability Database (NVD)** - For vulnerability data and CVSS scoring
+- **Security researchers worldwide** - For discovering and responsibly disclosing vulnerabilities
+
+### 🧠 **AI & Machine Learning**
+- **scikit-learn contributors** - For machine learning algorithms and tools
+- **NumPy and Pandas communities** - For data processing capabilities
+- **NLTK contributors** - For natural language processing features
+- **TensorFlow and PyTorch communities** - For deep learning inspirations
+
+### ⚛️ **Framework Communities**
+- **Next.js team at Vercel** - For the amazing React framework
+- **React team at Meta** - For the foundational UI library
+- **Vite team** - For the lightning-fast build tool
+- **Node.js contributors** - For the JavaScript runtime
+
+### 🔧 **Development Tools**
+- **Python Software Foundation** - For the Python programming language
+- **Click contributors** - For the command-line interface framework
+- **Rich contributors** - For beautiful terminal formatting
+- **aiohttp contributors** - For async HTTP client capabilities
+- **pytest contributors** - For the testing framework
+
+### 🌟 **Open Source Libraries**
+- **Requests library** - For HTTP functionality
+- **BeautifulSoup** - For HTML/XML parsing
+- **PyYAML** - For YAML configuration support
+- **Jinja2** - For templating capabilities
+- **Safety** - For Python dependency vulnerability checking
+
+### 🎨 **User Experience**
+- **Rich terminal library** - For beautiful CLI interfaces
+- **Chart.js contributors** - For interactive data visualizations
+- **Mermaid contributors** - For diagram generation
+- **Font Awesome** - For iconography
+
+### 🔗 **Integration Partners**
+- **GitHub** - For hosting, Actions, and security features
+- **GitLab** - For CI/CD integration capabilities
+- **Microsoft Azure** - For DevOps pipeline integration
+- **Jenkins community** - For enterprise CI/CD support
+
+### 📚 **Documentation & Learning**
+- **MkDocs contributors** - For documentation generation
+- **Markdown specification** - For documentation formatting
+- **GitHub Flavored Markdown** - For enhanced markdown features
+- **Sphinx contributors** - For documentation inspiration
+
+### 🌍 **Community Platforms**
+- **Discord** - For community communication platform
+- **Stack Overflow** - For developer Q&A integration
+- **Reddit security communities** - For threat intelligence sharing
+- **Twitter/X security researchers** - For real-time threat updates
+
+### 🏢 **Enterprise & Standards**
+- **ISO/IEC 27001** - For information security management standards
+- **NIST Cybersecurity Framework** - For security practice guidelines
+- **SOC 2** - For security and availability controls
+- **PCI DSS** - For payment card industry standards
+- **GDPR compliance** - For data protection requirements
+
+### 🔍 **Security Tools Inspiration**
+- **Snyk** - For dependency vulnerability scanning approaches
+- **SonarQube** - For static code analysis methodologies
+- **Burp Suite** - For web application security testing
+- **OWASP ZAP** - For dynamic security testing
+- **Semgrep** - For semantic code analysis patterns
+
+### 🤖 **AI Security Research**
+- **OpenAI** - For AI safety research and best practices
+- **Anthropic** - For AI alignment and safety considerations
+- **Google AI** - For responsible AI development guidelines
+- **Microsoft AI** - For AI security research and tools
+- **Academic AI security researchers** - For cutting-edge research
+
+### 💼 **Business & Legal**
+- **Electronic Frontier Foundation** - For digital rights advocacy
+- **Creative Commons** - For licensing frameworks
+- **Open Source Initiative** - For open source definition and advocacy
+- **Software Freedom Conservancy** - For open source project support
+
+### 🎓 **Educational Institutions**
+- **Universities worldwide** - For security research and education
+- **SANS Institute** - For cybersecurity training and research
+- **Carnegie Mellon CERT** - For security research and coordination
+- **MIT Computer Science and Artificial Intelligence Laboratory** - For foundational research
+
+### 🌟 **Individual Contributors**
+Special thanks to all the individual developers, security researchers, and community members who have:
+- **Contributed code** to the project
+- **Reported vulnerabilities** and bugs
+- **Provided feedback** and suggestions
+- **Created documentation** and tutorials
+- **Shared knowledge** in the community
+- **Mentored newcomers** to security
+- **Advocated for better security** practices
+
+### 🔮 **Future Collaborations**
+We're grateful for ongoing partnerships and look forward to working with:
+- **Cloud security providers** for enhanced threat intelligence
+- **Academic institutions** for cutting-edge research
+- **Security consulting firms** for real-world validation
+- **Developer tool companies** for better integrations
+- **AI/ML companies** for advanced analysis capabilities
+
+---
+
+## 🤝 **Contributing to Acknowledgments**
+
+If you've contributed to NjordScan or any of the technologies it builds upon, we'd love to acknowledge your work:
+
+1. **Open a Pull Request** adding your contribution to the appropriate section
+2. **Include a brief description** of your contribution
+3. **Link to your work** (GitHub profile, website, etc.)
+4. **Follow our** [**contribution guidelines**](CONTRIBUTING.md)
+
+### 📧 **Contact for Acknowledgments**
+- **Email**: acknowledgments@njordscan.dev
+- **GitHub**: Open an issue with the "acknowledgment" label
+- **Discord**: Mention it in the #contributors channel
+
+---
+
+## 🎯 **License Compatibility**
+
+NjordScan is designed to be compatible with various licensing models:
+
+### ✅ **Compatible Licenses**
+- **MIT License** - Full compatibility
+- **Apache 2.0** - Full compatibility
+- **BSD Licenses** (2-Clause, 3-Clause) - Full compatibility
+- **ISC License** - Full compatibility
+- **Unlicense** - Full compatibility
+
+### ⚠️ **Copyleft Licenses**
+- **GPL v2/v3** - Compatible for analysis, not for distribution
+- **LGPL** - Compatible with proper attribution
+- **AGPL** - Compatible for analysis tools
+- **Mozilla Public License** - Compatible with proper handling
+
+### ❌ **Incompatible Licenses**
+- **Proprietary licenses** - Cannot be included directly
+- **Custom restrictive licenses** - Case-by-case evaluation
+- **Patents-encumbered code** - Avoided for legal safety
+
+---
+
+## 🔒 **Security Considerations**
+
+The MIT License provides software "AS IS" without warranty. For security tools like NjordScan:
+
+### 🛡️ **Security Disclaimer**
+- **No warranty** of security effectiveness
+- **Users responsible** for validation and testing
+- **Continuous improvement** through community feedback
+- **Professional security advice** recommended for critical applications
+
+### 📋 **Compliance Notes**
+- **Export controls** may apply to security software
+- **Local laws** regarding security tools should be considered
+- **Enterprise policies** may require additional approvals
+- **Audit trails** available through community transparency
+
+---
+
+## 🌟 **Recognition Programs**
+
+### 🏆 **Contributor Recognition**
+- **GitHub Contributors** page with detailed statistics
+- **Annual acknowledgment** in release notes
+- **Community spotlight** features
+- **Conference speaking** opportunities
+- **Swag and rewards** for significant contributions
+
+### 🎖️ **Security Research Recognition**
+- **Hall of Fame** for vulnerability discoveries
+- **CVE credits** where applicable
+- **Research paper acknowledgments**
+- **Bug bounty rewards** for significant findings
+- **Security conference** presentation opportunities
+
+### 🤝 **Partnership Recognition**
+- **Sponsor acknowledgments** in documentation
+- **Logo placement** for significant supporters
+- **Joint marketing** opportunities
+- **Case study** development and sharing
+- **Technical advisory** board positions
+
+---
+
+<div align="center">
+
+## 🙏 **Thank You to Everyone!**
+
+**NjordScan exists because of the incredible open source community, security researchers, and developers who make the internet safer every day.**
+
+**Together, we're building a more secure digital world! 🌍🛡️**
+
+---
+
+*"If I have seen further it is by standing on the shoulders of giants."* - Sir Isaac Newton
+
+</div>

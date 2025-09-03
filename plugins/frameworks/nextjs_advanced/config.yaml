@@ -1,0 +1,37 @@
+name: "NextJS Advanced Scanner"
+version: "1.0.0"
+author: "NjordScan Team"
+description: "Advanced security scanning for Next.js applications"
+compatibility:
+  njordscan_version: ">=0.1.0"
+  frameworks: ["nextjs"]
+dependencies:
+  - aiohttp>=3.8.0
+  - beautifulsoup4>=4.9.0
+permissions:
+  - network_access
+  - file_system_read
+categories:
+  - framework_security
+  - web_scanning
+tags:
+  - nextjs
+  - ssr
+  - api_routes
+  - middleware
+installation:
+  pip_packages: []
+  system_commands: []
+configuration:
+  scan_api_routes:
+    type: boolean
+    default: true
+    description: "Scan Next.js API routes for security issues"
+  check_middleware:
+    type: boolean
+    default: true
+    description: "Analyze middleware configurations"
+  deep_scan_components:
+    type: boolean
+    default: false
+    description: "Perform deep analysis of React components"
