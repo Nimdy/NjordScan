@@ -397,15 +397,35 @@ class ReportFormatter:
             if count > 0:
                 chart_data.append(f"['{severity.title()}', {count}]")
         
+        # Calculate grade and recommendation based on score
+        njord_score = results.get('njord_score', 0)
+        if njord_score >= 90:
+            grade = 'A+'
+            recommendation = 'Excellent security posture! Keep up the great work.'
+        elif njord_score >= 80:
+            grade = 'A'
+            recommendation = 'Good security posture with minor improvements needed.'
+        elif njord_score >= 70:
+            grade = 'B'
+            recommendation = 'Moderate security posture. Address medium-priority issues.'
+        elif njord_score >= 60:
+            grade = 'C'
+            recommendation = 'Below average security. Focus on high-priority vulnerabilities.'
+        else:
+            grade = 'D'
+            recommendation = 'Poor security posture. Immediate action required.'
+        
         template_data = {
             'title': 'NjordScan Security Report',
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'target': html.escape(results['target']),
-            'framework': results['framework'].title(),
-            'scan_mode': results['scan_mode'].title(),
-            'duration': f"{results['scan_duration']:.2f}s",
+            'target': html.escape(results.get('target', '.')),
+            'framework': results.get('framework', 'Unknown').title(),
+            'scan_mode': results.get('mode', 'standard').title(),
+            'duration': f"{results.get('scan_duration', 0):.2f}s",
             'total_issues': total_issues,
-            'njord_score': results['njord_score'],
+            'njord_score': njord_score,
+            'njord_score_grade': grade,
+            'njord_score_recommendation': recommendation,
             'vulnerabilities_html': vulnerabilities_html,
             'chart_data': ','.join(chart_data),
             'severity_breakdown': severity_breakdown,
@@ -479,17 +499,17 @@ class ReportFormatter:
             f.write("=" * 50 + "\n\n")
             
             # Header information
-            f.write(f"Target: {results['target']}\n")
-            f.write(f"Framework: {results['framework']}\n")
-            f.write(f"Scan Mode: {results['scan_mode']}\n")
-            f.write(f"Duration: {results['scan_duration']:.2f}s\n")
+            f.write(f"Target: {results.get('target', '.')}\n")
+            f.write(f"Framework: {results.get('framework', 'Unknown')}\n")
+            f.write(f"Scan Mode: {results.get('mode', 'standard')}\n")
+            f.write(f"Duration: {results.get('scan_duration', 0):.2f}s\n")
             f.write(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
             
             # Executive Summary
             f.write("EXECUTIVE SUMMARY\n")
             f.write("-" * 20 + "\n")
             f.write(f"Total Issues: {results['summary']['total_issues']}\n")
-            f.write(f"Modules with Findings: {results['summary']['modules_with_findings']}\n\n")
+            f.write(f"Modules with Findings: {results['summary'].get('modules_with_findings', 0)}\n\n")
             
             # Severity breakdown
             for severity, count in results['summary']['severity_breakdown'].items():
@@ -497,15 +517,40 @@ class ReportFormatter:
                     f.write(f"{severity.title()}: {count}\n")
             
             # NjordScore
-            njord_score = results['njord_score']
-            f.write(f"\nNjordScore: {njord_score['score']}/100 ({njord_score['grade']})\n")
-            f.write(f"Recommendation: {njord_score['recommendation']}\n\n")
+            njord_score = results.get('njord_score', 0)
+            if njord_score >= 90:
+                grade = 'A+'
+                recommendation = 'Excellent security posture! Keep up the great work.'
+            elif njord_score >= 80:
+                grade = 'A'
+                recommendation = 'Good security posture with minor improvements needed.'
+            elif njord_score >= 70:
+                grade = 'B'
+                recommendation = 'Moderate security posture. Address medium-priority issues.'
+            elif njord_score >= 60:
+                grade = 'C'
+                recommendation = 'Below average security. Focus on high-priority vulnerabilities.'
+            else:
+                grade = 'D'
+                recommendation = 'Poor security posture. Immediate action required.'
+            
+            f.write(f"\nNjordScore: {njord_score}/100 ({grade})\n")
+            f.write(f"Recommendation: {recommendation}\n\n")
             
             # Detailed vulnerabilities
             f.write("DETAILED FINDINGS\n")
             f.write("-" * 20 + "\n\n")
             
-            for module_name, module_vulns in results['vulnerabilities'].items():
+            vulnerabilities = results['vulnerabilities']
+            
+            # Handle both list and dict formats
+            if isinstance(vulnerabilities, list):
+                # Convert list to dict format for processing
+                vuln_dict = {'General': vulnerabilities}
+            else:
+                vuln_dict = vulnerabilities
+            
+            for module_name, module_vulns in vuln_dict.items():
                 if module_vulns:
                     f.write(f"{module_name.upper()} MODULE\n")
                     f.write("-" * len(module_name) + "\n")
@@ -515,17 +560,28 @@ class ReportFormatter:
                         f.write(f"Description: {vuln['description']}\n")
                         if vuln.get('file_path'):
                             f.write(f"File: {vuln['file_path']}\n")
+                        elif vuln.get('file'):
+                            f.write(f"File: {vuln['file']}\n")
                         if vuln.get('line_number'):
                             f.write(f"Line: {vuln['line_number']}\n")
+                        elif vuln.get('line'):
+                            f.write(f"Line: {vuln['line']}\n")
                         if vuln.get('fix'):
                             f.write(f"Fix: {vuln['fix']}\n")
                         f.write("\n")
     
-    def _format_vulnerabilities_for_html(self, vulnerabilities: Dict[str, List]) -> str:
+    def _format_vulnerabilities_for_html(self, vulnerabilities) -> str:
         """Format vulnerabilities for HTML display."""
         html_parts = []
         
-        for module_name, module_vulns in vulnerabilities.items():
+        # Handle both list and dict formats
+        if isinstance(vulnerabilities, list):
+            # Convert list to dict format for processing
+            vuln_dict = {'General': vulnerabilities}
+        else:
+            vuln_dict = vulnerabilities
+        
+        for module_name, module_vulns in vuln_dict.items():
             if not module_vulns:
                 continue
             
@@ -540,6 +596,8 @@ class ReportFormatter:
                 
                 if vuln.get('file_path'):
                     html_parts.append(f'<p class="vuln-file"><strong>File:</strong> {html.escape(vuln["file_path"])}</p>')
+                elif vuln.get('file'):
+                    html_parts.append(f'<p class="vuln-file"><strong>File:</strong> {html.escape(vuln["file"])}</p>')
                 if vuln.get('fix'):
                     html_parts.append(f'<p class="vuln-fix"><strong>Fix:</strong> {html.escape(vuln["fix"])}</p>')
                 
@@ -757,9 +815,9 @@ class ReportFormatter:
         
         <div class="njord-score">
             <h2>🏆 NjordScore Security Assessment</h2>
-            <span class="score-number">{njord_score[score]}/100</span>
-            <div class="score-grade">Grade: {njord_score[grade]}</div>
-            <p style="margin-top: 15px; font-size: 1.1em;">{njord_score[recommendation]}</p>
+            <span class="score-number">{njord_score}/100</span>
+            <div class="score-grade">Grade: {njord_score_grade}</div>
+            <p style="margin-top: 15px; font-size: 1.1em;">{njord_score_recommendation}</p>
         </div>
         
         <div class="summary-grid">
