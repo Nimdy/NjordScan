@@ -42,7 +42,7 @@ njordscan scan . --mode deep --ai-enhanced
 
 ### **🔍 Comprehensive Security Scanning**
 - **Framework Detection** - Auto-detect Next.js, React, Vite
-- **Standardized Vulnerability Types** - 25+ vulnerability types aligned with OWASP Top 10 2021
+- **Standardized Vulnerability Types** - 25+ vulnerability types aligned with OWASP Top 10
 - **Dependency Analysis** - CVE scanning, license compliance, typosquatting detection
 - **Configuration Security** - Environment variables, secrets detection, insecure settings
 - **Runtime Security** - Headers, cookies, authentication, dynamic testing
