@@ -338,6 +338,7 @@ pip install njordscan
 | `SSL: CERTIFICATE_VERIFY_FAILED` | Use `pip install --trusted-host pypi.org njordscan` |
 | `pkg_resources is deprecated` | Use `pip install --upgrade setuptools` |
 | `libxml2 and libxslt development packages` | Install `libxml2-dev libxslt1-dev` |
+| `failed building wheel for lxml` | Use `./fix-lxml-kali.sh` or install system deps |
 
 ### **Platform-Specific Solutions**
 
