@@ -35,7 +35,25 @@ sudo apt install -y libxml2-dev libxslt1-dev
 pip3 install njordscan
 ```
 
-### Issue 3: Missing build tools
+### Issue 3: lxml wheel build failure
+**Error Message:**
+```
+error: failed building wheel for lxml
+running setup.py clean for lxml
+failed to build installable wheels for some pyproject.toml based project lxml
+```
+
+**Solution:**
+```bash
+# Use our dedicated lxml fix script
+./fix-lxml-kali.sh
+
+# Or manually install lxml dependencies
+sudo apt install -y python3-dev libxml2-dev libxslt1-dev build-essential
+pip3 install lxml --no-cache-dir
+```
+
+### Issue 4: Missing build tools
 **Error Message:**
 ```
 error: Microsoft Visual C++ 14.0 is required

@@ -56,7 +56,7 @@ update_packages() {
 install_system_deps() {
     print_info "Installing system dependencies for Kali Linux..."
     
-    # Essential build tools
+    # Essential build tools and lxml dependencies
     sudo apt install -y \
         python3-dev \
         python3-pip \
@@ -66,6 +66,11 @@ install_system_deps() {
         libffi-dev \
         libxml2-dev \
         libxslt1-dev \
+        libxslt-dev \
+        libxml2-utils \
+        libxml2 \
+        libxslt1.1 \
+        zlib1g-dev \
         libjpeg-dev \
         libpng-dev \
         libfreetype6-dev \
@@ -77,7 +82,10 @@ install_system_deps() {
         pkg-config \
         git \
         curl \
-        wget
+        wget \
+        gcc \
+        g++ \
+        make
     
     print_status "System dependencies installed"
 }
@@ -131,11 +139,45 @@ install_build_tools() {
     # Install additional build dependencies
     $PYTHON_CMD -m pip install --upgrade \
         cython \
-        numpy \
-        lxml \
-        beautifulsoup4
+        numpy
     
     print_status "Build tools installed"
+}
+
+# Install lxml with special handling for Kali Linux
+install_lxml() {
+    print_info "Installing lxml (this may take a few minutes)..."
+    
+    # Try multiple installation methods for lxml
+    print_info "Attempting lxml installation method 1: Direct pip install..."
+    if $PYTHON_CMD -m pip install lxml --no-cache-dir; then
+        print_status "lxml installed successfully via pip"
+        return 0
+    fi
+    
+    print_warning "Method 1 failed, trying method 2: Pre-compiled wheel..."
+    if $PYTHON_CMD -m pip install lxml --only-binary=all --no-cache-dir; then
+        print_status "lxml installed successfully via pre-compiled wheel"
+        return 0
+    fi
+    
+    print_warning "Method 2 failed, trying method 3: With specific compiler flags..."
+    export STATIC_DEPS=true
+    export STATICBUILD=true
+    if $PYTHON_CMD -m pip install lxml --no-cache-dir --no-binary=lxml; then
+        print_status "lxml installed successfully with static build"
+        return 0
+    fi
+    
+    print_warning "Method 3 failed, trying method 4: Alternative lxml package..."
+    if $PYTHON_CMD -m pip install lxml-html-clean --no-cache-dir; then
+        print_status "Alternative lxml package installed"
+        return 0
+    fi
+    
+    print_error "All lxml installation methods failed"
+    print_info "You may need to install lxml manually or use a different XML parser"
+    return 1
 }
 
 # Create virtual environment
@@ -223,6 +265,7 @@ main() {
     check_python
     check_pip
     install_build_tools
+    install_lxml
     create_venv
     install_njordscan
     verify_installation
