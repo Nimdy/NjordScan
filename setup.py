@@ -9,6 +9,7 @@ including all advanced features, AI capabilities, and enterprise integrations.
 import os
 import sys
 import subprocess
+from pathlib import Path
 from setuptools import setup, find_packages
 from setuptools.command.install import install
 from setuptools.command.build_py import build_py
