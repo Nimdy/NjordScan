@@ -8,8 +8,10 @@ including all advanced features, AI capabilities, and enterprise integrations.
 
 import os
 import sys
+import subprocess
 from setuptools import setup, find_packages
 from setuptools.command.install import install
+from setuptools.command.build_py import build_py
 
 # Ensure Python version compatibility
 if sys.version_info < (3, 8):
@@ -55,6 +57,31 @@ def read_requirements(filename="requirements.txt"):
             "pyyaml>=6.0",
             "jinja2>=3.1.0"
         ]
+
+# Custom build command to ensure wheel is available
+class CustomBuildCommand(build_py):
+    """Custom build command that ensures wheel is available."""
+    
+    def run(self):
+        # Ensure wheel is available
+        self.ensure_wheel()
+        # Run the standard build
+        build_py.run(self)
+    
+    def ensure_wheel(self):
+        """Ensure wheel package is available."""
+        try:
+            import wheel
+            print("✅ wheel package is available")
+        except ImportError:
+            print("⚠️  wheel package not found, installing...")
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "wheel"])
+                print("✅ wheel package installed successfully")
+            except subprocess.CalledProcessError as e:
+                print(f"❌ Failed to install wheel: {e}")
+                print("Please install wheel manually: pip install wheel")
+                sys.exit(1)
 
 # Custom install command for post-installation setup
 class CustomInstallCommand(install):
@@ -298,16 +325,17 @@ setup(
     # Zip safety
     zip_safe=False,
     
-    # Custom install command
+    # Custom commands
     cmdclass={
+        "build_py": CustomBuildCommand,
         "install": CustomInstallCommand,
     },
     
     # Platform-specific requirements
     platforms=["any"],
     
-    # Minimum setuptools version
-    setup_requires=["setuptools>=45.0"],
+    # Minimum setuptools version and wheel
+    setup_requires=["setuptools>=45.0", "wheel>=0.37.0"],
     
     # Tests
     test_suite="tests",
