@@ -336,6 +336,8 @@ pip install njordscan
 | `error: Microsoft Visual C++ 14.0 is required` | Install Visual Studio Build Tools |
 | `Permission denied` | Use `pip install --user njordscan` |
 | `SSL: CERTIFICATE_VERIFY_FAILED` | Use `pip install --trusted-host pypi.org njordscan` |
+| `pkg_resources is deprecated` | Use `pip install --upgrade setuptools` |
+| `libxml2 and libxslt development packages` | Install `libxml2-dev libxslt1-dev` |
 
 ### **Platform-Specific Solutions**
 
@@ -366,6 +368,18 @@ pip3 install njordscan
 
 # Or with system package manager
 sudo apt-get install python3-pip python3-dev
+pip3 install njordscan
+```
+
+**Kali Linux:**
+```bash
+# Use our Kali-specific installer (handles libxml2/libxslt dependencies)
+./install-kali.sh
+
+# Or manually install system dependencies first
+sudo apt update
+sudo apt install -y python3-dev python3-pip libxml2-dev libxslt1-dev build-essential
+pip3 install --upgrade pip setuptools wheel
 pip3 install njordscan
 ```
 

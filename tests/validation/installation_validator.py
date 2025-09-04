@@ -20,7 +20,8 @@ import json
 import re
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
-import pkg_resources
+# import pkg_resources  # Deprecated, using importlib.metadata instead
+import importlib.metadata
 import ast
 
 class InstallationValidator:
