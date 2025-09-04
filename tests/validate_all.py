@@ -160,7 +160,7 @@ def run_validation_suite():
                     python_files += 1
                     file_path = Path(root) / file
                     try:
-                        with open(file_path, 'r') as f:
+                        with open(file_path, 'r', encoding='utf-8') as f:
                             total_lines += len(f.readlines())
                     except:
                         pass

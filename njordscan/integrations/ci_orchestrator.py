@@ -155,8 +155,8 @@ class CIScanResult:
     quality_gate_details: Dict[str, Any] = field(default_factory=dict)
     
     # Security metrics
-    security_score: float
-    risk_level: str
+    security_score: float = 0.0
+    risk_level: str = "unknown"
     new_findings: int = 0
     fixed_findings: int = 0
     
@@ -652,7 +652,7 @@ class CIOrchestrator:
         
         # Generate JSON report
         json_path = scan_dir / "results.json"
-        with open(json_path, 'w') as f:
+        with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(scan_data, f, indent=2, default=str)
         result.json_report_path = str(json_path)
     
@@ -775,7 +775,7 @@ class CIOrchestrator:
             ]
         }
         
-        with open(output_path, 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(sarif_data, f, indent=2)
     
     async def _generate_html_report(self, scan_data: Dict[str, Any], output_path: Path):

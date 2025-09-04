@@ -87,7 +87,7 @@ def get_version():
     """Extract version from package __init__.py."""
     version_file = os.path.join("njordscan", "__init__.py")
     try:
-        with open(version_file, "r") as f:
+        with open(version_file, "r", encoding="utf-8") as f:
             for line in f:
                 if line.startswith("__version__"):
                     return line.split('"')[1]

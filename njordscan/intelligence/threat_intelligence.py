@@ -903,7 +903,7 @@ class ThreatIntelligenceEngine:
         try:
             storage_file = Path(self.config.storage_file)
             if storage_file.exists():
-                with open(storage_file, 'r') as f:
+                with open(storage_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 
                 # Load indicators
@@ -933,7 +933,7 @@ class ThreatIntelligenceEngine:
                 'actors': [self._serialize_actor(actor) for actor in self.threat_actors.values()]
             }
             
-            with open(self.config.storage_file, 'w') as f:
+            with open(self.config.storage_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2)
                 
         except Exception as e:

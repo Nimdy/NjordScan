@@ -238,7 +238,7 @@ class CustomRuleManager:
         """Save a rule to a JSON file."""
         try:
             rule_file = self.rules_dir / f"{rule.id}.json"
-            with open(rule_file, 'w') as f:
+            with open(rule_file, 'w', encoding='utf-8') as f:
                 json.dump(asdict(rule), f, indent=2)
         except Exception as e:
             print(f"Warning: Could not save rule to file: {e}")
@@ -385,10 +385,10 @@ class CustomRuleManager:
             rules_data = [asdict(rule) for rule in self.rules.values()]
             
             if format.lower() == 'json':
-                with open(output_path, 'w') as f:
+                with open(output_path, 'w', encoding='utf-8') as f:
                     json.dump(rules_data, f, indent=2)
             elif format.lower() == 'yaml':
-                with open(output_path, 'w') as f:
+                with open(output_path, 'w', encoding='utf-8') as f:
                     yaml.dump(rules_data, f, default_flow_style=False, indent=2)
             else:
                 print(f"Unsupported format: {format}")
@@ -404,10 +404,10 @@ class CustomRuleManager:
         """Import custom rules from file."""
         try:
             if format.lower() == 'json':
-                with open(input_path, 'r') as f:
+                with open(input_path, 'r', encoding='utf-8') as f:
                     rules_data = json.load(f)
             elif format.lower() == 'yaml':
-                with open(input_path, 'r') as f:
+                with open(input_path, 'r', encoding='utf-8') as f:
                     rules_data = yaml.safe_load(f)
             else:
                 print(f"Unsupported format: {format}")

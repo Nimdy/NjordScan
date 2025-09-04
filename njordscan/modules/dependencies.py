@@ -81,7 +81,7 @@ class DependenciesModule(BaseModule):
             return vulnerabilities
         
         try:
-            with open(package_json_path, 'r') as f:
+            with open(package_json_path, 'r', encoding='utf-8') as f:
                 package_data = json.load(f)
             
             # Run npm audit if available
@@ -360,7 +360,7 @@ class DependenciesModule(BaseModule):
         vulnerabilities = []
         
         try:
-            with open(requirements_path, 'r') as f:
+            with open(requirements_path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
             
             for line_num, line in enumerate(lines, 1):
@@ -416,7 +416,7 @@ class DependenciesModule(BaseModule):
         vulnerabilities = []
         
         try:
-            with open(pipfile_path, 'r') as f:
+            with open(pipfile_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
             # Check for allow_prereleases

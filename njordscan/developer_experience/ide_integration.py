@@ -1068,7 +1068,7 @@ class IDEIntegration:
             }
         }
         
-        with open(extension_dir / "package.json", 'w') as f:
+        with open(extension_dir / "package.json", 'w', encoding='utf-8') as f:
             json.dump(package_json, f, indent=2)
         
         # Extension TypeScript code
@@ -1148,7 +1148,7 @@ export function deactivate(): Thenable<void> | undefined {
         src_dir = extension_dir / "src"
         src_dir.mkdir()
         
-        with open(src_dir / "extension.ts", 'w') as f:
+        with open(src_dir / "extension.ts", 'w', encoding='utf-8') as f:
             f.write(extension_ts)
         
         # TypeScript config
@@ -1165,7 +1165,7 @@ export function deactivate(): Thenable<void> | undefined {
             "exclude": ["node_modules", ".vscode-test"]
         }
         
-        with open(extension_dir / "tsconfig.json", 'w') as f:
+        with open(extension_dir / "tsconfig.json", 'w', encoding='utf-8') as f:
             json.dump(tsconfig, f, indent=2)
         
         logger.info(f"VS Code extension created at {extension_dir}")
@@ -1201,7 +1201,7 @@ augroup NjordScan
 augroup END
 '''
             
-            with open(plugin_dir / "plugin" / "njordscan.vim", 'w') as f:
+            with open(plugin_dir / "plugin" / "njordscan.vim", 'w', encoding='utf-8') as f:
                 f.write(plugin_content)
             
             logger.info("Vim plugin installed")

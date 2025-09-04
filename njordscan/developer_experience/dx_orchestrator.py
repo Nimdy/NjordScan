@@ -507,7 +507,7 @@ class DeveloperExperienceOrchestrator:
             preferences_file = Path.home() / ".njordscan" / "developer_preferences.json"
             
             if preferences_file.exists():
-                with open(preferences_file) as f:
+                with open(preferences_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 
                 self.preferences = data.get('preferences', {})
@@ -540,7 +540,7 @@ class DeveloperExperienceOrchestrator:
                 'updated_at': time.time()
             }
             
-            with open(preferences_file, 'w') as f:
+            with open(preferences_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2)
             
         except Exception as e:

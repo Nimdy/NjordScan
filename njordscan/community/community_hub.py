@@ -666,7 +666,7 @@ class CommunityHub:
             profile_file = Path.home() / ".njordscan" / "community_profile.json"
             
             if profile_file.exists():
-                with open(profile_file) as f:
+                with open(profile_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 
                 if 'member_id' in data:
@@ -707,7 +707,7 @@ class CommunityHub:
                 'last_active': time.time()
             }
             
-            with open(profile_file, 'w') as f:
+            with open(profile_file, 'w', encoding='utf-8') as f:
                 json.dump(profile_data, f, indent=2)
                 
         except Exception as e:

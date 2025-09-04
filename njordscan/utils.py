@@ -54,7 +54,7 @@ def detect_framework_from_directory(directory: str) -> str:
     package_json = path / "package.json"
     if package_json.exists():
         try:
-            with open(package_json, 'r') as f:
+            with open(package_json, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 dependencies = {**data.get('dependencies', {}), **data.get('devDependencies', {})}
                 
