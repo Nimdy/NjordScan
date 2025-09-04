@@ -73,7 +73,7 @@ class InstallationValidator:
         
         # Parse setup.py content
         try:
-            with open(setup_py, 'r') as f:
+            with open(setup_py, 'r', encoding='utf-8') as f:
                 content = f.read()
             
             # Check for required components
@@ -133,7 +133,7 @@ class InstallationValidator:
             print(f"✅ {req_file} exists")
             
             try:
-                with open(req_path, 'r') as f:
+                with open(req_path, 'r', encoding='utf-8') as f:
                     lines = [line.strip() for line in f if line.strip() and not line.startswith('#')]
                 
                 print(f"📦 {req_file}: {len(lines)} dependencies")
@@ -179,7 +179,7 @@ class InstallationValidator:
         
         try:
             import toml
-            with open(pyproject_path, 'r') as f:
+            with open(pyproject_path, 'r', encoding='utf-8') as f:
                 data = toml.load(f)
             
             # Check for required sections
@@ -232,7 +232,7 @@ class InstallationValidator:
         print("✅ MANIFEST.in exists")
         
         try:
-            with open(manifest_path, 'r') as f:
+            with open(manifest_path, 'r', encoding='utf-8') as f:
                 lines = [line.strip() for line in f if line.strip() and not line.startswith('#')]
             
             print(f"📄 MANIFEST.in: {len(lines)} directives")
@@ -264,7 +264,7 @@ class InstallationValidator:
         
         if setup_py.exists():
             try:
-                with open(setup_py, 'r') as f:
+                with open(setup_py, 'r', encoding='utf-8') as f:
                     content = f.read()
                 
                 if 'entry_points' in content:
@@ -297,7 +297,7 @@ class InstallationValidator:
                 print(f"✅ {name} exists")
                 
                 try:
-                    with open(file_path, 'r') as f:
+                    with open(file_path, 'r', encoding='utf-8') as f:
                         content = f.read()
                     
                     if 'if __name__ == "__main__"' in content:
@@ -318,7 +318,7 @@ class InstallationValidator:
         init_py = self.project_root / "njordscan" / "__init__.py"
         if init_py.exists():
             try:
-                with open(init_py, 'r') as f:
+                with open(init_py, 'r', encoding='utf-8') as f:
                     content = f.read()
                 
                 version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
@@ -336,7 +336,7 @@ class InstallationValidator:
         setup_py = self.project_root / "setup.py"
         if setup_py.exists():
             try:
-                with open(setup_py, 'r') as f:
+                with open(setup_py, 'r', encoding='utf-8') as f:
                     content = f.read()
                 
                 version_match = re.search(r'version\s*=\s*["\']([^"\']+)["\']', content)
@@ -429,7 +429,7 @@ def main():
     
     # Save report
     report_file = Path(__file__).parent / "installation_report.json"
-    with open(report_file, 'w') as f:
+    with open(report_file, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2)
     
     print(f"\n📄 Detailed report saved to: {report_file}")

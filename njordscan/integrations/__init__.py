@@ -12,18 +12,18 @@ This module provides comprehensive CI/CD pipeline integration including:
 
 from .ci_orchestrator import CIOrchestrator
 from .github_integration import GitHubIntegration
-from .gitlab_integration import GitLabIntegration
-from .jenkins_integration import JenkinsIntegration
-from .azure_devops_integration import AzureDevOpsIntegration
+# from .gitlab_integration import GitLabIntegration  # Module not implemented yet
+# from .jenkins_integration import JenkinsIntegration  # Module not implemented yet
+# from .azure_devops_integration import AzureDevOpsIntegration  # Module not implemented yet
 from .quality_gates import QualityGateEngine
-from .notification_manager import NotificationManager
+# from .notification_manager import NotificationManager  # Module not implemented yet
 
 __all__ = [
     'CIOrchestrator',
     'GitHubIntegration',
-    'GitLabIntegration',
-    'JenkinsIntegration',
-    'AzureDevOpsIntegration',
+    # 'GitLabIntegration',  # Module not implemented yet
+    # 'JenkinsIntegration',  # Module not implemented yet
+    # 'AzureDevOpsIntegration',  # Module not implemented yet
     'QualityGateEngine',
-    'NotificationManager'
+    # 'NotificationManager'  # Module not implemented yet
 ]

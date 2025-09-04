@@ -497,7 +497,7 @@ class FalsePositiveFilter:
                         'created_at': row[6]
                     })
                 
-                with open(output_path, 'w') as f:
+                with open(output_path, 'w', encoding='utf-8') as f:
                     json.dump(data, f, indent=2)
                     
                 return True
@@ -509,7 +509,7 @@ class FalsePositiveFilter:
     def import_false_positives(self, input_path: Path) -> bool:
         """Import false positive data from external source."""
         try:
-            with open(input_path, 'r') as f:
+            with open(input_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 
             with sqlite3.connect(self.db_path) as conn:

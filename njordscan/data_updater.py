@@ -168,7 +168,7 @@ class VulnerabilityDataManager:
                 
                 # Save raw data to cache
                 cache_file = self.cache_dir / f'{source.name}_cache.json'
-                with open(cache_file, 'w') as f:
+                with open(cache_file, 'w', encoding='utf-8') as f:
                     json.dump(data, f, indent=2)
                 
                 # Update source metadata
@@ -206,7 +206,7 @@ class VulnerabilityDataManager:
                     output_file.rename(backup_file)
                 
                 # Write new processed data
-                with open(output_file, 'w') as f:
+                with open(output_file, 'w', encoding='utf-8') as f:
                     json.dump(processed_data, f, indent=2)
                     
             except Exception as e:
@@ -223,7 +223,7 @@ class VulnerabilityDataManager:
         # Process NIST CVE data
         nist_cache = self.cache_dir / 'nist_cve_cache.json'
         if nist_cache.exists():
-            with open(nist_cache) as f:
+            with open(nist_cache, 'r', encoding='utf-8') as f:
                 nist_data = json.load(f)
                 
                 if 'vulnerabilities' in nist_data:
@@ -299,7 +299,7 @@ class VulnerabilityDataManager:
         # Process MITRE ATT&CK data
         mitre_cache = self.cache_dir / 'mitre_attck_cache.json'
         if mitre_cache.exists():
-            with open(mitre_cache) as f:
+            with open(mitre_cache, 'r', encoding='utf-8') as f:
                 mitre_raw = json.load(f)
                 
                 if 'objects' in mitre_raw:
@@ -381,21 +381,21 @@ class VulnerabilityDataManager:
         # Process Next.js vulnerabilities
         nextjs_cache = self.cache_dir / 'nextjs_security_cache.json'
         if nextjs_cache.exists():
-            with open(nextjs_cache) as f:
+            with open(nextjs_cache, 'r', encoding='utf-8') as f:
                 nextjs_data = json.load(f)
                 frameworks_data['nextjs'] = self._normalize_github_advisories(nextjs_data)
         
         # Process React vulnerabilities
         react_cache = self.cache_dir / 'react_security_cache.json'
         if react_cache.exists():
-            with open(react_cache) as f:
+            with open(react_cache, 'r', encoding='utf-8') as f:
                 react_data = json.load(f)
                 frameworks_data['react'] = self._normalize_github_advisories(react_data)
         
         # Process Vite vulnerabilities
         vite_cache = self.cache_dir / 'vite_security_cache.json'
         if vite_cache.exists():
-            with open(vite_cache) as f:
+            with open(vite_cache, 'r', encoding='utf-8') as f:
                 vite_data = json.load(f)
                 frameworks_data['vite'] = self._normalize_github_advisories(vite_data)
         
@@ -411,14 +411,14 @@ class VulnerabilityDataManager:
         # Process npm security data
         npm_cache = self.cache_dir / 'npm_security_cache.json'
         if npm_cache.exists():
-            with open(npm_cache) as f:
+            with open(npm_cache, 'r', encoding='utf-8') as f:
                 npm_advisories = json.load(f)
                 npm_data['packages'] = self._normalize_npm_advisories(npm_advisories)
         
         # Process Snyk data
         snyk_cache = self.cache_dir / 'snyk_js_cache.json'
         if snyk_cache.exists():
-            with open(snyk_cache) as f:
+            with open(snyk_cache, 'r', encoding='utf-8') as f:
                 snyk_data = json.load(f)
                 snyk_packages = self._normalize_snyk_data(snyk_data)
                 
@@ -451,7 +451,7 @@ class VulnerabilityDataManager:
         # Process GitHub advisories for AI libraries
         github_cache = self.cache_dir / 'github_advisories_cache.json'
         if github_cache.exists():
-            with open(github_cache) as f:
+            with open(github_cache, 'r', encoding='utf-8') as f:
                 github_data = json.load(f)
                 ai_advisories = self._filter_ai_advisories(github_data)
                 
@@ -493,7 +493,7 @@ class VulnerabilityDataManager:
         # Load existing rules and enhance with new vulnerability data
         existing_rules = self.data_dir / 'rules.yaml'
         if existing_rules.exists():
-            with open(existing_rules) as f:
+            with open(existing_rules, 'r', encoding='utf-8') as f:
                 base_rules = yaml.safe_load(f)
                 
             # Merge base rules with new intelligence

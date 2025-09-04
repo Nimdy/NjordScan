@@ -432,7 +432,7 @@ class TrendAnalyzer:
             
             # Save report if output path specified
             if output_path:
-                with open(output_path, 'w') as f:
+                with open(output_path, 'w', encoding='utf-8') as f:
                     f.write(report)
                     
             return report
@@ -543,7 +543,7 @@ class TrendAnalyzer:
             }
             
             if format.lower() == 'json':
-                with open(output_path, 'w') as f:
+                with open(output_path, 'w', encoding='utf-8') as f:
                     json.dump(export_data, f, indent=2)
             elif format.lower() == 'csv':
                 # Convert to CSV format

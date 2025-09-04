@@ -53,7 +53,7 @@ class TestScanner:
         
         for filename, content in test_files.items():
             filepath = os.path.join(self.temp_dir, filename)
-            with open(filepath, 'w') as f:
+            with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(content)
         
         result = self.scanner.scan(self.temp_dir)
@@ -65,7 +65,7 @@ class TestScanner:
         """Test scanning files with potential vulnerabilities."""
         # Create a file with potential XSS vulnerability
         vulnerable_file = os.path.join(self.temp_dir, 'vulnerable.html')
-        with open(vulnerable_file, 'w') as f:
+        with open(vulnerable_file, 'w', encoding='utf-8') as f:
             f.write('<script>document.write(document.URL)</script>')
         
         result = self.scanner.scan(self.temp_dir)
@@ -243,7 +243,7 @@ class TestIntegration:
             
             for filename, content in test_files.items():
                 filepath = os.path.join(temp_dir, filename)
-                with open(filepath, 'w') as f:
+                with open(filepath, 'w', encoding='utf-8') as f:
                     f.write(content)
             
             # Run full scan

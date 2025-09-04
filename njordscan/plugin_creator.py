@@ -48,7 +48,7 @@ class PluginCreator:
             
             if item.is_file():
                 # Read template content
-                content = item.read_text()
+                content = item.read_text(encoding='utf-8')
                 
                 # Replace template placeholders
                 content = content.replace('template_scanner', f"{plugin_name}_scanner")
@@ -64,7 +64,7 @@ class PluginCreator:
                     dest_path = output_path / new_name
                 
                 # Write customized content
-                dest_path.write_text(content)
+                dest_path.write_text(content, encoding='utf-8')
             else:
                 # Copy directories recursively
                 shutil.copytree(item, dest_path)

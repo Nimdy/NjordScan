@@ -466,7 +466,7 @@ class Config:
         if not config_path.exists():
             raise FileNotFoundError(f"Config file not found: {config_file}")
         
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             if config_path.suffix.lower() in ['.yaml', '.yml']:
                 data = yaml.safe_load(f)
             else:
@@ -523,7 +523,7 @@ class Config:
         config_path = Path(config_file)
         config_data = self.to_dict()
         
-        with open(config_path, 'w') as f:
+        with open(config_path, 'w', encoding='utf-8') as f:
             if config_path.suffix.lower() in ['.yaml', '.yml']:
                 yaml.dump(config_data, f, default_flow_style=False, indent=2)
             else:

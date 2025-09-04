@@ -66,7 +66,7 @@ class BasePlugin(ABC):
                         plugin_files = list(subdir.glob('*.py'))
                         for plugin_file in plugin_files:
                             try:
-                                content = plugin_file.read_text()
+                                content = plugin_file.read_text(encoding='utf-8')
                                 if self.__class__.__name__ in content:
                                     return subdir
                             except:
@@ -84,7 +84,7 @@ class BasePlugin(ABC):
             return None
         
         try:
-            with open(config_file) as f:
+            with open(config_file, 'r', encoding='utf-8') as f:
                 config_data = yaml.safe_load(f)
             
             return PluginMetadata(

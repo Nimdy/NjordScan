@@ -612,7 +612,7 @@ class CommunityOrchestrator:
             state_file = Path.home() / ".njordscan" / "community_state.json"
             
             if state_file.exists():
-                with open(state_file) as f:
+                with open(state_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 
                 # Load initiatives
@@ -670,7 +670,7 @@ class CommunityOrchestrator:
                 'saved_at': time.time()
             }
             
-            with open(state_file, 'w') as f:
+            with open(state_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, default=str)
                 
         except Exception as e:

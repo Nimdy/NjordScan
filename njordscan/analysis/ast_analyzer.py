@@ -576,7 +576,7 @@ class JavaScriptASTAnalyzer(BaseASTAnalyzer):
             import tempfile
             import os
             
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False, encoding='utf-8') as f:
                 f.write(content)
                 temp_file = f.name
             
@@ -596,7 +596,7 @@ class JavaScriptASTAnalyzer(BaseASTAnalyzer):
                 }}
                 """
                 
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as script_f:
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False, encoding='utf-8') as script_f:
                     script_f.write(parser_script)
                     script_file = script_f.name
                 
@@ -634,7 +634,7 @@ class TypeScriptASTAnalyzer(BaseASTAnalyzer):
             import tempfile
             import os
             
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.ts', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.ts', delete=False, encoding='utf-8') as f:
                 f.write(content)
                 temp_file = f.name
             
@@ -680,7 +680,7 @@ class TypeScriptASTAnalyzer(BaseASTAnalyzer):
                 }}
                 """
                 
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as script_f:
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False, encoding='utf-8') as script_f:
                     script_f.write(parser_script)
                     script_file = script_f.name
                 

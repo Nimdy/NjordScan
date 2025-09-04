@@ -377,7 +377,7 @@ class ReportFormatter:
             }
         }
         
-        with open(output_path, 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(report_data, f, indent=2, default=str)
     
     def _save_html_report(self, results: Dict[str, Any], output_path: Path):
@@ -469,7 +469,7 @@ class ReportFormatter:
                 
                 sarif_report["runs"][0]["results"].append(sarif_result)
         
-        with open(output_path, 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(sarif_report, f, indent=2)
     
     def _save_text_report(self, results: Dict[str, Any], output_path: Path):

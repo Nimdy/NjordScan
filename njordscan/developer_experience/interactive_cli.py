@@ -113,7 +113,7 @@ class InteractiveCLI:
         
         if config_file.exists():
             try:
-                with open(config_file) as f:
+                with open(config_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 return CLIConfig(**data)
             except Exception as e:
@@ -129,7 +129,7 @@ class InteractiveCLI:
         config_file = config_dir / "cli_config.json"
         
         try:
-            with open(config_file, 'w') as f:
+            with open(config_file, 'w', encoding='utf-8') as f:
                 json.dump(self.config.__dict__, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save CLI config: {e}")
@@ -784,7 +784,7 @@ Ready to secure your application? Let's get started! 🚀
         scan_summaries = []
         for i, result_file in enumerate(sorted(result_files, key=lambda x: x.stat().st_mtime, reverse=True)):
             try:
-                with open(result_file) as f:
+                with open(result_file, 'r', encoding='utf-8') as f:
                     result_data = json.load(f)
                 
                 date_str = time.strftime("%Y-%m-%d %H:%M", time.localtime(result_data.get('start_time', 0)))
@@ -994,7 +994,7 @@ njordscan --ci --format sarif
         package_json = project_path / "package.json"
         if package_json.exists():
             try:
-                with open(package_json) as f:
+                with open(package_json, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 
                 deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
@@ -1061,7 +1061,7 @@ jobs:
 """
         
         workflow_file = github_dir / "njordscan.yml"
-        with open(workflow_file, 'w') as f:
+        with open(workflow_file, 'w', encoding='utf-8') as f:
             f.write(workflow_content)
         
         self.console.print(f"[green]✅ GitHub Actions workflow created: {workflow_file}[/green]")
@@ -1075,7 +1075,7 @@ jobs:
         config_file = config_dir / "wizard_config.json"
         
         try:
-            with open(config_file, 'w') as f:
+            with open(config_file, 'w', encoding='utf-8') as f:
                 json.dump(config, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save wizard config: {e}")
@@ -1092,7 +1092,7 @@ jobs:
         results_file = results_dir / filename
         
         try:
-            with open(results_file, 'w') as f:
+            with open(results_file, 'w', encoding='utf-8') as f:
                 json.dump(results, f, indent=2, default=str)
             
             self.console.print(f"[green]💾 Results saved: {results_file}[/green]")

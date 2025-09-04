@@ -1180,7 +1180,7 @@ class PerformanceOrchestrator:
         try:
             state_file = Path(self.config.state_file_path)
             if state_file.exists():
-                with open(state_file, 'r') as f:
+                with open(state_file, 'r', encoding='utf-8') as f:
                     state = json.load(f)
                 
                 # Load policies
@@ -1218,7 +1218,7 @@ class PerformanceOrchestrator:
             }
             
             state_file = Path(self.config.state_file_path)
-            with open(state_file, 'w') as f:
+            with open(state_file, 'w', encoding='utf-8') as f:
                 json.dump(state, f, indent=2)
             
         except Exception as e:

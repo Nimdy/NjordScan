@@ -304,7 +304,7 @@ class GitHubIntegration:
         
         try:
             # Read SARIF file
-            with open(result.sarif_report_path, 'r') as f:
+            with open(result.sarif_report_path, 'r', encoding='utf-8') as f:
                 sarif_content = f.read()
             
             # Encode SARIF content
