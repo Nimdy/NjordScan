@@ -33,7 +33,7 @@ __documentation__ = "https://njordscan.dev/docs"
 __status__ = "Production/Stable"
 
 # Core imports
-from .scanner import ScanOrchestrator
+from .scanner import Scanner, ScanOrchestrator
 from .config import Config
 from .vulnerability import Vulnerability, Severity, Confidence
 from .vulnerability_types import VulnerabilityType, normalize_vulnerability_type
@@ -44,6 +44,7 @@ __version_info__ = tuple(int(x) for x in __version__.split('.'))
 # All public API exports
 __all__ = [
     # Core classes
+    "Scanner",
     "ScanOrchestrator", 
     "Config",
     "Vulnerability",

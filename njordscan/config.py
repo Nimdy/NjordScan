@@ -119,6 +119,7 @@ class Config:
     cache_strategy: str = "intelligent"
     include_remediation: bool = True
     executive_summary: bool = False
+    suggest_fixes: bool = True
     
     # Plugin settings
     plugins: Dict[str, Dict[str, Any]] = field(default_factory=dict)
@@ -529,6 +530,38 @@ class Config:
             else:
                 json.dump(config_data, f, indent=2)
     
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get configuration value by key."""
+        # Map old key names to new ones
+        key_mapping = {
+            'scan_mode': 'mode',
+            'output_format': 'report_format',
+            'verbose': 'verbose'
+        }
+        actual_key = key_mapping.get(key, key)
+        return getattr(self, actual_key, default)
+    
+    def set(self, key: str, value: Any) -> None:
+        """Set configuration value by key."""
+        # Map old key names to new ones
+        key_mapping = {
+            'scan_mode': 'mode',
+            'output_format': 'report_format',
+            'verbose': 'verbose'
+        }
+        actual_key = key_mapping.get(key, key)
+        
+        if hasattr(self, actual_key):
+            setattr(self, actual_key, value)
+        else:
+            # Allow setting arbitrary keys for testing
+            setattr(self, key, value)
+    
+    def validate_scan_mode(self, mode: str) -> bool:
+        """Validate scan mode."""
+        valid_modes = ['quick', 'standard', 'deep', 'enterprise', 'static', 'dynamic', 'full']
+        return mode in valid_modes
+
     def display(self):
         """Display current configuration in a formatted way."""
         from rich.console import Console

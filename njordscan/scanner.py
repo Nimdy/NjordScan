@@ -39,6 +39,26 @@ try:
 except ImportError:
     ADVANCED_ORCHESTRATORS = False
 
+class Scanner:
+    """Simple Scanner interface for backward compatibility."""
+    
+    def __init__(self, config: Optional[Config] = None):
+        """Initialize scanner with optional config."""
+        if config is None:
+            config = Config()
+        self.orchestrator = ScanOrchestrator(config)
+    
+    def scan(self, target: str = None) -> List[Vulnerability]:
+        """Perform security scan."""
+        if target:
+            self.orchestrator.config.target = target
+        import asyncio
+        return asyncio.run(self.orchestrator.scan())
+    
+    def __getattr__(self, name):
+        """Delegate to orchestrator for other methods."""
+        return getattr(self.orchestrator, name)
+
 class ScanOrchestrator:
     """Main scanner orchestrator."""
     
@@ -447,10 +467,30 @@ class ScanOrchestrator:
         """Display scan results in the terminal."""
         self.report_formatter.display_terminal_report(results)
         
-        # Save to file if specified
+        # Save to file if specified, otherwise save default report
         if self.config.output_file:
             self.report_formatter.save_report(results, self.config.output_file)
             self.console.print(f"\n[green]Report saved to: {self.config.output_file}[/green]")
+        else:
+            # Save default report as Markdown
+            default_report_path = self._generate_default_report_path(results)
+            self.report_formatter.save_markdown_report(results, default_report_path)
+            self.console.print(f"\n[green]Report saved to: {default_report_path}[/green]")
+    
+    def _generate_default_report_path(self, results: Dict[str, Any]) -> str:
+        """Generate default report path based on scan results."""
+        from datetime import datetime
+        import os
+        
+        # Create reports directory if it doesn't exist
+        reports_dir = Path("reports")
+        reports_dir.mkdir(exist_ok=True)
+        
+        # Generate filename based on target and timestamp
+        target_name = Path(self.config.target).name or "scan"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"njordscan_report_{target_name}_{timestamp}.md"
+        
+        return str(reports_dir / filename)
 
-# Backward compatibility
-Scanner = ScanOrchestrator
+# Backward compatibility - Scanner class is defined above

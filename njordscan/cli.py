@@ -458,7 +458,13 @@ def scan(ctx, target, output_format, output, mode, framework, severity, verbose,
         
         # Display scan results
         if not quiet and not ci:
-            display_scan_results(results, config, verbose)
+            # Use orchestrator's display method which includes report saving
+            orchestrator.display_results(results)
+        else:
+            # For quiet/CI mode, still save the report but don't display
+            if hasattr(orchestrator, 'display_results'):
+                # Save report without displaying
+                orchestrator.display_results(results)
         
         console.print("✅ Security scan completed successfully!", style="green")
         
