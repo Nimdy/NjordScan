@@ -17,6 +17,7 @@ from rich.text import Text
 from rich.table import Table
 
 from .vulnerability import Vulnerability, Severity
+from .config import Config
 
 def validate_target(target: str) -> Tuple[bool, str]:
     """Validate if target is a valid URL or directory path."""
@@ -28,12 +29,17 @@ def validate_target(target: str) -> Tuple[bool, str]:
         except requests.RequestException as e:
             return False, f"URL not accessible: {str(e)}"
     else:
-        # Directory validation
+        # Directory or file validation
         path = Path(target)
-        if path.exists() and path.is_dir():
-            return True, f"Valid directory: {path.absolute()}"
+        if path.exists() and (path.is_dir() or path.is_file()):
+            return True, f"Valid path: {path.absolute()}"
         else:
-            return False, f"Directory not found: {path.absolute()}"
+            return False, f"Path not found: {path.absolute()}"
+
+def validate_target_simple(target: str) -> bool:
+    """Simple validation that returns only boolean."""
+    is_valid, _ = validate_target(target)
+    return is_valid
 
 def detect_framework(target: str) -> str:
     """Detect the framework used in the target."""
@@ -319,3 +325,33 @@ class NjordScore:
         ])
         
         return steps
+
+def load_config(config_file: Optional[str] = None) -> Config:
+    """Load configuration from file or return default config."""
+    if config_file and Path(config_file).exists():
+        # Load the raw data first
+        with open(config_file, 'r', encoding='utf-8') as f:
+            if config_file.endswith(('.yaml', '.yml')):
+                import yaml
+                data = yaml.safe_load(f)
+            else:
+                data = json.load(f)
+        
+        # Map old key names to new ones for backward compatibility
+        key_mapping = {
+            'scan_mode': 'mode',
+            'output_format': 'report_format',
+            'verbose': 'verbose'
+        }
+        
+        # Apply key mapping
+        mapped_data = {}
+        for key, value in data.items():
+            if key in key_mapping:
+                mapped_data[key_mapping[key]] = value
+            else:
+                mapped_data[key] = value
+        
+        # Create config with mapped data
+        return Config(**mapped_data)
+    return Config()
