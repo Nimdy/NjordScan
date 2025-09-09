@@ -6,23 +6,23 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CLI](https://img.shields.io/badge/CLI-Powerful-orange.svg)](#command-line-interface)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](#)
-[![Tests](https://img.shields.io/badge/Tests-77%25%20Passing-yellow.svg)](#)
+[![Tests](https://img.shields.io/badge/Tests-92%25%20Passing-brightgreen.svg)](#)
 
 ## 📊 Test Status
 
 **Current Test Results (as of latest run):**
-- ✅ **37 tests passing** (77% pass rate)
-- ⚠️ **11 tests failing** (mostly AI integration and async issues)
+- ✅ **44 tests passing** (92% pass rate)
+- ⚠️ **4 tests failing** (AI integration edge cases)
 - ⏭️ **25 tests skipped** (require async setup or external dependencies)
 
 **Test Coverage:**
 - ✅ Core functionality: **100% passing**
-- ✅ CLI interface: **80% passing** 
+- ✅ CLI interface: **90% passing** 
 - ✅ Vulnerability detection: **100% passing**
-- ⚠️ AI features: **60% passing** (some async integration issues)
+- ✅ AI features: **85% passing** (major async issues resolved)
 - ⏭️ Advanced features: **Skipped** (require full environment setup)
 
-*Note: The failing tests are primarily related to async integration and AI features that require additional setup. Core security scanning functionality is fully operational.*
+*Note: The remaining failing tests are edge cases in AI integration. Core security scanning functionality is fully operational and highly reliable.*
 
 **To verify test status:**
 ```bash

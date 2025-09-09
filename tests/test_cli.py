@@ -46,70 +46,128 @@ class TestCLI:
     
     def test_scan_help(self):
         """Test scan command help."""
-        result = self.runner.invoke(scan, ['--help'])
+        result = self.runner.invoke(main, ['scan', '--help'])
         assert result.exit_code == 0
         assert 'scan' in result.output.lower()
         assert 'target' in result.output.lower()
     
+    @patch('njordscan.legal.legal_manager.check_acceptance', return_value=True)
     @patch('njordscan.cli.ScanOrchestrator')
-    def test_scan_basic(self, mock_orchestrator):
+    def test_scan_basic(self, mock_orchestrator, mock_legal):
         """Test basic scan functionality."""
         # Mock the orchestrator
         mock_instance = MagicMock()
         mock_orchestrator.return_value = mock_instance
-        mock_instance.scan.return_value = {'status': 'completed', 'findings': []}
+        
+        # Mock the async scan method
+        async def mock_scan():
+            return {'status': 'completed', 'findings': []}
+        
+        mock_instance.scan = mock_scan
         
         # Create a temporary directory for testing
         import tempfile
         with tempfile.TemporaryDirectory() as temp_dir:
-            result = self.runner.invoke(scan, [temp_dir, '--mode', 'quick'])
+            result = self.runner.invoke(main, ['scan', temp_dir, '--mode', 'quick'])
+            if result.exit_code != 0:
+                print(f"Error output: {result.output}")
+                print(f"Exception: {result.exception}")
             assert result.exit_code == 0
     
-    def test_scan_invalid_target(self):
+    @patch('njordscan.legal.legal_manager.check_acceptance', return_value=True)
+    def test_scan_invalid_target(self, mock_legal):
         """Test scan with invalid target."""
-        result = self.runner.invoke(scan, ['/nonexistent/path'])
+        result = self.runner.invoke(main, ['scan', '/nonexistent/path'])
         assert result.exit_code != 0
     
-    def test_scan_modes(self):
+    @patch('njordscan.legal.legal_manager.check_acceptance', return_value=True)
+    @patch('njordscan.cli.ScanOrchestrator')
+    def test_scan_modes(self, mock_orchestrator, mock_legal):
         """Test different scan modes."""
+        # Mock the orchestrator
+        mock_instance = MagicMock()
+        mock_orchestrator.return_value = mock_instance
+        
+        # Mock the async scan method
+        async def mock_scan():
+            return {'status': 'completed', 'findings': []}
+        
+        mock_instance.scan = mock_scan
+        
         import tempfile
         with tempfile.TemporaryDirectory() as temp_dir:
             # Test quick mode
-            result = self.runner.invoke(scan, [temp_dir, '--mode', 'quick'])
+            result = self.runner.invoke(main, ['scan', temp_dir, '--mode', 'quick'])
             assert result.exit_code == 0
             
             # Test standard mode
-            result = self.runner.invoke(scan, [temp_dir, '--mode', 'standard'])
+            result = self.runner.invoke(main, ['scan', temp_dir, '--mode', 'standard'])
             assert result.exit_code == 0
             
             # Test deep mode
-            result = self.runner.invoke(scan, [temp_dir, '--mode', 'deep'])
+            result = self.runner.invoke(main, ['scan', temp_dir, '--mode', 'deep'])
             assert result.exit_code == 0
     
-    def test_scan_output_formats(self):
+    @patch('njordscan.legal.legal_manager.check_acceptance', return_value=True)
+    @patch('njordscan.cli.ScanOrchestrator')
+    def test_scan_output_formats(self, mock_orchestrator, mock_legal):
         """Test different output formats."""
+        # Mock the orchestrator
+        mock_instance = MagicMock()
+        mock_orchestrator.return_value = mock_instance
+        
+        # Mock the async scan method
+        async def mock_scan():
+            return {'status': 'completed', 'findings': []}
+        
+        mock_instance.scan = mock_scan
+        
         import tempfile
         with tempfile.TemporaryDirectory() as temp_dir:
             # Test JSON output
-            result = self.runner.invoke(scan, [temp_dir, '--output-format', 'json'])
+            result = self.runner.invoke(main, ['scan', temp_dir, '--format', 'json'])
             assert result.exit_code == 0
             
             # Test HTML output
-            result = self.runner.invoke(scan, [temp_dir, '--output-format', 'html'])
+            result = self.runner.invoke(main, ['scan', temp_dir, '--format', 'html'])
             assert result.exit_code == 0
     
-    def test_scan_verbose_mode(self):
+    @patch('njordscan.legal.legal_manager.check_acceptance', return_value=True)
+    @patch('njordscan.cli.ScanOrchestrator')
+    def test_scan_verbose_mode(self, mock_orchestrator, mock_legal):
         """Test verbose mode."""
+        # Mock the orchestrator
+        mock_instance = MagicMock()
+        mock_orchestrator.return_value = mock_instance
+        
+        # Mock the async scan method
+        async def mock_scan():
+            return {'status': 'completed', 'findings': []}
+        
+        mock_instance.scan = mock_scan
+        
         import tempfile
         with tempfile.TemporaryDirectory() as temp_dir:
-            result = self.runner.invoke(scan, [temp_dir, '--verbose'])
+            result = self.runner.invoke(main, ['scan', temp_dir, '--verbose'])
             assert result.exit_code == 0
     
-    def test_scan_ai_enhanced(self):
+    @patch('njordscan.legal.legal_manager.check_acceptance', return_value=True)
+    @patch('njordscan.cli.ScanOrchestrator')
+    def test_scan_ai_enhanced(self, mock_orchestrator, mock_legal):
         """Test AI-enhanced scanning."""
+        # Mock the orchestrator
+        mock_instance = MagicMock()
+        mock_orchestrator.return_value = mock_instance
+        
+        # Mock the async scan method
+        async def mock_scan():
+            return {'status': 'completed', 'findings': []}
+        
+        mock_instance.scan = mock_scan
+        
         import tempfile
         with tempfile.TemporaryDirectory() as temp_dir:
-            result = self.runner.invoke(scan, [temp_dir, '--ai-enhanced'])
+            result = self.runner.invoke(main, ['scan', temp_dir, '--ai-enhanced'])
             assert result.exit_code == 0
 
 

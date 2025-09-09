@@ -878,7 +878,9 @@ class CodeUnderstandingEngine:
         
         complexity = 1  # Base complexity
         for keyword in keywords:
-            complexity += len(re.findall(rf'\b{keyword}\b', content, re.IGNORECASE))
+            # Escape special regex characters in keywords
+            escaped_keyword = re.escape(keyword)
+            complexity += len(re.findall(rf'\b{escaped_keyword}\b', content, re.IGNORECASE))
         
         return complexity
     
