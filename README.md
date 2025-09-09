@@ -121,6 +121,21 @@ njordscan scan . --mode deep --ai-enhanced --behavioral-analysis
 njordscan scan http://localhost:3000 --mode enterprise --pentest
 ```
 
+### 🐳 Docker Usage
+
+```bash
+# Scan with Docker (no installation needed)
+docker run -v $(pwd):/workspace njordscan scan /workspace
+
+# Deep scan with HTML output
+docker run -v $(pwd):/workspace njordscan scan /workspace --mode deep --format html --output /workspace/report.html
+
+# Get help
+docker run njordscan --help
+```
+
+> **📖 [Complete Docker Guide](docs/docker/README.md)** - Detailed Docker usage, CI/CD integration, and troubleshooting
+
 ## ✨ Key Features
 
 - **🔍 Comprehensive Security Scanning** - Static analysis, dynamic testing, and penetration testing

@@ -1,0 +1,108 @@
+# ============================================================================
+# Docker Compose Configuration for NjordScan
+# Provides easy setup for development and testing
+# ============================================================================
+
+version: '3.8'
+
+services:
+  njordscan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: njordscan:latest
+    container_name: njordscan-scanner
+    volumes:
+      # Mount current directory for scanning
+      - .:/workspace:ro
+      # Mount output directory for reports
+      - ./output:/app/output
+      # Mount cache directory for performance
+      - ./cache:/app/cache
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NJORDSCAN_CACHE_DIR=/app/cache
+      - NJORDSCAN_OUTPUT_DIR=/app/output
+    working_dir: /workspace
+    # Default command - can be overridden
+    command: ["--help"]
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+    # Security: run as non-root user
+    user: "1000:1000"
+    # Health check
+    healthcheck:
+      test: ["CMD", "njordscan", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Development service with live code mounting
+  njordscan-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder  # Use builder stage for development
+    image: njordscan:dev
+    container_name: njordscan-dev
+    volumes:
+      # Mount source code for live development
+      - .:/app
+      - ./output:/app/output
+      - ./cache:/app/cache
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - NJORDSCAN_CACHE_DIR=/app/cache
+      - NJORDSCAN_OUTPUT_DIR=/app/output
+    working_dir: /app
+    command: ["bash"]
+    stdin_open: true
+    tty: true
+    # Development mode - run as root for easier development
+    user: "0:0"
+
+  # Testing service
+  njordscan-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: njordscan:test
+    container_name: njordscan-test
+    volumes:
+      - .:/workspace:ro
+      - ./test_output:/app/output
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NJORDSCAN_CACHE_DIR=/tmp/cache
+      - NJORDSCAN_OUTPUT_DIR=/app/output
+    working_dir: /workspace
+    command: ["python", "-m", "pytest", "tests/", "-v"]
+    # Clean up after testing
+    restart: "no"
+
+# ============================================================================
+# Usage Examples:
+# ============================================================================
+#
+# 1. Basic scanning:
+#    docker-compose run --rm njordscan scan /workspace
+#
+# 2. Deep scan with HTML output:
+#    docker-compose run --rm njordscan scan /workspace --mode deep --format html --output /app/output/report.html
+#
+# 3. Interactive development:
+#    docker-compose run --rm njordscan-dev bash
+#
+# 4. Run tests:
+#    docker-compose run --rm njordscan-test
+#
+# 5. Scan specific directory:
+#    docker-compose run --rm -v /path/to/scan:/workspace njordscan scan /workspace
+#
+# 6. Get help:
+#    docker-compose run --rm njordscan --help
+#
+# ============================================================================
