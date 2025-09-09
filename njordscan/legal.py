@@ -206,6 +206,14 @@ def require_legal_acceptance(func):
                 raise click.Abort()
         
         return func(*args, **kwargs)
+    
+    # Preserve Click function metadata
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
+    wrapper.__click_params__ = getattr(func, '__click_params__', [])
+    wrapper.__click_options__ = getattr(func, '__click_options__', [])
+    wrapper.__click_arguments__ = getattr(func, '__click_arguments__', [])
+    
     return wrapper
 
 def show_legal_disclaimer():
