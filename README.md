@@ -7,6 +7,7 @@
 [![CLI](https://img.shields.io/badge/CLI-Powerful-orange.svg)](#command-line-interface)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](#)
 [![Tests](https://img.shields.io/badge/Tests-92%25%20Passing-brightgreen.svg)](#)
+[![Community](https://img.shields.io/badge/Community-Welcome!-purple.svg)](#-join-our-community)
 
 ## 📊 Test Status
 
@@ -35,6 +36,76 @@ python -m pytest tests/test_core_functionality.py -v
 # Run with coverage
 python -m pytest tests/ --cov=njordscan --cov-report=html
 ```
+
+## 🤝 Community Support
+
+**NjordScan thrives on community contributions!** We need your help to make it the best security scanner possible.
+
+### 📈 Community Impact
+
+- 🎯 **92% Test Pass Rate** - Reliable and battle-tested
+- 🛡️ **35+ Vulnerability Types** - Comprehensive security coverage
+- 🚀 **AI-Powered Analysis** - Cutting-edge threat detection
+- 🌍 **Open Source** - Built by the community, for the community
+- ⚡ **Fast & Efficient** - Optimized for modern development workflows
+
+### 🛠️ How You Can Help
+
+**🐛 Report Issues & Bugs**
+- Found a vulnerability in NjordScan itself? Report it!
+- Encountered a false positive? Let us know!
+- Have a feature request? We want to hear it!
+
+**💡 Contribute Code**
+- Fix bugs and improve existing features
+- Add new vulnerability detection patterns
+- Improve AI analysis algorithms
+- Enhance framework support
+
+**📚 Improve Documentation**
+- Write better examples and tutorials
+- Improve code comments and docstrings
+- Create video tutorials or blog posts
+
+**🧪 Help with Testing**
+- Test on different frameworks and languages
+- Improve test coverage
+- Report edge cases and compatibility issues
+
+**🌍 Spread the Word**
+- Star ⭐ this repository
+- Share with your security team
+- Write about NjordScan in your blog
+- Present at security conferences
+
+### 🎯 Current Priorities
+
+**High Priority:**
+- [ ] Improve AI model accuracy for edge cases
+- [ ] Add support for more frameworks (Vue.js, Angular, Svelte)
+- [ ] Enhance mobile app security scanning
+- [ ] Better integration with CI/CD pipelines
+
+**Medium Priority:**
+- [ ] Add more vulnerability patterns
+- [ ] Improve performance for large codebases
+- [ ] Better false positive filtering
+- [ ] Enhanced reporting formats
+
+**Community Ideas:**
+- [ ] Plugin marketplace for custom rules
+- [ ] Integration with popular IDEs
+- [ ] Real-time scanning dashboard
+- [ ] Team collaboration features
+
+### 💬 Get Involved
+
+- **GitHub Issues**: [Report bugs and request features](https://github.com/nimdy/njordscan/issues)
+- **Discussions**: [Join community discussions](https://github.com/nimdy/njordscan/discussions)
+- **Discord**: [Real-time chat and support](https://discord.gg/njordscan)
+- **Email**: [security@njordscan.dev](mailto:security@njordscan.dev)
+
+**Every contribution matters, no matter how small!** 🚀
 
 ## 🚀 Quick Start
 
@@ -151,15 +222,58 @@ njordscan scan . --quality-gate policy.yaml --fail-on critical
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+**We need your help to make NjordScan the best security scanner!** Every contribution, no matter how small, makes a difference.
 
-### Development Setup
+### 🚀 Quick Contribution Guide
+
+**1. Fork & Clone**
 ```bash
-git clone https://github.com/nimdy/njordscan.git
+git clone https://github.com/your-username/njordscan.git
 cd njordscan
 pip install -e .
-python -m pytest  # Run tests
 ```
+
+**2. Make Your Changes**
+- Fix a bug
+- Add a new feature
+- Improve documentation
+- Add tests
+
+**3. Test Your Changes**
+```bash
+python -m pytest  # Run all tests
+python -m pytest tests/test_core_functionality.py -v  # Run core tests
+```
+
+**4. Submit a Pull Request**
+- Clear description of changes
+- Reference any related issues
+- Include tests for new features
+
+### 🎯 What We Need Most
+
+**🔥 High Impact Contributions:**
+- **Bug Fixes**: Help us reach 100% test pass rate
+- **New Vulnerability Patterns**: Add detection for emerging threats
+- **Framework Support**: Extend support to Vue.js, Angular, Svelte
+- **Performance**: Optimize scanning for large codebases
+- **Documentation**: Improve examples and tutorials
+
+**💡 Easy First Contributions:**
+- Fix typos in documentation
+- Add test cases for edge scenarios
+- Improve error messages
+- Add more examples to README
+- Translate documentation
+
+### 📚 Resources
+
+- **[Contributing Guide](CONTRIBUTING.md)** - Detailed contribution guidelines
+- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards
+- **[Issue Templates](.github/ISSUE_TEMPLATE/)** - Bug reports and feature requests
+- **[Pull Request Template](.github/pull_request_template.md)** - PR guidelines
+
+**Questions?** Join our [Discord](https://discord.gg/njordscan) or open a [GitHub Discussion](https://github.com/nimdy/njordscan/discussions)!
 
 ## 📄 License
 
@@ -170,6 +284,47 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: [docs/README.md](docs/README.md)
 - **Issues**: [GitHub Issues](https://github.com/nimdy/njordscan/issues)
 - **Security**: [Security Policy](SECURITY.md)
+
+---
+
+## 🌟 Join Our Community
+
+**NjordScan is more than just a tool - it's a community of security professionals working together to make the web safer.**
+
+### 🎯 Our Mission
+To create the most comprehensive, accurate, and user-friendly security scanner that helps developers build secure applications from day one.
+
+### 🤝 Why Your Contribution Matters
+
+**Every line of code, every bug report, every suggestion makes NjordScan better for everyone.**
+
+- **Security Researchers**: Help us stay ahead of emerging threats
+- **Developers**: Make security scanning easier and more accurate
+- **DevOps Engineers**: Improve CI/CD integration and automation
+- **Students**: Learn about security while contributing to real projects
+- **Companies**: Help shape the future of application security
+
+### 🚀 Ready to Make a Difference?
+
+**Start Small:**
+- ⭐ Star this repository
+- 🐛 Report a bug you found
+- 📝 Improve documentation
+- 🧪 Add a test case
+
+**Go Big:**
+- 🔧 Fix a critical bug
+- ✨ Add a new feature
+- 🎨 Improve the UI/UX
+- 📊 Optimize performance
+
+**Become a Maintainer:**
+- 🏆 Consistent contributor
+- 🎯 Help review PRs
+- 📢 Represent the project
+- 🎓 Mentor new contributors
+
+**Together, we can make NjordScan the gold standard for security scanning!** 🛡️
 
 ---
 
