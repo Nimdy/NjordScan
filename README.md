@@ -145,4 +145,61 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
+## ⚖️ Legal Disclaimer
+
+**IMPORTANT: READ THIS DISCLAIMER CAREFULLY BEFORE USING NJORDSCAN**
+
+### **Terms of Use and Liability Disclaimer**
+
+By using NjordScan, you acknowledge and agree to the following terms:
+
+#### **1. No Warranty**
+- NjordScan is provided "AS IS" without any warranty, express or implied
+- We make no representations or warranties regarding the accuracy, reliability, or completeness of scan results
+- We do not guarantee that NjordScan will detect all vulnerabilities or security issues
+
+#### **2. Limitation of Liability**
+- **YOU USE NJORDSCAN AT YOUR OWN RISK**
+- We are not responsible for any damage, loss, or harm caused by:
+  - Use or misuse of this software
+  - False positives or false negatives in scan results
+  - System instability, crashes, or data loss
+  - Any security incidents that occur before, during, or after scanning
+  - Actions taken based on scan results
+
+#### **3. Ethical Use Only**
+- **ONLY USE ON SYSTEMS YOU OWN OR HAVE EXPLICIT PERMISSION TO TEST**
+- Unauthorized scanning of systems is illegal and prohibited
+- You are solely responsible for ensuring you have proper authorization
+- We are not responsible for any legal consequences of unauthorized use
+
+#### **4. Professional Advice**
+- Scan results are for informational purposes only
+- They do not constitute professional security advice
+- Consult qualified security professionals for critical security decisions
+- We recommend independent verification of all findings
+
+#### **5. Data and Privacy**
+- Scan results may contain sensitive information
+- You are responsible for protecting and securing scan data
+- We are not responsible for data breaches or privacy violations
+
+#### **6. Third-Party Dependencies**
+- NjordScan uses third-party libraries and services
+- We are not responsible for vulnerabilities in third-party components
+- Use of external APIs is subject to their respective terms of service
+
+#### **7. Updates and Changes**
+- Software may be updated without notice
+- We reserve the right to modify or discontinue the software
+- Previous versions may become unsupported
+
+### **Acceptance of Terms**
+By running NjordScan, you confirm that you have read, understood, and agree to be bound by this disclaimer. If you do not agree to these terms, do not use this software.
+
+### **Contact**
+For legal questions or concerns, please contact us through our [GitHub Issues](https://github.com/nimdy/njordscan/issues).
+
+---
+
 **Made with ❤️ for the security community**
