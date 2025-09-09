@@ -1,4 +1,4 @@
-# 🛡️ NjordScan - Ultimate Security Scanner
+# 🛡️ NjordScan - Ultimate Security Scanner (Beta)
 
 > **The Ultimate Security Scanner for Next.js, React, and Vite Applications**
 
