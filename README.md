@@ -281,7 +281,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Documentation**: [docs/README.md](docs/README.md)
 - **Issues**: [GitHub Issues](https://github.com/nimdy/njordscan/issues)
-- **Security**: [Security Policy](SECURITY.md)
+- **Security**: Community-driven security research
 
 ---
 

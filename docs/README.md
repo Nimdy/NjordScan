@@ -26,7 +26,7 @@ Welcome to the comprehensive documentation for NjordScan - The Ultimate Security
 
 ### Security
 - [**Vulnerability Types**](security/vulnerability-types.md) - Complete vulnerability type reference
-- [**Security Policy**](../SECURITY.md) - Security reporting and policies
+- **Security** - Community-driven security research
 
 ## 🎯 Documentation Structure
 
@@ -104,7 +104,7 @@ We welcome contributions to improve our documentation! Please see our [Contribut
 
 - **Issues**: [GitHub Issues](https://github.com/nimdy/njordscan/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/nimdy/njordscan/discussions)
-- **Security**: [Security Policy](../SECURITY.md)
+- **Security**: Community-driven security research
 
 ---
 

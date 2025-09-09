@@ -424,13 +424,7 @@ class DevTools:
             # Generate different types of documentation
             docs_generated = []
             
-            # Security README
-            readme_content = await self._generate_security_readme(project_analysis)
-            readme_path = project_path / "SECURITY.md"
-            
-            async with aiofiles.open(readme_path, 'w') as f:
-                await f.write(readme_content)
-            docs_generated.append(str(readme_path))
+            # Security documentation removed - using community-driven approach
             
             # Security checklist
             checklist_content = await self._generate_security_checklist(project_analysis)
@@ -1126,8 +1120,7 @@ npm run security:report
 - [Security Headers](https://securityheaders.com/)
 """
         
-        async with aiofiles.open(docs_dir / "SECURITY.md", 'w') as f:
-            await f.write(security_readme)
+        # Security documentation removed - using community-driven approach
     
     def _get_next_steps(self, template: ProjectTemplate) -> List[str]:
         """Get recommended next steps for the project."""
@@ -1135,7 +1128,7 @@ npm run security:report
         steps = [
             "Install dependencies: npm install",
             "Run security scan: npm run security:scan",
-            "Review security documentation in docs/SECURITY.md",
+            "Review security best practices in documentation",
             "Configure environment variables from .env.example"
         ]
         
