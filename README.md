@@ -102,8 +102,6 @@ python -m pytest tests/ --cov=njordscan --cov-report=html
 
 - **GitHub Issues**: [Report bugs and request features](https://github.com/nimdy/njordscan/issues)
 - **Discussions**: [Join community discussions](https://github.com/nimdy/njordscan/discussions)
-- **Discord**: [Real-time chat and support](https://discord.gg/njordscan)
-- **Email**: [security@njordscan.dev](mailto:security@njordscan.dev)
 
 **Every contribution matters, no matter how small!** 🚀
 
@@ -228,7 +226,7 @@ njordscan scan . --quality-gate policy.yaml --fail-on critical
 
 **1. Fork & Clone**
 ```bash
-git clone https://github.com/your-username/njordscan.git
+git clone https://github.com/nimdy/njordscan.git
 cd njordscan
 pip install -e .
 ```
@@ -273,7 +271,7 @@ python -m pytest tests/test_core_functionality.py -v  # Run core tests
 - **[Issue Templates](.github/ISSUE_TEMPLATE/)** - Bug reports and feature requests
 - **[Pull Request Template](.github/pull_request_template.md)** - PR guidelines
 
-**Questions?** Join our [Discord](https://discord.gg/njordscan) or open a [GitHub Discussion](https://github.com/nimdy/njordscan/discussions)!
+**Questions?** Open a [GitHub Discussion](https://github.com/nimdy/njordscan/discussions)!
 
 ## 📄 License
 
