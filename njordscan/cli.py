@@ -22,6 +22,7 @@ from .config import Config
 from .utils import validate_target, display_banner, explain_vulnerability
 from .cache import CacheManager
 from .plugins import PluginManager
+from .legal import require_legal_acceptance, legal_manager
 
 # Optional imports for advanced features
 try:
@@ -333,6 +334,7 @@ def main(ctx):
 @click.option('--false-positive-filter', is_flag=True, help='Enable false positive filtering')
 @click.option('--trend-analysis', is_flag=True, help='Enable trend analysis')
 @click.pass_context
+@require_legal_acceptance
 def scan(ctx, target, output_format, output, mode, framework, severity, verbose, quiet, 
          no_cache, pentest, explain, interactive, theme, ai_enhanced, behavioral_analysis,
          threat_intel, community_rules, web, threads, cache_strategy, fail_on, quality_gate,
@@ -601,6 +603,31 @@ def fix(interactive, issue, dry_run, safe_only, fix_all):
         asyncio.run(interactive_fix())
     else:
         console.print("❌ Fix functionality requires recent scan results.", style="red")
+
+@main.command()
+@click.option('--show', is_flag=True, help='Show legal disclaimer')
+@click.option('--accept', is_flag=True, help='Accept legal terms')
+@click.option('--clear', is_flag=True, help='Clear acceptance cache')
+def legal(show, accept, clear):
+    """⚖️ Legal disclaimer and terms management."""
+    if show:
+        legal_manager.force_show_disclaimer()
+    elif accept:
+        if legal_manager.show_disclaimer():
+            console.print("\n[green]✓ Legal terms accepted successfully![/green]")
+        else:
+            console.print("\n[red]✗ Legal terms not accepted.[/red]")
+    elif clear:
+        legal_manager.clear_acceptance()
+        console.print("\n[yellow]Legal acceptance cache cleared.[/yellow]")
+    else:
+        # Show current status
+        if legal_manager.check_acceptance():
+            console.print("\n[green]✓ Legal terms have been accepted.[/green]")
+            console.print("[dim]Use --show to view the full disclaimer.[/dim]")
+        else:
+            console.print("\n[yellow]⚠ Legal terms not yet accepted.[/yellow]")
+            console.print("[dim]Use --accept to accept the terms.[/dim]")
 
 @main.command()
 @click.option('--check', is_flag=True, help='Check for updates')
