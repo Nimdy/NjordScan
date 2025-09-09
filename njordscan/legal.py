@@ -200,6 +200,10 @@ legal_manager = LegalManager()
 def require_legal_acceptance(func):
     """Decorator to require legal acceptance before running commands."""
     def wrapper(*args, **kwargs):
+        # Check for environment variable to bypass legal acceptance (useful for Docker/CI)
+        if os.getenv('NJORDSCAN_ACCEPT_LEGAL', '').lower() in ('true', '1', 'yes', 'y'):
+            return func(*args, **kwargs)
+        
         if not legal_manager.check_acceptance():
             if not legal_manager.show_disclaimer():
                 console.print("\n[red]❌ Legal terms not accepted. Exiting.[/red]")
