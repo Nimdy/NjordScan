@@ -74,8 +74,9 @@ pip install -e .
 ## 🛡️ Security Capabilities
 
 ### Vulnerability Detection
-- **25+ Vulnerability Types** - XSS, SQL Injection, CSRF, SSRF, and more
+- **35+ Vulnerability Types** - XSS, SQL Injection, CSRF, SSRF, LLM vulnerabilities, and more
 - **OWASP Top 10 2021** - Complete coverage of critical security risks
+- **OWASP LLM Applications 2025** - AI/LLM-specific security vulnerabilities
 - **Framework-Specific** - Next.js, React, and Vite security patterns
 - **AI-Enhanced** - Machine learning for novel vulnerability detection
 
