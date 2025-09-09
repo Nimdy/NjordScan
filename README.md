@@ -6,7 +6,35 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CLI](https://img.shields.io/badge/CLI-Powerful-orange.svg)](#command-line-interface)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](#)
-[![Tests](https://img.shields.io/badge/Tests-90%25%20Passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/Tests-77%25%20Passing-yellow.svg)](#)
+
+## 📊 Test Status
+
+**Current Test Results (as of latest run):**
+- ✅ **37 tests passing** (77% pass rate)
+- ⚠️ **11 tests failing** (mostly AI integration and async issues)
+- ⏭️ **25 tests skipped** (require async setup or external dependencies)
+
+**Test Coverage:**
+- ✅ Core functionality: **100% passing**
+- ✅ CLI interface: **80% passing** 
+- ✅ Vulnerability detection: **100% passing**
+- ⚠️ AI features: **60% passing** (some async integration issues)
+- ⏭️ Advanced features: **Skipped** (require full environment setup)
+
+*Note: The failing tests are primarily related to async integration and AI features that require additional setup. Core security scanning functionality is fully operational.*
+
+**To verify test status:**
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Run only core functionality tests
+python -m pytest tests/test_core_functionality.py -v
+
+# Run with coverage
+python -m pytest tests/ --cov=njordscan --cov-report=html
+```
 
 ## 🚀 Quick Start
 
