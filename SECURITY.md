@@ -89,41 +89,30 @@ We maintain a hall of fame for security researchers who contribute to the commun
 
 ---
 
-## 🔐 **Security Features**
+## 🔐 **Security Model**
 
-### 🛡️ **Built-in Security Measures**
+### 🛡️ **Tool-Based Security**
 
-#### **Input Validation**
-- All user inputs are validated and sanitized
-- Type checking and bounds validation
-- SQL injection prevention in database queries
-- Command injection prevention in system calls
+NjordScan is a **security scanning tool collection** (like Kali Linux), not a running service. It consists of:
 
-#### **Authentication & Authorization**
-- Secure session management
-- Role-based access control
-- API key validation and rotation
-- Multi-factor authentication support
+#### **Core Components**
+- **Static Analysis Tools** - Code scanning modules
+- **Dynamic Testing Tools** - Runtime vulnerability detection
+- **Dependency Scanners** - Package vulnerability checking
+- **AI-Enhanced Detection** - Machine learning-based analysis
 
-#### **Data Protection**
-- Encryption at rest for sensitive data
-- TLS encryption for all network communications
-- Secure credential storage
-- Data anonymization for telemetry
+#### **Security Approach**
+- **No persistent data storage** - Scans are temporary
+- **No network services** - Runs locally on demand
+- **Package-based architecture** - Uses established security tools
+- **Community-driven rules** - Open source vulnerability patterns
 
-#### **Code Security**
-- Static analysis on our own codebase
-- Dependency vulnerability scanning
-- Automated security testing in CI/CD
-- Regular security audits
-
-### 🔍 **Security Scanning**
+### 🔍 **Self-Scanning**
 
 We regularly scan our own codebase with:
 - **NjordScan itself** (dogfooding)
-- **SAST tools** (CodeQL, Semgrep)
-- **Dependency scanners** (Safety, Snyk)
-- **Container scanners** (Trivy, Clair)
+- **Standard Python security tools** (bandit, safety)
+- **Dependency scanners** (pip-audit, safety)
 
 ---
 
@@ -132,11 +121,10 @@ We regularly scan our own codebase with:
 ### 🔒 **Development Security**
 
 #### **Secure Coding Standards**
-- **OWASP Top 10** prevention
-- **CWE/SANS Top 25** mitigation
-- **Input validation** on all boundaries
-- **Output encoding** for all outputs
-- **Least privilege principle**
+- **OWASP Top 10** prevention in our code
+- **Input validation** on all user inputs
+- **Safe subprocess execution** for external tools
+- **No hardcoded secrets** in source code
 
 #### **Code Review Process**
 - **Security-focused reviews** for all changes
@@ -144,55 +132,31 @@ We regularly scan our own codebase with:
 - **Dependency vulnerability checks**
 - **Static analysis** integration
 
-#### **Secrets Management**
-- **No hardcoded secrets** in code
-- **Environment variable** configuration
-- **Secure credential storage**
-- **Regular secret rotation**
+### 🛠️ **Tool Security**
 
-### 🚀 **Deployment Security**
+#### **External Tool Integration**
+- **Trusted security tools** only (bandit, safety, etc.)
+- **Sandboxed execution** of external commands
+- **Input sanitization** before tool execution
+- **Safe file handling** for scan results
 
-#### **Infrastructure Security**
-- **Secure hosting** with reputable providers
-- **Network segmentation** and firewalls
-- **Regular security updates**
-- **Monitoring and alerting**
-
-#### **Container Security**
-- **Minimal base images**
-- **Non-root user** execution
-- **Read-only filesystems** where possible
-- **Security scanning** of images
-
-### 📊 **Monitoring & Response**
-
-#### **Security Monitoring**
-- **Real-time threat detection**
-- **Anomaly detection** systems
-- **Log analysis** and correlation
-- **Incident response** procedures
-
-#### **Incident Response Plan**
-1. **Detection** - Automated and manual monitoring
-2. **Analysis** - Threat assessment and impact analysis
-3. **Containment** - Immediate threat mitigation
-4. **Eradication** - Root cause elimination
-5. **Recovery** - Service restoration
-6. **Lessons Learned** - Process improvement
+#### **Package Management**
+- **Pinned dependency versions** for security
+- **Regular dependency updates** for vulnerabilities
+- **Minimal attack surface** - only necessary packages
 
 ---
 
 ## 🏥 **Security Advisories**
 
-### 📢 **Advisory Process**
+### 📢 **Vulnerability Reports**
 
-When we discover or receive reports of vulnerabilities:
+When we discover or receive reports of vulnerabilities in NjordScan:
 
-1. **Internal Assessment** - Severity and impact analysis
+1. **Assessment** - Severity and impact analysis
 2. **Fix Development** - Secure patch creation
-3. **Testing** - Comprehensive security testing
-4. **Advisory Creation** - Detailed security advisory
-5. **Coordinated Disclosure** - Responsible public notification
+3. **Testing** - Security testing of fixes
+4. **Release** - Updated version with fix
 
 ### 📋 **Advisory Format**
 
@@ -203,7 +167,7 @@ When we discover or receive reports of vulnerabilities:
 Brief vulnerability description
 
 ## Severity
-[Critical/High/Medium/Low] - CVSS Score: X.X
+[Critical/High/Medium/Low]
 
 ## Affected Versions
 - NjordScan < X.X.X
