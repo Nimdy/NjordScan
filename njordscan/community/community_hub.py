@@ -8,7 +8,7 @@ Central platform for community features and collaboration:
 - Community challenges and leaderboards
 - Knowledge sharing and best practices
 - Collaborative security research
-- Bug bounty and responsible disclosure
+- Responsible disclosure and security research
 """
 
 import asyncio
@@ -147,8 +147,8 @@ class Challenge:
     participants: Set[str] = field(default_factory=set)
     submissions: List[str] = field(default_factory=list)
     
-    # Rewards
-    rewards: Dict[str, Any] = field(default_factory=dict)
+    # Recognition
+    recognition: Dict[str, Any] = field(default_factory=dict)
     winners: List[Dict[str, Any]] = field(default_factory=list)
     
     # Rules and criteria

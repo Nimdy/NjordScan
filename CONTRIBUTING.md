@@ -361,10 +361,10 @@ How will we measure success?
 - **🌟 Maintainer** - Ongoing project leadership
 - **🛡️ Security Expert** - Security-focused contributions
 
-### 🎁 **Rewards**
+### 🎁 **Recognition**
 - **GitHub Badge** on profile
 - **Hall of Fame** recognition
-- **Swag Package** for significant contributions
+- **Community Recognition** for significant contributions
 - **Conference Speaking** opportunities
 - **Direct Collaboration** with core team
 
