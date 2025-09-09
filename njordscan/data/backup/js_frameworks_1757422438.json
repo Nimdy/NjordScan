@@ -1,66 +1,6 @@
 {
   "nextjs": [
     {
-      "id": "GHSA-4342-x723-ch2f",
-      "cve_id": "CVE-2025-57822",
-      "summary": "Improper Middleware Redirect Handling Leads to SSRF",
-      "severity": "medium",
-      "published_at": "2025-08-29T21:23:04Z",
-      "updated_at": "2025-08-29T21:43:56Z",
-      "references": [],
-      "vulnerabilities": [
-        {
-          "package": {
-            "ecosystem": "npm",
-            "name": "next.js"
-          },
-          "vulnerable_version_range": "<14.2.32, <15.4.7",
-          "patched_versions": "14.2.32, 15.4.7",
-          "vulnerable_functions": []
-        }
-      ]
-    },
-    {
-      "id": "GHSA-xv57-4mr9-wg8v",
-      "cve_id": "CVE-2025-55173",
-      "summary": "Content Injection for Image Optimization",
-      "severity": "medium",
-      "published_at": "2025-08-29T21:36:06Z",
-      "updated_at": "2025-08-29T21:36:06Z",
-      "references": [],
-      "vulnerabilities": [
-        {
-          "package": {
-            "ecosystem": "npm",
-            "name": "next.js"
-          },
-          "vulnerable_version_range": "< 14.2.31, 15.0.0 - 15.4.4",
-          "patched_versions": "15.4.5, 14.2.31",
-          "vulnerable_functions": []
-        }
-      ]
-    },
-    {
-      "id": "GHSA-g5qg-72qw-gw5v",
-      "cve_id": "CVE-2025-57752",
-      "summary": "Cache Key Confusion for Image Optimization API Routes",
-      "severity": "medium",
-      "published_at": "2025-08-29T21:36:23Z",
-      "updated_at": "2025-08-29T21:36:23Z",
-      "references": [],
-      "vulnerabilities": [
-        {
-          "package": {
-            "ecosystem": "npm",
-            "name": "next"
-          },
-          "vulnerable_version_range": "< 14.2.31, 15.0.0 - 15.4.4",
-          "patched_versions": "15.4.5, 14.2.31",
-          "vulnerable_functions": []
-        }
-      ]
-    },
-    {
       "id": "GHSA-r2fc-ccr8-96c4",
       "cve_id": "CVE-2025-49005",
       "summary": "Cache poisoning due to omission of Vary header",
@@ -555,100 +495,6 @@
   ],
   "react": [],
   "vite": [
-    {
-      "id": "GHSA-g4jq-h2w9-997c",
-      "cve_id": "CVE-2025-58751",
-      "summary": "Files starting with the same name with the public directory were served",
-      "severity": "low",
-      "published_at": "2025-09-08T07:03:21Z",
-      "updated_at": "2025-09-08T17:32:49Z",
-      "references": [],
-      "vulnerabilities": [
-        {
-          "package": {
-            "ecosystem": "npm",
-            "name": "vite"
-          },
-          "vulnerable_version_range": ">=7.1.0,<=7.1.4",
-          "patched_versions": "7.1.5",
-          "vulnerable_functions": []
-        },
-        {
-          "package": {
-            "ecosystem": "npm",
-            "name": "vite"
-          },
-          "vulnerable_version_range": ">=7.0.0,<=7.0.6",
-          "patched_versions": "7.0.7",
-          "vulnerable_functions": []
-        },
-        {
-          "package": {
-            "ecosystem": "npm",
-            "name": "vite"
-          },
-          "vulnerable_version_range": ">=6.0.0,<=6.3.5",
-          "patched_versions": "6.3.6",
-          "vulnerable_functions": []
-        },
-        {
-          "package": {
-            "ecosystem": "npm",
-            "name": "vite"
-          },
-          "vulnerable_version_range": "<=5.4.19",
-          "patched_versions": "5.4.20",
-          "vulnerable_functions": []
-        }
-      ]
-    },
-    {
-      "id": "GHSA-jqfw-vq24-v9c3",
-      "cve_id": "CVE-2025-58752",
-      "summary": "`server.fs` settings was not applied to HTML files",
-      "severity": "low",
-      "published_at": "2025-09-08T07:03:19Z",
-      "updated_at": "2025-09-08T17:32:56Z",
-      "references": [],
-      "vulnerabilities": [
-        {
-          "package": {
-            "ecosystem": "npm",
-            "name": "vite"
-          },
-          "vulnerable_version_range": ">=7.1.0,<=7.1.4",
-          "patched_versions": "7.1.5",
-          "vulnerable_functions": []
-        },
-        {
-          "package": {
-            "ecosystem": "npm",
-            "name": "vite"
-          },
-          "vulnerable_version_range": ">=7.0.0,<=7.0.6",
-          "patched_versions": "7.0.7",
-          "vulnerable_functions": []
-        },
-        {
-          "package": {
-            "ecosystem": "npm",
-            "name": "vite"
-          },
-          "vulnerable_version_range": ">=6.0.0,<=6.3.5",
-          "patched_versions": "6.3.6",
-          "vulnerable_functions": []
-        },
-        {
-          "package": {
-            "ecosystem": "npm",
-            "name": "vite"
-          },
-          "vulnerable_version_range": "<=5.4.19",
-          "patched_versions": "5.4.20",
-          "vulnerable_functions": []
-        }
-      ]
-    },
     {
       "id": "GHSA-859w-5945-r5v3",
       "cve_id": "CVE-2025-46565",
@@ -1313,5 +1159,5 @@
       ]
     }
   ],
-  "last_updated": "2025-09-09T08:53:58.823914"
+  "last_updated": "2025-08-29T10:21:27.185151"
 }
