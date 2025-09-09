@@ -484,7 +484,7 @@ Ready to secure your application? Let's get started! 🚀
                     info['config_files'].append(str(item.relative_to(target_path)))
                 
                 # Detect security-related files
-                if item.name in ['.gitignore', 'security.md', 'SECURITY.md']:
+                if item.name in ['.gitignore']:
                     info['security_files'].append(str(item.relative_to(target_path)))
             
             elif item.is_dir():

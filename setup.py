@@ -319,7 +319,7 @@ setup(
     
     # Additional data files
     data_files=[
-        ("share/njordscan/docs", ["README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md"]),
+        ("share/njordscan/docs", ["README.md", "CHANGELOG.md", "CONTRIBUTING.md"]),
         ("share/njordscan/examples", ["examples/basic_scan.py"] if os.path.exists("examples/basic_scan.py") else []),
     ],
     
