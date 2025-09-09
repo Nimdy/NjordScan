@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NjordScan Security Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .scan-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .info-card {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .njord-score {
+            text-align: center;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        .score-number {
+            font-size: 4em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .score-grade {
+            font-size: 2em;
+            margin-top: 10px;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .chart-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .vulnerability {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid #ccc;
+        }
+        
+        .vulnerability.critical {
+            background: #fff5f5;
+            border-left-color: #dc3545;
+        }
+        
+        .vulnerability.high {
+            background: #fff8f0;
+            border-left-color: #fd7e14;
+        }
+        
+        .vulnerability.medium {
+            background: #fffbf0;
+            border-left-color: #ffc107;
+        }
+        
+        .vulnerability.low {
+            background: #f0f8ff;
+            border-left-color: #17a2b8;
+        }
+        
+        .vulnerability.info {
+            background: #f8f9fa;
+            border-left-color: #6c757d;
+        }
+        
+        .vuln-title {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .vuln-description {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .vuln-fix {
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        .module-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .module-title {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #eee;
+            margin-top: 40px;
+        }
+        
+        @media (max-width: 768px) {
+            .container { margin: 10px; padding: 15px; }
+            .summary-grid { grid-template-columns: 1fr; }
+            .scan-info { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 NjordScan Security Report</h1>
+            <p>Professional Web Application Security Assessment</p>
+            
+            <div class="scan-info">
+                <div class="info-card">
+                    <strong>🎯 Target:</strong><br>.
+                </div>
+                <div class="info-card">
+                    <strong>⚡ Framework:</strong><br>Unknown
+                </div>
+                <div class="info-card">
+                    <strong>🔧 Scan Mode:</strong><br>Standard
+                </div>
+                <div class="info-card">
+                    <strong>⏱️ Duration:</strong><br>0.01s
+                </div>
+                <div class="info-card">
+                    <strong>📅 Timestamp:</strong><br>2025-09-09 14:16:12
+                </div>
+                <div class="info-card">
+                    <strong>🔍 Modules:</strong><br>configs, static, dependencies, ai_endpoints
+                </div>
+            </div>
+        </div>
+        
+        <div class="njord-score">
+            <h2>🏆 NjordScore Security Assessment</h2>
+            <span class="score-number">0/100</span>
+            <div class="score-grade">Grade: D</div>
+            <p style="margin-top: 15px; font-size: 1.1em;">Poor security posture. Immediate action required.</p>
+        </div>
+        
+        <div class="summary-grid">
+            <div class="chart-container">
+                <h3>📊 Vulnerability Distribution</h3>
+                <canvas id="severityChart" width="400" height="300"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>📈 Security Metrics</h3>
+                <table style="width: 100%; margin-top: 20px;">
+                    <tr><td><strong>Total Issues:</strong></td><td>154</td></tr>
+                    <tr><td><strong>Critical:</strong></td><td style="color: #dc3545;">3</td></tr>
+                    <tr><td><strong>High:</strong></td><td style="color: #fd7e14;">44</td></tr>
+                    <tr><td><strong>Medium:</strong></td><td style="color: #ffc107;">24</td></tr>
+                    <tr><td><strong>Low:</strong></td><td style="color: #17a2b8;">83</td></tr>
+                    <tr><td><strong>Info:</strong></td><td style="color: #6c757d;">0</td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <h2>🔍 Detailed Security Findings</h2>
+        <div class="module-section">
+<h3 class="module-title">Codestatic Module</h3>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> setup.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: subprocess</h4>
+<p class="vuln-description">Import of subprocess module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> setup.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: subprocess</h4>
+<p class="vuln-description">Import of subprocess module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> install.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> install.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: subprocess</h4>
+<p class="vuln-description">Import of subprocess module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> tests/validate_all.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> tests/validate_all.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> tests/validation/deep_validation.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: subprocess</h4>
+<p class="vuln-description">Import of subprocess module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> tests/validation/deep_validation.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> tests/validation/installation_validator.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: subprocess</h4>
+<p class="vuln-description">Import of subprocess module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> tests/validation/installation_validator.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> plugins/core/base_plugin.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of document.write() which can lead to XSS</p>
+<p class="vuln-file"><strong>File:</strong> plugins/templates/scanner_template/template_scanner.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of document.write() which can lead to XSS</p>
+<p class="vuln-file"><strong>File:</strong> plugins/templates/scanner_template/template_scanner.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> plugins/templates/scanner_template/template_scanner.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> plugins/templates/scanner_template/template_scanner.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> plugins/templates/scanner_template/template_scanner.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> plugins/templates/reporter_template/template_reporter.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/cache.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/main.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/config.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/legal.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/plugin_creator.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/plugins.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/scanner.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/cli.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unsafe Input Function</h4>
+<p class="vuln-description">Use of input() without prompt may be confusing</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/cli.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use input() with clear prompts or consider alternatives</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/utils.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/fuzzing_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/fuzzing_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/fuzzing_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/dast_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/dast_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/dast_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/dast_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/dast_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/dast_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/dast_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/dast_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/dast_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/runtime/dast_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Dynamic function creation - can lead to code injection</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potential Weak Random Vulnerability</h4>
+<p class="vuln-description">Use of cryptographically insecure Math.random()</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potential Weak Random Vulnerability</h4>
+<p class="vuln-description">Use of cryptographically insecure Math.random()</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potential Weak Random Vulnerability</h4>
+<p class="vuln-description">Use of cryptographically insecure Math.random()</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: subprocess</h4>
+<p class="vuln-description">Import of subprocess module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/ide_integration.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/dx_orchestrator.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/dev_tools.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/dev_tools.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: subprocess</h4>
+<p class="vuln-description">Import of subprocess module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/dev_tools.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/interactive_cli.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: subprocess</h4>
+<p class="vuln-description">Import of subprocess module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/interactive_cli.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unsafe Input Function</h4>
+<p class="vuln-description">Use of input() without prompt may be confusing</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/developer_experience/interactive_cli.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use input() with clear prompts or consider alternatives</p>
+</div>
+<div class="vulnerability critical">
+<h4 class="vuln-title">Potential Secrets Exposure Vulnerability</h4>
+<p class="vuln-description">Hardcoded API key found</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/configuration/secrets_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability critical">
+<h4 class="vuln-title">Potential Secrets Exposure Vulnerability</h4>
+<p class="vuln-description">Hardcoded password found</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/configuration/secrets_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability critical">
+<h4 class="vuln-title">Potential Secrets Exposure Vulnerability</h4>
+<p class="vuln-description">Hardcoded secret found</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/configuration/secrets_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Secrets Exposure Vulnerability</h4>
+<p class="vuln-description">Hardcoded token found</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/configuration/secrets_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Secrets Exposure Vulnerability</h4>
+<p class="vuln-description">Hardcoded token found</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/configuration/secrets_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Secrets Exposure Vulnerability</h4>
+<p class="vuln-description">Hardcoded token found</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/configuration/secrets_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Secrets Exposure Vulnerability</h4>
+<p class="vuln-description">Hardcoded token found</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/configuration/secrets_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/plugins_v2/plugin_marketplace.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Dynamic function creation - can lead to code injection</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/plugins_v2/plugin_manager.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Dynamic function creation - can lead to code injection</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/plugins_v2/plugin_manager.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/plugins_v2/plugin_manager.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/intelligence/rules_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/intelligence/rules_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: pickle</h4>
+<p class="vuln-description">Import of pickle module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/intelligence/rules_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Dynamic function creation - can lead to code injection</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/report/formatter.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/report/formatter.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: pickle</h4>
+<p class="vuln-description">Import of pickle module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/performance/cache_manager.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Dynamic function creation - can lead to code injection</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/performance/resource_manager.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Dynamic function creation - can lead to code injection</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/performance/resource_manager.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/performance/resource_manager.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Dynamic function creation - can lead to code injection</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/performance/parallel_coordinator.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/performance/parallel_coordinator.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: pickle</h4>
+<p class="vuln-description">Import of pickle module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/performance/parallel_coordinator.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Dynamic function creation - can lead to code injection</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/performance/performance_orchestrator.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Dynamic function creation - can lead to code injection</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/performance/performance_orchestrator.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Dynamic function creation - can lead to code injection</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/reporting/visualization_engine.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of document.write() which can lead to XSS</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/code_static.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/code_static.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/code_static.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/code_static.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/code_static.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/code_static.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potential Weak Random Vulnerability</h4>
+<p class="vuln-description">Use of cryptographically insecure Math.random()</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/code_static.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/code_static.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/runtime.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/runtime.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/runtime.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/configs.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/dependencies.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: subprocess</h4>
+<p class="vuln-description">Import of subprocess module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/dependencies.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/vulnerability_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/vulnerability_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/vulnerability_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/vulnerability_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/vulnerability_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/vulnerability_detector.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/ai_endpoints.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/headers.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/code_static_enhanced.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/modules/code_static_enhanced.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+<div class="vulnerability high">
+<h4 class="vuln-title">Potential Xss Reflected Vulnerability</h4>
+<p class="vuln-description">Use of eval() function - can execute arbitrary code</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/analysis/ast_analyzer.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potential Weak Random Vulnerability</h4>
+<p class="vuln-description">Use of cryptographically insecure Math.random()</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/analysis/ast_analyzer.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: subprocess</h4>
+<p class="vuln-description">Import of subprocess module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/analysis/ast_analyzer.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/analysis/ast_analyzer.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potentially Dangerous Import: os</h4>
+<p class="vuln-description">Import of os module requires careful handling</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/analysis/ast_analyzer.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Use these modules carefully and validate all inputs</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potential Weak Random Vulnerability</h4>
+<p class="vuln-description">Use of cryptographically insecure Math.random()</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/frameworks/react_analyzer.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Potential Weak Random Vulnerability</h4>
+<p class="vuln-description">Use of timestamp for random values</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/frameworks/react_analyzer.py</p>
+<p class="vuln-fix"><strong>Fix:</strong> Review and fix the security issue</p>
+</div>
+<div class="vulnerability medium">
+<h4 class="vuln-title">Potential Path Traversal Vulnerability</h4>
+<p class="vuln-description">Potential path traversal sequence</p>
+<p class="vuln-file"><strong>File:</strong> njordscan/data/cache/github_advisories_cache.json</p>
+<p class="vuln-fix"><strong>Fix:</strong> Validate file paths and implement proper access controls</p>
+</div>
+</div>
+<div class="module-section">
+<h3 class="module-title">Dependencies Module</h3>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: click</h4>
+<p class="vuln-description">Package click version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin click to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: rich</h4>
+<p class="vuln-description">Package rich version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin rich to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: colorama</h4>
+<p class="vuln-description">Package colorama version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin colorama to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: aiohttp</h4>
+<p class="vuln-description">Package aiohttp version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin aiohttp to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: requests</h4>
+<p class="vuln-description">Package requests version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin requests to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: httpx</h4>
+<p class="vuln-description">Package httpx version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin httpx to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: pyyaml</h4>
+<p class="vuln-description">Package pyyaml version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin pyyaml to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: toml</h4>
+<p class="vuln-description">Package toml version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin toml to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: python-dotenv</h4>
+<p class="vuln-description">Package python-dotenv version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin python-dotenv to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: beautifulsoup4</h4>
+<p class="vuln-description">Package beautifulsoup4 version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin beautifulsoup4 to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: lxml</h4>
+<p class="vuln-description">Package lxml version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin lxml to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: html5lib</h4>
+<p class="vuln-description">Package html5lib version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin html5lib to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: jinja2</h4>
+<p class="vuln-description">Package jinja2 version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin jinja2 to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: markdown</h4>
+<p class="vuln-description">Package markdown version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin markdown to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: cryptography</h4>
+<p class="vuln-description">Package cryptography version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin cryptography to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: pyjwt</h4>
+<p class="vuln-description">Package pyjwt version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin pyjwt to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: aiofiles</h4>
+<p class="vuln-description">Package aiofiles version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin aiofiles to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: asyncio-throttle</h4>
+<p class="vuln-description">Package asyncio-throttle version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin asyncio-throttle to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: typing-extensions</h4>
+<p class="vuln-description">Package typing-extensions version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin typing-extensions to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: pydantic</h4>
+<p class="vuln-description">Package pydantic version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin pydantic to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: safety</h4>
+<p class="vuln-description">Package safety version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin safety to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: packaging</h4>
+<p class="vuln-description">Package packaging version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin packaging to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: tqdm</h4>
+<p class="vuln-description">Package tqdm version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin tqdm to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: tabulate</h4>
+<p class="vuln-description">Package tabulate version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin tabulate to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: psutil</h4>
+<p class="vuln-description">Package psutil version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin psutil to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: watchdog</h4>
+<p class="vuln-description">Package watchdog version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin watchdog to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: importlib-metadata</h4>
+<p class="vuln-description">Package importlib-metadata version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin importlib-metadata to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: stevedore</h4>
+<p class="vuln-description">Package stevedore version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin stevedore to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: pluggy</h4>
+<p class="vuln-description">Package pluggy version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin pluggy to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: diskcache</h4>
+<p class="vuln-description">Package diskcache version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin diskcache to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: dnspython</h4>
+<p class="vuln-description">Package dnspython version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin dnspython to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: lz4</h4>
+<p class="vuln-description">Package lz4 version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin lz4 to a specific version using == operator</p>
+</div>
+<div class="vulnerability low">
+<h4 class="vuln-title">Unpinned Python Dependency: bandit</h4>
+<p class="vuln-description">Package bandit version is not pinned, which may lead to instability</p>
+<p class="vuln-file"><strong>File:</strong> requirements.txt</p>
+<p class="vuln-fix"><strong>Fix:</strong> Pin bandit to a specific version using == operator</p>
+</div>
+</div>
+        
+        <div class="footer">
+            <p>Generated by NjordScan v0.1.0 | Professional Web Application Security Scanner</p>
+            <p>For support and documentation, visit: <a href="https://github.com/njordscan">https://github.com/njordscan</a></p>
+        </div>
+    </div>
+    
+    <script>
+        // Create severity distribution chart
+        const ctx = document.getElementById('severityChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+                datasets: [{
+                    data: [3, 44, 24, 83, 0],
+                    backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#17a2b8', '#6c757d'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Security Issues by Severity'
+                    }
+                },
+                cutout: '50%',
+                animation: {
+                    animateRotate: true,
+                    duration: 1000
+                }
+            }
+        });
+        
+        // Add hover effects and tooltips
+        chart.options.plugins.tooltip = {
+            callbacks: {
+                label: function(context) {
+                    const label = context.label || '';
+                    const value = context.parsed;
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                    return `${label}: ${value} (${percentage}%)`;
+                }
+            }
+        };
+        
+        // Update chart with new options
+        chart.update();
+    </script>
+</body>
+</html>

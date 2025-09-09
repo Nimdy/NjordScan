@@ -403,7 +403,8 @@ class ReportFormatter:
                 chart_data.append(f"['{severity.title()}', {count}]")
         
         # Calculate grade and recommendation based on score
-        njord_score = results.get('njord_score', 0)
+        njord_score_data = results.get('njord_score', {})
+        njord_score = njord_score_data.get('score', 0) if isinstance(njord_score_data, dict) else njord_score_data
         if njord_score >= 90:
             grade = 'A+'
             recommendation = 'Excellent security posture! Keep up the great work.'
@@ -522,7 +523,8 @@ class ReportFormatter:
                     f.write(f"{severity.title()}: {count}\n")
             
             # NjordScore
-            njord_score = results.get('njord_score', 0)
+            njord_score_data = results.get('njord_score', {})
+            njord_score = njord_score_data.get('score', 0) if isinstance(njord_score_data, dict) else njord_score_data
             if njord_score >= 90:
                 grade = 'A+'
                 recommendation = 'Excellent security posture! Keep up the great work.'
