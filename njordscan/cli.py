@@ -438,6 +438,10 @@ def scan(ctx, target, output_format, output, mode, framework, severity, verbose,
                     'custom_rule_matches': results.get('custom_rule_matches', [])
                 }
             }
+            # Create a mock orchestrator for display purposes
+            orchestrator = type('MockOrchestrator', (), {
+                'display_results': lambda self, results: display_scan_results(results, config, verbose)
+            })()
         else:
             # Use standard orchestrator
             if verbose:

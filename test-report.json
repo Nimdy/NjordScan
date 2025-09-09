@@ -1,0 +1,3529 @@
+{
+  "metadata": {
+    "tool": "NjordScan",
+    "version": "0.1.0",
+    "timestamp": "2025-09-09T14:15:08.370754",
+    "report_format": "json",
+    "scan_config": {
+      "mode": "quick",
+      "framework": "unknown",
+      "pentest_mode": false
+    }
+  },
+  "scan_results": {
+    "target": ".",
+    "framework": "unknown",
+    "scan_mode": "quick",
+    "scan_duration": 0.015573978424072266,
+    "modules_run": [
+      "configs",
+      "static",
+      "dependencies",
+      "ai_endpoints"
+    ],
+    "plugins_run": [],
+    "vulnerabilities": {
+      "codestatic": [
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-001",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "setup.py",
+          "file_path": "setup.py",
+          "line_number": 9,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-002",
+          "title": "Potentially Dangerous Import: subprocess",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of subprocess module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "setup.py",
+          "file_path": "setup.py",
+          "line_number": 11,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-003",
+          "title": "Potentially Dangerous Import: subprocess",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of subprocess module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "install.py",
+          "file_path": "install.py",
+          "line_number": 8,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-004",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "install.py",
+          "file_path": "install.py",
+          "line_number": 9,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-005",
+          "title": "Potentially Dangerous Import: subprocess",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of subprocess module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "tests/validate_all.py",
+          "file_path": "tests/validate_all.py",
+          "line_number": 14,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-006",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "tests/validate_all.py",
+          "file_path": "tests/validate_all.py",
+          "line_number": 153,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-007",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "tests/validation/deep_validation.py",
+          "file_path": "tests/validation/deep_validation.py",
+          "line_number": 16,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-008",
+          "title": "Potentially Dangerous Import: subprocess",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of subprocess module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "tests/validation/deep_validation.py",
+          "file_path": "tests/validation/deep_validation.py",
+          "line_number": 19,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-009",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "tests/validation/installation_validator.py",
+          "file_path": "tests/validation/installation_validator.py",
+          "line_number": 16,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-010",
+          "title": "Potentially Dangerous Import: subprocess",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of subprocess module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "tests/validation/installation_validator.py",
+          "file_path": "tests/validation/installation_validator.py",
+          "line_number": 17,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-011",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "plugins/core/base_plugin.py",
+          "file_path": "plugins/core/base_plugin.py",
+          "line_number": 7,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-001",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Use of document.write() which can lead to XSS",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "plugins/templates/scanner_template/template_scanner.py",
+          "file_path": "plugins/templates/scanner_template/template_scanner.py",
+          "line_number": 74,
+          "code_snippet": "'title': 'Use of document.write()',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "document\\.write\\s*\\(",
+            "matched_text": "document.write(",
+            "line_content": "'title': 'Use of document.write()',",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-002",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Use of document.write() which can lead to XSS",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "plugins/templates/scanner_template/template_scanner.py",
+          "file_path": "plugins/templates/scanner_template/template_scanner.py",
+          "line_number": 75,
+          "code_snippet": "'description': 'document.write() can lead to XSS vulnerabilities'",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "document\\.write\\s*\\(",
+            "matched_text": "document.write(",
+            "line_content": "'description': 'document.write() can lead to XSS vulnerabilities'",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-003",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "plugins/templates/scanner_template/template_scanner.py",
+          "file_path": "plugins/templates/scanner_template/template_scanner.py",
+          "line_number": 68,
+          "code_snippet": "'title': 'Use of eval() function',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'title': 'Use of eval() function',",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-004",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "plugins/templates/scanner_template/template_scanner.py",
+          "file_path": "plugins/templates/scanner_template/template_scanner.py",
+          "line_number": 69,
+          "code_snippet": "'description': 'eval() can execute arbitrary code and should be avoided'",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'description': 'eval() can execute arbitrary code and should be avoided'",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-012",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "plugins/templates/scanner_template/template_scanner.py",
+          "file_path": "plugins/templates/scanner_template/template_scanner.py",
+          "line_number": 12,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-013",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "plugins/templates/reporter_template/template_reporter.py",
+          "file_path": "plugins/templates/reporter_template/template_reporter.py",
+          "line_number": 14,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-014",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/cache.py",
+          "file_path": "njordscan/cache.py",
+          "line_number": 12,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-015",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/main.py",
+          "file_path": "njordscan/main.py",
+          "line_number": 9,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-016",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/config.py",
+          "file_path": "njordscan/config.py",
+          "line_number": 8,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-017",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/legal.py",
+          "file_path": "njordscan/legal.py",
+          "line_number": 7,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-018",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/plugin_creator.py",
+          "file_path": "njordscan/plugin_creator.py",
+          "line_number": 8,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-019",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/plugins.py",
+          "file_path": "njordscan/plugins.py",
+          "line_number": 8,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-020",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/scanner.py",
+          "file_path": "njordscan/scanner.py",
+          "line_number": 483,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-021",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/cli.py",
+          "file_path": "njordscan/cli.py",
+          "line_number": 10,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-UNSAFE_INPUT-001",
+          "title": "Unsafe Input Function",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Use of input() without prompt may be confusing",
+          "fix": "Use input() with clear prompts or consider alternatives",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "unsafe_input",
+          "location": "njordscan/cli.py",
+          "file_path": "njordscan/cli.py",
+          "line_number": 65,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-022",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/utils.py",
+          "file_path": "njordscan/utils.py",
+          "line_number": 8,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-001",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/fuzzing_engine.py",
+          "file_path": "njordscan/runtime/fuzzing_engine.py",
+          "line_number": 390,
+          "code_snippet": "\"../../../etc/passwd\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../etc/passwd\","
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-002",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/fuzzing_engine.py",
+          "file_path": "njordscan/runtime/fuzzing_engine.py",
+          "line_number": 390,
+          "code_snippet": "\"../../../etc/passwd\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../etc/passwd\","
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-003",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/fuzzing_engine.py",
+          "file_path": "njordscan/runtime/fuzzing_engine.py",
+          "line_number": 390,
+          "code_snippet": "\"../../../etc/passwd\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../etc/passwd\","
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-004",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/dast_engine.py",
+          "file_path": "njordscan/runtime/dast_engine.py",
+          "line_number": 310,
+          "code_snippet": "\"../../../etc/passwd\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../etc/passwd\","
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-005",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/dast_engine.py",
+          "file_path": "njordscan/runtime/dast_engine.py",
+          "line_number": 310,
+          "code_snippet": "\"../../../etc/passwd\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../etc/passwd\","
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-006",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/dast_engine.py",
+          "file_path": "njordscan/runtime/dast_engine.py",
+          "line_number": 310,
+          "code_snippet": "\"../../../etc/passwd\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../etc/passwd\","
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-007",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/dast_engine.py",
+          "file_path": "njordscan/runtime/dast_engine.py",
+          "line_number": 319,
+          "code_snippet": "\"../../../proc/version\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../proc/version\","
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-008",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/dast_engine.py",
+          "file_path": "njordscan/runtime/dast_engine.py",
+          "line_number": 319,
+          "code_snippet": "\"../../../proc/version\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../proc/version\","
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-009",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/dast_engine.py",
+          "file_path": "njordscan/runtime/dast_engine.py",
+          "line_number": 319,
+          "code_snippet": "\"../../../proc/version\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../proc/version\","
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-010",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/dast_engine.py",
+          "file_path": "njordscan/runtime/dast_engine.py",
+          "line_number": 321,
+          "code_snippet": "\"../../../var/log/apache2/access.log\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../var/log/apache2/access.log\""
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-011",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/dast_engine.py",
+          "file_path": "njordscan/runtime/dast_engine.py",
+          "line_number": 321,
+          "code_snippet": "\"../../../var/log/apache2/access.log\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../var/log/apache2/access.log\""
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-012",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/dast_engine.py",
+          "file_path": "njordscan/runtime/dast_engine.py",
+          "line_number": 321,
+          "code_snippet": "\"../../../var/log/apache2/access.log\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"../../../var/log/apache2/access.log\""
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-013",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/runtime/dast_engine.py",
+          "file_path": "njordscan/runtime/dast_engine.py",
+          "line_number": 884,
+          "code_snippet": "if \"../\" in payload or \"..\\\\\") in payload:",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "if \"../\" in payload or \"..\\\\\") in payload:"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-005",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 532,
+          "code_snippet": "if 'eval(' in line:",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "if 'eval(' in line:",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-006",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 534,
+          "code_snippet": "'title': 'Dangerous eval() Usage',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'title': 'Dangerous eval() Usage',",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-007",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 535,
+          "code_snippet": "'description': 'Use of eval() can lead to code injection',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'description': 'Use of eval() can lead to code injection',",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-008",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 538,
+          "code_snippet": "'column': line.find('eval('),",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'column': line.find('eval('),",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-009",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 540,
+          "code_snippet": "'end_column': line.find('eval(') + 4,",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'end_column': line.find('eval(') + 4,",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-010",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 542,
+          "code_snippet": "'fix_suggestion': 'Avoid using eval() - consider safer alternatives'",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'fix_suggestion': 'Avoid using eval() - consider safer alternatives'",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-011",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 674,
+          "code_snippet": "if 'eval(' in current_line:",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "if 'eval(' in current_line:",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-012",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 678,
+          "code_snippet": "\"value\": \"\u26a0\ufe0f **Security Warning: eval() usage**\\n\\n\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "\"value\": \"\u26a0\ufe0f **Security Warning: eval() usage**\\n\\n\"",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-013",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 679,
+          "code_snippet": "\"The `eval()` function can execute arbitrary JavaScript code, \"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "\"The `eval()` function can execute arbitrary JavaScript code, \"",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-014",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 733,
+          "code_snippet": "title=\"Replace eval() with safer alternative\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "title=\"Replace eval() with safer alternative\",",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-015",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Dynamic function creation - can lead to code injection",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 683,
+          "code_snippet": "\"- Use `Function()` constructor for safer dynamic code execution\\n\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Function\\s*\\(",
+            "matched_text": "Function(",
+            "line_content": "\"- Use `Function()` constructor for safer dynamic code execution\\n\"",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-WEAK_RANDOM-001",
+          "title": "Potential Weak Random Vulnerability",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Use of cryptographically insecure Math.random()",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "weak_random",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 688,
+          "code_snippet": "elif 'Math.random()' in current_line:",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Math\\.random\\(\\)",
+            "matched_text": "Math.random()",
+            "line_content": "elif 'Math.random()' in current_line:"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-WEAK_RANDOM-002",
+          "title": "Potential Weak Random Vulnerability",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Use of cryptographically insecure Math.random()",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "weak_random",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 692,
+          "code_snippet": "\"value\": \"\u26a0\ufe0f **Security Notice: Math.random() usage**\\n\\n\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Math\\.random\\(\\)",
+            "matched_text": "Math.random()",
+            "line_content": "\"value\": \"\u26a0\ufe0f **Security Notice: Math.random() usage**\\n\\n\""
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-WEAK_RANDOM-003",
+          "title": "Potential Weak Random Vulnerability",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Use of cryptographically insecure Math.random()",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "weak_random",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 693,
+          "code_snippet": "\"`Math.random()` is not cryptographically secure and should not be used \"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Math\\.random\\(\\)",
+            "matched_text": "Math.random()",
+            "line_content": "\"`Math.random()` is not cryptographically secure and should not be used \""
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-023",
+          "title": "Potentially Dangerous Import: subprocess",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of subprocess module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 23,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-024",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/developer_experience/ide_integration.py",
+          "file_path": "njordscan/developer_experience/ide_integration.py",
+          "line_number": 25,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-025",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/developer_experience/dx_orchestrator.py",
+          "file_path": "njordscan/developer_experience/dx_orchestrator.py",
+          "line_number": 21,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-016",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/developer_experience/dev_tools.py",
+          "file_path": "njordscan/developer_experience/dev_tools.py",
+          "line_number": 949,
+          "code_snippet": "\"eval(\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "\"eval(\",",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-026",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/developer_experience/dev_tools.py",
+          "file_path": "njordscan/developer_experience/dev_tools.py",
+          "line_number": 15,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-027",
+          "title": "Potentially Dangerous Import: subprocess",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of subprocess module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/developer_experience/dev_tools.py",
+          "file_path": "njordscan/developer_experience/dev_tools.py",
+          "line_number": 25,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-028",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/developer_experience/interactive_cli.py",
+          "file_path": "njordscan/developer_experience/interactive_cli.py",
+          "line_number": 33,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-029",
+          "title": "Potentially Dangerous Import: subprocess",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of subprocess module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/developer_experience/interactive_cli.py",
+          "file_path": "njordscan/developer_experience/interactive_cli.py",
+          "line_number": 34,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-UNSAFE_INPUT-002",
+          "title": "Unsafe Input Function",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Use of input() without prompt may be confusing",
+          "fix": "Use input() with clear prompts or consider alternatives",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "unsafe_input",
+          "location": "njordscan/developer_experience/interactive_cli.py",
+          "file_path": "njordscan/developer_experience/interactive_cli.py",
+          "line_number": 211,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-SECRETS_EXPOSURE-001",
+          "title": "Potential Secrets Exposure Vulnerability",
+          "severity": "critical",
+          "confidence": "medium",
+          "description": "Hardcoded API key found",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Use_of_hard-coded_credentials",
+          "vuln_type": "secrets_exposure",
+          "location": "njordscan/configuration/secrets_detector.py",
+          "file_path": "njordscan/configuration/secrets_detector.py",
+          "line_number": 24,
+          "code_snippet": "API_KEY = \"api_key\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "api[_-]?key\\s*[:=]\\s*[\\'\"]\\w+[\\'\"]",
+            "matched_text": "API_KEY = \"api_key\"",
+            "line_content": "API_KEY = \"api_key\"",
+            "cwe_codes": [
+              "CWE-798",
+              "CWE-200"
+            ],
+            "owasp_category": "A02:2021 - Cryptographic Failures",
+            "normalized_type": "secrets_exposure"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-SECRETS_EXPOSURE-002",
+          "title": "Potential Secrets Exposure Vulnerability",
+          "severity": "critical",
+          "confidence": "medium",
+          "description": "Hardcoded password found",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Use_of_hard-coded_credentials",
+          "vuln_type": "secrets_exposure",
+          "location": "njordscan/configuration/secrets_detector.py",
+          "file_path": "njordscan/configuration/secrets_detector.py",
+          "line_number": 32,
+          "code_snippet": "PASSWORD = \"password\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "password\\s*[:=]\\s*[\\'\"]\\w+[\\'\"]",
+            "matched_text": "PASSWORD = \"password\"",
+            "line_content": "PASSWORD = \"password\"",
+            "cwe_codes": [
+              "CWE-798",
+              "CWE-200"
+            ],
+            "owasp_category": "A02:2021 - Cryptographic Failures",
+            "normalized_type": "secrets_exposure"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-SECRETS_EXPOSURE-003",
+          "title": "Potential Secrets Exposure Vulnerability",
+          "severity": "critical",
+          "confidence": "medium",
+          "description": "Hardcoded secret found",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Use_of_hard-coded_credentials",
+          "vuln_type": "secrets_exposure",
+          "location": "njordscan/configuration/secrets_detector.py",
+          "file_path": "njordscan/configuration/secrets_detector.py",
+          "line_number": 38,
+          "code_snippet": "GENERIC_SECRET = \"generic_secret\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "secret\\s*[:=]\\s*[\\'\"]\\w+[\\'\"]",
+            "matched_text": "SECRET = \"generic_secret\"",
+            "line_content": "GENERIC_SECRET = \"generic_secret\"",
+            "cwe_codes": [
+              "CWE-798",
+              "CWE-200"
+            ],
+            "owasp_category": "A02:2021 - Cryptographic Failures",
+            "normalized_type": "secrets_exposure"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-SECRETS_EXPOSURE-004",
+          "title": "Potential Secrets Exposure Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Hardcoded token found",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Use_of_hard-coded_credentials",
+          "vuln_type": "secrets_exposure",
+          "location": "njordscan/configuration/secrets_detector.py",
+          "file_path": "njordscan/configuration/secrets_detector.py",
+          "line_number": 27,
+          "code_snippet": "GITHUB_TOKEN = \"github_token\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "token\\s*[:=]\\s*[\\'\"]\\w+[\\'\"]",
+            "matched_text": "TOKEN = \"github_token\"",
+            "line_content": "GITHUB_TOKEN = \"github_token\"",
+            "cwe_codes": [
+              "CWE-798",
+              "CWE-200"
+            ],
+            "owasp_category": "A02:2021 - Cryptographic Failures",
+            "normalized_type": "secrets_exposure"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-SECRETS_EXPOSURE-005",
+          "title": "Potential Secrets Exposure Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Hardcoded token found",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Use_of_hard-coded_credentials",
+          "vuln_type": "secrets_exposure",
+          "location": "njordscan/configuration/secrets_detector.py",
+          "file_path": "njordscan/configuration/secrets_detector.py",
+          "line_number": 28,
+          "code_snippet": "SLACK_TOKEN = \"slack_token\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "token\\s*[:=]\\s*[\\'\"]\\w+[\\'\"]",
+            "matched_text": "TOKEN = \"slack_token\"",
+            "line_content": "SLACK_TOKEN = \"slack_token\"",
+            "cwe_codes": [
+              "CWE-798",
+              "CWE-200"
+            ],
+            "owasp_category": "A02:2021 - Cryptographic Failures",
+            "normalized_type": "secrets_exposure"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-SECRETS_EXPOSURE-006",
+          "title": "Potential Secrets Exposure Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Hardcoded token found",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Use_of_hard-coded_credentials",
+          "vuln_type": "secrets_exposure",
+          "location": "njordscan/configuration/secrets_detector.py",
+          "file_path": "njordscan/configuration/secrets_detector.py",
+          "line_number": 30,
+          "code_snippet": "JWT_TOKEN = \"jwt_token\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "token\\s*[:=]\\s*[\\'\"]\\w+[\\'\"]",
+            "matched_text": "TOKEN = \"jwt_token\"",
+            "line_content": "JWT_TOKEN = \"jwt_token\"",
+            "cwe_codes": [
+              "CWE-798",
+              "CWE-200"
+            ],
+            "owasp_category": "A02:2021 - Cryptographic Failures",
+            "normalized_type": "secrets_exposure"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-SECRETS_EXPOSURE-007",
+          "title": "Potential Secrets Exposure Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Hardcoded token found",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Use_of_hard-coded_credentials",
+          "vuln_type": "secrets_exposure",
+          "location": "njordscan/configuration/secrets_detector.py",
+          "file_path": "njordscan/configuration/secrets_detector.py",
+          "line_number": 34,
+          "code_snippet": "OAUTH_TOKEN = \"oauth_token\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "token\\s*[:=]\\s*[\\'\"]\\w+[\\'\"]",
+            "matched_text": "TOKEN = \"oauth_token\"",
+            "line_content": "OAUTH_TOKEN = \"oauth_token\"",
+            "cwe_codes": [
+              "CWE-798",
+              "CWE-200"
+            ],
+            "owasp_category": "A02:2021 - Cryptographic Failures",
+            "normalized_type": "secrets_exposure"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-017",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/plugins_v2/plugin_marketplace.py",
+          "file_path": "njordscan/plugins_v2/plugin_marketplace.py",
+          "line_number": 743,
+          "code_snippet": "'patterns': ['eval(', 'exec(', '__import__']",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'patterns': ['eval(', 'exec(', '__import__']",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-018",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Dynamic function creation - can lead to code injection",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/plugins_v2/plugin_manager.py",
+          "file_path": "njordscan/plugins_v2/plugin_manager.py",
+          "line_number": 178,
+          "code_snippet": "if asyncio.iscoroutinefunction(callback):",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Function\\s*\\(",
+            "matched_text": "function(",
+            "line_content": "if asyncio.iscoroutinefunction(callback):",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-019",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Dynamic function creation - can lead to code injection",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/plugins_v2/plugin_manager.py",
+          "file_path": "njordscan/plugins_v2/plugin_manager.py",
+          "line_number": 575,
+          "code_snippet": "if asyncio.iscoroutinefunction(callback):",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Function\\s*\\(",
+            "matched_text": "function(",
+            "line_content": "if asyncio.iscoroutinefunction(callback):",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-030",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/plugins_v2/plugin_manager.py",
+          "file_path": "njordscan/plugins_v2/plugin_manager.py",
+          "line_number": 12,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-020",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/intelligence/rules_engine.py",
+          "file_path": "njordscan/intelligence/rules_engine.py",
+          "line_number": 758,
+          "code_snippet": "name=\"Dangerous eval() Usage\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "name=\"Dangerous eval() Usage\",",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-021",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/intelligence/rules_engine.py",
+          "file_path": "njordscan/intelligence/rules_engine.py",
+          "line_number": 759,
+          "code_snippet": "description=\"Detects dangerous use of eval() function\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "description=\"Detects dangerous use of eval() function\",",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-031",
+          "title": "Potentially Dangerous Import: pickle",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of pickle module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/intelligence/rules_engine.py",
+          "file_path": "njordscan/intelligence/rules_engine.py",
+          "line_number": 27,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-022",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Dynamic function creation - can lead to code injection",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/report/formatter.py",
+          "file_path": "njordscan/report/formatter.py",
+          "line_number": 896,
+          "code_snippet": "label: function(context) {{",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Function\\s*\\(",
+            "matched_text": "function(",
+            "line_content": "label: function(context) {{",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-032",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/report/formatter.py",
+          "file_path": "njordscan/report/formatter.py",
+          "line_number": 9,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-033",
+          "title": "Potentially Dangerous Import: pickle",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of pickle module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/performance/cache_manager.py",
+          "file_path": "njordscan/performance/cache_manager.py",
+          "line_number": 17,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-023",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Dynamic function creation - can lead to code injection",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/performance/resource_manager.py",
+          "file_path": "njordscan/performance/resource_manager.py",
+          "line_number": 890,
+          "code_snippet": "if asyncio.iscoroutinefunction(callback):",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Function\\s*\\(",
+            "matched_text": "function(",
+            "line_content": "if asyncio.iscoroutinefunction(callback):",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-024",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Dynamic function creation - can lead to code injection",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/performance/resource_manager.py",
+          "file_path": "njordscan/performance/resource_manager.py",
+          "line_number": 1034,
+          "code_snippet": "if asyncio.iscoroutinefunction(callback):",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Function\\s*\\(",
+            "matched_text": "function(",
+            "line_content": "if asyncio.iscoroutinefunction(callback):",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-034",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/performance/resource_manager.py",
+          "file_path": "njordscan/performance/resource_manager.py",
+          "line_number": 18,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-025",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Dynamic function creation - can lead to code injection",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/performance/parallel_coordinator.py",
+          "file_path": "njordscan/performance/parallel_coordinator.py",
+          "line_number": 608,
+          "code_snippet": "task_result = task.function(*task.args, **task.kwargs)",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Function\\s*\\(",
+            "matched_text": "function(",
+            "line_content": "task_result = task.function(*task.args, **task.kwargs)",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-035",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/performance/parallel_coordinator.py",
+          "file_path": "njordscan/performance/parallel_coordinator.py",
+          "line_number": 19,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-036",
+          "title": "Potentially Dangerous Import: pickle",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of pickle module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/performance/parallel_coordinator.py",
+          "file_path": "njordscan/performance/parallel_coordinator.py",
+          "line_number": 26,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-026",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Dynamic function creation - can lead to code injection",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/performance/performance_orchestrator.py",
+          "file_path": "njordscan/performance/performance_orchestrator.py",
+          "line_number": 1016,
+          "code_snippet": "if asyncio.iscoroutinefunction(callback):",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Function\\s*\\(",
+            "matched_text": "function(",
+            "line_content": "if asyncio.iscoroutinefunction(callback):",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-027",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Dynamic function creation - can lead to code injection",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/performance/performance_orchestrator.py",
+          "file_path": "njordscan/performance/performance_orchestrator.py",
+          "line_number": 1158,
+          "code_snippet": "if asyncio.iscoroutinefunction(callback):",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Function\\s*\\(",
+            "matched_text": "function(",
+            "line_content": "if asyncio.iscoroutinefunction(callback):",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-028",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Dynamic function creation - can lead to code injection",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/reporting/visualization_engine.py",
+          "file_path": "njordscan/reporting/visualization_engine.py",
+          "line_number": 792,
+          "code_snippet": "setInterval(function() {{",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Function\\s*\\(",
+            "matched_text": "function(",
+            "line_content": "setInterval(function() {{",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-029",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Use of document.write() which can lead to XSS",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/code_static.py",
+          "file_path": "njordscan/modules/code_static.py",
+          "line_number": 45,
+          "code_snippet": "'description': 'Use of document.write() which can lead to XSS'",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "document\\.write\\s*\\(",
+            "matched_text": "document.write(",
+            "line_content": "'description': 'Use of document.write() which can lead to XSS'",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-030",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/code_static.py",
+          "file_path": "njordscan/modules/code_static.py",
+          "line_number": 50,
+          "code_snippet": "'description': 'Use of eval() function - can execute arbitrary code'",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'description': 'Use of eval() function - can execute arbitrary code'",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-031",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/code_static.py",
+          "file_path": "njordscan/modules/code_static.py",
+          "line_number": 398,
+          "code_snippet": "'title': 'eval() in Event Handler',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'title': 'eval() in Event Handler',",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-032",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/code_static.py",
+          "file_path": "njordscan/modules/code_static.py",
+          "line_number": 399,
+          "code_snippet": "'description': 'Use of eval() in event handlers is dangerous',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'description': 'Use of eval() in event handlers is dangerous',",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-033",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/code_static.py",
+          "file_path": "njordscan/modules/code_static.py",
+          "line_number": 595,
+          "code_snippet": "'eval_handler': 'Remove eval() usage and use safer alternatives'",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'eval_handler': 'Remove eval() usage and use safer alternatives'",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-014",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/modules/code_static.py",
+          "file_path": "njordscan/modules/code_static.py",
+          "line_number": 950,
+          "code_snippet": "'<a href=\"../\">',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "'<a href=\"../\">',"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-WEAK_RANDOM-004",
+          "title": "Potential Weak Random Vulnerability",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Use of cryptographically insecure Math.random()",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "weak_random",
+          "location": "njordscan/modules/code_static.py",
+          "file_path": "njordscan/modules/code_static.py",
+          "line_number": 166,
+          "code_snippet": "'description': 'Use of cryptographically insecure Math.random()'",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Math\\.random\\(\\)",
+            "matched_text": "Math.random()",
+            "line_content": "'description': 'Use of cryptographically insecure Math.random()'"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-037",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/modules/code_static.py",
+          "file_path": "njordscan/modules/code_static.py",
+          "line_number": 9,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-015",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/modules/runtime.py",
+          "file_path": "njordscan/modules/runtime.py",
+          "line_number": 53,
+          "code_snippet": "'../../../etc/passwd',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "'../../../etc/passwd',"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-016",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/modules/runtime.py",
+          "file_path": "njordscan/modules/runtime.py",
+          "line_number": 53,
+          "code_snippet": "'../../../etc/passwd',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "'../../../etc/passwd',"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-017",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/modules/runtime.py",
+          "file_path": "njordscan/modules/runtime.py",
+          "line_number": 53,
+          "code_snippet": "'../../../etc/passwd',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "'../../../etc/passwd',"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-018",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/modules/configs.py",
+          "file_path": "njordscan/modules/configs.py",
+          "line_number": 591,
+          "code_snippet": "'<a href=\"../\">',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "'<a href=\"../\">',"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-019",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/modules/dependencies.py",
+          "file_path": "njordscan/modules/dependencies.py",
+          "line_number": 905,
+          "code_snippet": "'<a href=\"../\">',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "'<a href=\"../\">',"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-038",
+          "title": "Potentially Dangerous Import: subprocess",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of subprocess module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/modules/dependencies.py",
+          "file_path": "njordscan/modules/dependencies.py",
+          "line_number": 8,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-034",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/vulnerability_detector.py",
+          "file_path": "njordscan/modules/vulnerability_detector.py",
+          "line_number": 587,
+          "code_snippet": "if 'eval(' in content:",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "if 'eval(' in content:",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-035",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/vulnerability_detector.py",
+          "file_path": "njordscan/modules/vulnerability_detector.py",
+          "line_number": 589,
+          "code_snippet": "title=\"Dangerous eval() Usage\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "title=\"Dangerous eval() Usage\",",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-036",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/vulnerability_detector.py",
+          "file_path": "njordscan/modules/vulnerability_detector.py",
+          "line_number": 590,
+          "code_snippet": "description=\"eval() function can execute arbitrary code and is a security risk\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "description=\"eval() function can execute arbitrary code and is a security risk\",",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-037",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/vulnerability_detector.py",
+          "file_path": "njordscan/modules/vulnerability_detector.py",
+          "line_number": 594,
+          "code_snippet": "code_snippet=self._extract_line_with_context(content, 'eval('),",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "code_snippet=self._extract_line_with_context(content, 'eval('),",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-038",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/vulnerability_detector.py",
+          "file_path": "njordscan/modules/vulnerability_detector.py",
+          "line_number": 595,
+          "code_snippet": "fix=\"Replace eval() with safer alternatives like JSON.parse() or Function constructor with proper validation.\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "fix=\"Replace eval() with safer alternatives like JSON.parse() or Function constructor with proper validation.\",",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-039",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/vulnerability_detector.py",
+          "file_path": "njordscan/modules/vulnerability_detector.py",
+          "line_number": 643,
+          "code_snippet": "fix=\"Avoid exec() with user input. Use safer alternatives like ast.literal_eval() for simple expressions.\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "fix=\"Avoid exec() with user input. Use safer alternatives like ast.literal_eval() for simple expressions.\",",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-040",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/ai_endpoints.py",
+          "file_path": "njordscan/modules/ai_endpoints.py",
+          "line_number": 447,
+          "code_snippet": "'description': 'AI response is being executed as code using eval()',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'description': 'AI response is being executed as code using eval()',",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-041",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/headers.py",
+          "file_path": "njordscan/modules/headers.py",
+          "line_number": 169,
+          "code_snippet": "description=\"Content Security Policy contains 'unsafe-eval' which allows eval() and similar functions\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "description=\"Content Security Policy contains 'unsafe-eval' which allows eval() and similar functions\",",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-042",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/modules/code_static_enhanced.py",
+          "file_path": "njordscan/modules/code_static_enhanced.py",
+          "line_number": 733,
+          "code_snippet": "'code_injection': 'Avoid eval() and Function constructor, or properly sanitize inputs'",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "'code_injection': 'Avoid eval() and Function constructor, or properly sanitize inputs'",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-020",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/modules/code_static_enhanced.py",
+          "file_path": "njordscan/modules/code_static_enhanced.py",
+          "line_number": 1319,
+          "code_snippet": "'Index of', 'Directory listing', 'Parent Directory', '<a href=\"../\">',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "'Index of', 'Directory listing', 'Parent Directory', '<a href=\"../\">',"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-XSS_REFLECTED-043",
+          "title": "Potential Xss Reflected Vulnerability",
+          "severity": "high",
+          "confidence": "medium",
+          "description": "Use of eval() function - can execute arbitrary code",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "vuln_type": "xss_reflected",
+          "location": "njordscan/analysis/ast_analyzer.py",
+          "file_path": "njordscan/analysis/ast_analyzer.py",
+          "line_number": 372,
+          "code_snippet": "message='Potential code injection via eval() with user input',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "eval\\s*\\(",
+            "matched_text": "eval(",
+            "line_content": "message='Potential code injection via eval() with user input',",
+            "cwe_codes": [
+              "CWE-79"
+            ],
+            "owasp_category": "A03:2021 - Injection",
+            "normalized_type": "xss_reflected"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-WEAK_RANDOM-005",
+          "title": "Potential Weak Random Vulnerability",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Use of cryptographically insecure Math.random()",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "weak_random",
+          "location": "njordscan/analysis/ast_analyzer.py",
+          "file_path": "njordscan/analysis/ast_analyzer.py",
+          "line_number": 276,
+          "code_snippet": "message='Use of cryptographically weak Math.random()',",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Math\\.random\\(\\)",
+            "matched_text": "Math.random()",
+            "line_content": "message='Use of cryptographically weak Math.random()',"
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-039",
+          "title": "Potentially Dangerous Import: subprocess",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of subprocess module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/analysis/ast_analyzer.py",
+          "file_path": "njordscan/analysis/ast_analyzer.py",
+          "line_number": 9,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-040",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/analysis/ast_analyzer.py",
+          "file_path": "njordscan/analysis/ast_analyzer.py",
+          "line_number": 577,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-DANGEROUS_IMPORT-041",
+          "title": "Potentially Dangerous Import: os",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Import of os module requires careful handling",
+          "fix": "Use these modules carefully and validate all inputs",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "dangerous_import",
+          "location": "njordscan/analysis/ast_analyzer.py",
+          "file_path": "njordscan/analysis/ast_analyzer.py",
+          "line_number": 635,
+          "code_snippet": null,
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {}
+        },
+        {
+          "id": "NJORD-CODESTATIC-WEAK_RANDOM-006",
+          "title": "Potential Weak Random Vulnerability",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Use of cryptographically insecure Math.random()",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "weak_random",
+          "location": "njordscan/frameworks/react_analyzer.py",
+          "file_path": "njordscan/frameworks/react_analyzer.py",
+          "line_number": 382,
+          "code_snippet": "description=\"Using Math.random() or Date.now() for React keys can cause issues\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Math\\.random\\(\\)",
+            "matched_text": "Math.random()",
+            "line_content": "description=\"Using Math.random() or Date.now() for React keys can cause issues\","
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-WEAK_RANDOM-007",
+          "title": "Potential Weak Random Vulnerability",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Use of timestamp for random values",
+          "fix": "Review and fix the security issue",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "weak_random",
+          "location": "njordscan/frameworks/react_analyzer.py",
+          "file_path": "njordscan/frameworks/react_analyzer.py",
+          "line_number": 382,
+          "code_snippet": "description=\"Using Math.random() or Date.now() for React keys can cause issues\",",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "Date\\.now\\(\\)",
+            "matched_text": "Date.now()",
+            "line_content": "description=\"Using Math.random() or Date.now() for React keys can cause issues\","
+          }
+        },
+        {
+          "id": "NJORD-CODESTATIC-PATH_TRAVERSAL-021",
+          "title": "Potential Path Traversal Vulnerability",
+          "severity": "medium",
+          "confidence": "medium",
+          "description": "Potential path traversal sequence",
+          "fix": "Validate file paths and implement proper access controls",
+          "reference": "https://owasp.org/www-community/",
+          "vuln_type": "path_traversal",
+          "location": "njordscan/data/cache/github_advisories_cache.json",
+          "file_path": "njordscan/data/cache/github_advisories_cache.json",
+          "line_number": 3087,
+          "code_snippet": "\"name\": \"Path Traversal: '../filedir'\"",
+          "framework": "unknown",
+          "module": "codestatic",
+          "metadata": {
+            "pattern": "\\.\\./",
+            "matched_text": "../",
+            "line_content": "\"name\": \"Path Traversal: '../filedir'\""
+          }
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-001",
+          "title": "Unpinned Python Dependency: click",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package click version is not pinned, which may lead to instability",
+          "fix": "Pin click to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 7,
+          "code_snippet": "click>=8.0.0,<9.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "click",
+            "version_spec": "8.0.0,<9.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-002",
+          "title": "Unpinned Python Dependency: rich",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package rich version is not pinned, which may lead to instability",
+          "fix": "Pin rich to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 8,
+          "code_snippet": "rich>=13.0.0,<15.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "rich",
+            "version_spec": "13.0.0,<15.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-003",
+          "title": "Unpinned Python Dependency: colorama",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package colorama version is not pinned, which may lead to instability",
+          "fix": "Pin colorama to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 9,
+          "code_snippet": "colorama>=0.4.4,<1.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "colorama",
+            "version_spec": "0.4.4,<1.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-004",
+          "title": "Unpinned Python Dependency: aiohttp",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package aiohttp version is not pinned, which may lead to instability",
+          "fix": "Pin aiohttp to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 12,
+          "code_snippet": "aiohttp>=3.8.0,<4.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "aiohttp",
+            "version_spec": "3.8.0,<4.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-005",
+          "title": "Unpinned Python Dependency: requests",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package requests version is not pinned, which may lead to instability",
+          "fix": "Pin requests to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 13,
+          "code_snippet": "requests>=2.28.0,<3.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "requests",
+            "version_spec": "2.28.0,<3.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-006",
+          "title": "Unpinned Python Dependency: httpx",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package httpx version is not pinned, which may lead to instability",
+          "fix": "Pin httpx to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 14,
+          "code_snippet": "httpx>=0.24.0,<1.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "httpx",
+            "version_spec": "0.24.0,<1.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-007",
+          "title": "Unpinned Python Dependency: pyyaml",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package pyyaml version is not pinned, which may lead to instability",
+          "fix": "Pin pyyaml to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 17,
+          "code_snippet": "pyyaml>=6.0,<7.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "pyyaml",
+            "version_spec": "6.0,<7.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-008",
+          "title": "Unpinned Python Dependency: toml",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package toml version is not pinned, which may lead to instability",
+          "fix": "Pin toml to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 18,
+          "code_snippet": "toml>=0.10.2,<1.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "toml",
+            "version_spec": "0.10.2,<1.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-009",
+          "title": "Unpinned Python Dependency: python-dotenv",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package python-dotenv version is not pinned, which may lead to instability",
+          "fix": "Pin python-dotenv to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 19,
+          "code_snippet": "python-dotenv>=1.0.0,<2.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "python-dotenv",
+            "version_spec": "1.0.0,<2.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-010",
+          "title": "Unpinned Python Dependency: beautifulsoup4",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package beautifulsoup4 version is not pinned, which may lead to instability",
+          "fix": "Pin beautifulsoup4 to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 24,
+          "code_snippet": "beautifulsoup4>=4.11.0,<5.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "beautifulsoup4",
+            "version_spec": "4.11.0,<5.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-011",
+          "title": "Unpinned Python Dependency: lxml",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package lxml version is not pinned, which may lead to instability",
+          "fix": "Pin lxml to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 25,
+          "code_snippet": "lxml>=4.9.0,<5.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "lxml",
+            "version_spec": "4.9.0,<5.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-012",
+          "title": "Unpinned Python Dependency: html5lib",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package html5lib version is not pinned, which may lead to instability",
+          "fix": "Pin html5lib to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 26,
+          "code_snippet": "html5lib>=1.1,<2.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "html5lib",
+            "version_spec": "1.1,<2.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-013",
+          "title": "Unpinned Python Dependency: jinja2",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package jinja2 version is not pinned, which may lead to instability",
+          "fix": "Pin jinja2 to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 29,
+          "code_snippet": "jinja2>=3.1.0,<4.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "jinja2",
+            "version_spec": "3.1.0,<4.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-014",
+          "title": "Unpinned Python Dependency: markdown",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package markdown version is not pinned, which may lead to instability",
+          "fix": "Pin markdown to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 30,
+          "code_snippet": "markdown>=3.4.0,<4.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "markdown",
+            "version_spec": "3.4.0,<4.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-015",
+          "title": "Unpinned Python Dependency: cryptography",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package cryptography version is not pinned, which may lead to instability",
+          "fix": "Pin cryptography to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 33,
+          "code_snippet": "cryptography>=40.0.0,<42.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "cryptography",
+            "version_spec": "40.0.0,<42.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-016",
+          "title": "Unpinned Python Dependency: pyjwt",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package pyjwt version is not pinned, which may lead to instability",
+          "fix": "Pin pyjwt to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 34,
+          "code_snippet": "pyjwt>=2.7.0,<3.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "pyjwt",
+            "version_spec": "2.7.0,<3.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-017",
+          "title": "Unpinned Python Dependency: aiofiles",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package aiofiles version is not pinned, which may lead to instability",
+          "fix": "Pin aiofiles to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 37,
+          "code_snippet": "aiofiles>=23.0.0,<24.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "aiofiles",
+            "version_spec": "23.0.0,<24.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-018",
+          "title": "Unpinned Python Dependency: asyncio-throttle",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package asyncio-throttle version is not pinned, which may lead to instability",
+          "fix": "Pin asyncio-throttle to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 38,
+          "code_snippet": "asyncio-throttle>=1.0.2,<2.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "asyncio-throttle",
+            "version_spec": "1.0.2,<2.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-019",
+          "title": "Unpinned Python Dependency: typing-extensions",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package typing-extensions version is not pinned, which may lead to instability",
+          "fix": "Pin typing-extensions to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 41,
+          "code_snippet": "typing-extensions>=4.5.0,<5.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "typing-extensions",
+            "version_spec": "4.5.0,<5.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-020",
+          "title": "Unpinned Python Dependency: pydantic",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package pydantic version is not pinned, which may lead to instability",
+          "fix": "Pin pydantic to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 42,
+          "code_snippet": "pydantic>=2.0.0,<3.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "pydantic",
+            "version_spec": "2.0.0,<3.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-021",
+          "title": "Unpinned Python Dependency: safety",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package safety version is not pinned, which may lead to instability",
+          "fix": "Pin safety to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 45,
+          "code_snippet": "safety>=3.0.0,<4.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "safety",
+            "version_spec": "3.0.0,<4.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-022",
+          "title": "Unpinned Python Dependency: packaging",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package packaging version is not pinned, which may lead to instability",
+          "fix": "Pin packaging to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 46,
+          "code_snippet": "packaging>=23.0,<24.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "packaging",
+            "version_spec": "23.0,<24.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-023",
+          "title": "Unpinned Python Dependency: tqdm",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package tqdm version is not pinned, which may lead to instability",
+          "fix": "Pin tqdm to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 49,
+          "code_snippet": "tqdm>=4.65.0,<5.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "tqdm",
+            "version_spec": "4.65.0,<5.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-024",
+          "title": "Unpinned Python Dependency: tabulate",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package tabulate version is not pinned, which may lead to instability",
+          "fix": "Pin tabulate to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 50,
+          "code_snippet": "tabulate>=0.9.0,<1.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "tabulate",
+            "version_spec": "0.9.0,<1.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-025",
+          "title": "Unpinned Python Dependency: psutil",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package psutil version is not pinned, which may lead to instability",
+          "fix": "Pin psutil to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 51,
+          "code_snippet": "psutil>=5.9.0,<6.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "psutil",
+            "version_spec": "5.9.0,<6.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-026",
+          "title": "Unpinned Python Dependency: watchdog",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package watchdog version is not pinned, which may lead to instability",
+          "fix": "Pin watchdog to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 52,
+          "code_snippet": "watchdog>=3.0.0,<4.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "watchdog",
+            "version_spec": "3.0.0,<4.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-027",
+          "title": "Unpinned Python Dependency: importlib-metadata",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package importlib-metadata version is not pinned, which may lead to instability",
+          "fix": "Pin importlib-metadata to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 55,
+          "code_snippet": "importlib-metadata>=6.8.0,<7.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "importlib-metadata",
+            "version_spec": "6.8.0,<7.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-028",
+          "title": "Unpinned Python Dependency: stevedore",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package stevedore version is not pinned, which may lead to instability",
+          "fix": "Pin stevedore to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 56,
+          "code_snippet": "stevedore>=5.1.0,<6.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "stevedore",
+            "version_spec": "5.1.0,<6.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-029",
+          "title": "Unpinned Python Dependency: pluggy",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package pluggy version is not pinned, which may lead to instability",
+          "fix": "Pin pluggy to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 57,
+          "code_snippet": "pluggy>=1.2.0,<2.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "pluggy",
+            "version_spec": "1.2.0,<2.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-030",
+          "title": "Unpinned Python Dependency: diskcache",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package diskcache version is not pinned, which may lead to instability",
+          "fix": "Pin diskcache to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 60,
+          "code_snippet": "diskcache>=5.6.0,<6.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "diskcache",
+            "version_spec": "5.6.0,<6.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-031",
+          "title": "Unpinned Python Dependency: dnspython",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package dnspython version is not pinned, which may lead to instability",
+          "fix": "Pin dnspython to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 63,
+          "code_snippet": "dnspython>=2.4.0,<3.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "dnspython",
+            "version_spec": "2.4.0,<3.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-032",
+          "title": "Unpinned Python Dependency: lz4",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package lz4 version is not pinned, which may lead to instability",
+          "fix": "Pin lz4 to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 66,
+          "code_snippet": "lz4>=4.3.0,<5.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "lz4",
+            "version_spec": "4.3.0,<5.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        },
+        {
+          "id": "NJORD-DEPENDENCIES-OUTDATED_DEPENDENCY-033",
+          "title": "Unpinned Python Dependency: bandit",
+          "severity": "low",
+          "confidence": "medium",
+          "description": "Package bandit version is not pinned, which may lead to instability",
+          "fix": "Pin bandit to a specific version using == operator",
+          "reference": "https://owasp.org/www-community/vulnerabilities/Using_Components_with_Known_Vulnerabilities",
+          "vuln_type": "outdated_dependency",
+          "location": "requirements.txt",
+          "file_path": "requirements.txt",
+          "line_number": 69,
+          "code_snippet": "bandit>=1.7.0,<2.0.0",
+          "framework": "unknown",
+          "module": "dependencies",
+          "metadata": {
+            "package_name": "bandit",
+            "version_spec": "1.7.0,<2.0.0",
+            "cwe_codes": [
+              "CWE-1104"
+            ],
+            "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+            "normalized_type": "outdated_dependency"
+          }
+        }
+      ]
+    },
+    "njord_score": {
+      "score": 0,
+      "grade": "F",
+      "total_issues": 154,
+      "severity_breakdown": {
+        "critical": 3,
+        "high": 44,
+        "medium": 24,
+        "low": 83,
+        "info": 0
+      },
+      "recommendation": "Critical security issues found. Immediate action required.",
+      "next_steps": [
+        "URGENT: Fix 3 critical vulnerabilities immediately",
+        "Fix 44 high-severity vulnerabilities within 24 hours",
+        "Review all security findings in detail",
+        "Implement recommended fixes",
+        "Re-scan after fixes to verify resolution",
+        "Consider security training for the development team"
+      ]
+    },
+    "summary": {
+      "total_issues": 154,
+      "severity_breakdown": {
+        "critical": 3,
+        "high": 44,
+        "medium": 24,
+        "low": 83,
+        "info": 0
+      },
+      "modules_with_findings": 2,
+      "plugins_with_findings": 0
+    },
+    "ai_enhanced": false
+  },
+  "statistics": {
+    "total_vulnerabilities": 154,
+    "severity_distribution": {
+      "critical": 3,
+      "high": 44,
+      "medium": 24,
+      "low": 83,
+      "info": 0
+    },
+    "modules_executed": 4,
+    "scan_efficiency": "154/0.0 issues/second"
+  }
+}

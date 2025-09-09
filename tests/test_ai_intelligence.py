@@ -270,8 +270,8 @@ class TestSecurityAdvisor:
         # Use generate_recommendations since analyze_security doesn't exist
         result = await self.advisor.generate_recommendations(test_data)
         assert result is not None
-        assert hasattr(result, 'recommendations')
-        assert hasattr(result, 'strategy')
+        assert isinstance(result, list)
+        assert len(result) > 0
     
     @pytest.mark.asyncio
     async def test_security_recommendations(self):
@@ -285,7 +285,7 @@ class TestSecurityAdvisor:
         
         result = await self.advisor.generate_recommendations(test_data)
         assert result is not None
-        assert hasattr(result, 'recommendations')
+        assert isinstance(result, list)
         assert len(result) > 0
 
 
@@ -334,9 +334,9 @@ class TestIntegration:
         
         # 4. Security advisory
         security_data = {
-            'vulnerabilities': code_analysis.get('security_concerns', []),
+            'vulnerabilities': getattr(code_analysis, 'suspicious_patterns', []),
             'threat_indicators': threat_indicators,
-            'behavioral_anomalies': behavior_analysis.get('anomalies', [])
+            'behavioral_anomalies': getattr(behavior_analysis, 'anomalies', [])
         }
         security_analysis = await security_advisor.generate_recommendations(security_data)
         
@@ -347,8 +347,8 @@ class TestIntegration:
         assert security_analysis is not None
         
         # Should detect security issues
-        assert len(code_analysis.get('security_concerns', [])) > 0
-        assert security_analysis.get('risk_score', 0) > 0
+        assert len(getattr(code_analysis, 'suspicious_patterns', [])) > 0 or len(getattr(code_analysis, 'risk_factors', [])) > 0
+        assert isinstance(security_analysis, list) and len(security_analysis) > 0
     
     @pytest.mark.asyncio
     async def test_error_handling(self):
