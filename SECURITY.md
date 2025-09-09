@@ -62,16 +62,7 @@ If you have ideas for remediation
 
 ---
 
-## 🏆 **Bug Bounty Program**
-
-### 💰 **Reward Structure**
-
-| Severity | Description | Reward |
-|----------|-------------|---------|
-| **🔴 Critical** | RCE, Authentication Bypass | $500 - $2000 |
-| **🟠 High** | Privilege Escalation, Data Exposure | $200 - $1000 |
-| **🟡 Medium** | XSS, CSRF, Information Disclosure | $50 - $500 |
-| **🔵 Low** | Minor security issues | $25 - $200 |
+## 🛡️ **Community Security Research**
 
 ### ✅ **Scope**
 
@@ -91,7 +82,7 @@ If you have ideas for remediation
 
 ### 🎖️ **Hall of Fame**
 
-We maintain a hall of fame for security researchers:
+We maintain a hall of fame for security researchers who contribute to the community:
 
 #### **🏆 2024 Security Champions**
 *Coming soon - be the first!*
