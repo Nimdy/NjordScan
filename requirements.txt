@@ -67,3 +67,9 @@ lz4>=4.3.0,<5.0.0
 
 # Additional Security Tools
 bandit>=1.7.0,<2.0.0
+
+# AI/ML Dependencies for NPM Attack Detection
+numpy>=1.24.0,<2.0.0
+scipy>=1.10.0,<2.0.0
+scikit-learn>=1.3.0,<2.0.0
+difflib2>=0.1.0,<1.0.0

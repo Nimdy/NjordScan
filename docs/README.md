@@ -13,6 +13,7 @@ Welcome to the comprehensive documentation for NjordScan - The Ultimate Security
 
 ### User Guide
 - [**CLI Reference**](user-guide/cli-reference.md) - Complete command-line interface documentation
+- [**AI NPM Attack Detection**](ai-npm-detection.md) - **NEW!** AI-powered npm package attack detection
 - [**Vulnerability Types**](security/vulnerability-types.md) - Comprehensive vulnerability detection types
 
 ### Advanced Topics
@@ -59,6 +60,7 @@ NjordScan is a comprehensive security scanner designed specifically for modern w
 - **🔍 Static Analysis** - Deep code analysis for security vulnerabilities
 - **⚡ Dynamic Testing** - Runtime security testing and penetration testing
 - **🤖 AI-Enhanced Detection** - Machine learning-powered vulnerability detection
+- **🛡️ AI NPM Attack Detection** - **NEW!** Advanced detection of AI-generated malicious packages
 - **🛡️ Threat Intelligence** - Real-time CVE and MITRE ATT&CK integration
 - **📊 Behavioral Analysis** - Advanced behavioral pattern detection
 - **🔌 Plugin System** - Extensible architecture with community plugins
