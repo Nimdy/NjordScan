@@ -21,6 +21,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
     gcc \
     g++ \
+    # AI/ML dependencies
+    python3-dev \
+    python3-numpy \
+    python3-scipy \
+    python3-sklearn \
+    # Additional dependencies for AI detection
+    libblas-dev \
+    liblapack-dev \
+    libatlas-base-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Create and set working directory
@@ -57,6 +66,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl3 \
     curl \
     git \
+    # AI/ML runtime dependencies
+    python3-numpy \
+    python3-scipy \
+    python3-sklearn \
+    # Additional runtime dependencies
+    libblas3 \
+    liblapack3 \
+    libatlas3-base \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 

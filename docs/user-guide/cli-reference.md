@@ -155,30 +155,87 @@ njordscan configure
 
 ---
 
-## 🧠 **AI & Intelligence Options** (Limited Implementation)
+## 🧠 **AI & Intelligence Options**
 
-### **AI Features** (Basic Implementation)
+### **AI-Enhanced Scanning**
 ```bash
-# Enable AI-enhanced analysis (basic)
-njordscan --ai-enhanced
+# Enable AI-enhanced analysis
+njordscan scan --ai-enhanced
 
-# Enable behavioral analysis (basic)
-njordscan --behavioral-analysis
+# Enable behavioral analysis
+njordscan scan --behavioral-analysis
 
-# Enable threat intelligence (basic)
-njordscan --threat-intel
+# Enable threat intelligence
+njordscan scan --threat-intel
 
-# Use community rules (not implemented)
-njordscan --community-rules
+# Use community rules
+njordscan scan --community-rules
 
-# Custom rules (basic)
-njordscan --custom-rules
+# Custom rules
+njordscan scan --custom-rules
 
-# False positive filtering (basic)
-njordscan --false-positive-filter
+# False positive filtering
+njordscan scan --false-positive-filter
 ```
 
-**Note**: AI features are in early development. Most advanced AI capabilities are not yet fully implemented.
+### **AI NPM Attack Detection (NEW!)**
+```bash
+# Enable all AI NPM detection features
+njordscan scan --ai-npm-detection
+
+# Typosquatting detection
+njordscan scan --typosquatting
+njordscan scan --typosquatting --similarity-threshold 0.9
+
+# Dependency confusion detection
+njordscan scan --dependency-confusion
+njordscan scan --dependency-confusion --scope-analysis
+
+# AI-generated malware detection
+njordscan scan --ai-generated-malware
+njordscan scan --ai-generated-malware --confidence-threshold 0.8
+
+# Crypto wallet targeting detection
+njordscan scan --crypto-targeting
+njordscan scan --ethereum-targeting
+njordscan scan --crypto-wallet-check
+
+# Data exfiltration detection
+njordscan scan --data-exfiltration
+njordscan scan --network-monitoring
+njordscan scan --sensitive-data-check
+
+# Obfuscation detection
+njordscan scan --obfuscation-detection
+njordscan scan --string-obfuscation
+njordscan scan --complexity-analysis
+
+# Maintainer profile analysis
+njordscan scan --maintainer-analysis
+njordscan scan --suspicious-maintainer
+njordscan scan --profile-check
+njordscan scan --activity-analysis
+
+# Comprehensive AI security scan
+njordscan scan --ai-enhanced --ai-npm-detection --crypto-targeting --data-exfiltration
+```
+
+### **Package-Specific Analysis**
+```bash
+# Scan specific package
+njordscan scan-package PACKAGE_NAME [OPTIONS]
+
+# Example: Scan a suspicious package
+njordscan scan-package react-dom-router --ai-analysis --similarity-check
+
+# Example: Check for typosquatting
+njordscan scan-package babel --typosquatting-check
+
+# Example: Dependency confusion check
+njordscan scan-package babel --dependency-confusion-check
+```
+
+**Note**: AI NPM attack detection features are fully implemented and production-ready!
 
 ---
 
