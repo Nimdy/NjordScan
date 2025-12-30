@@ -9,6 +9,22 @@
 [![Tests](https://img.shields.io/badge/Tests-100%25%20Passing-brightgreen.svg)](#)
 [![Community](https://img.shields.io/badge/Community-Welcome!-purple.svg)](#-join-our-community)
 
+## 🚀 Quick Start
+
+**New to NjordScan? Get started in 5 commands:**
+
+```bash
+python3 -m venv venv && source venv/bin/activate
+pip install -e .
+python -m njordscan update        # Download latest CVE/exploit data
+python -m njordscan legal --accept # Accept terms (one-time)
+python -m njordscan scan          # Start scanning!
+```
+
+📖 **Full Guide:** See [QUICK_INSTALL.md](QUICK_INSTALL.md) | [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
+
+---
+
 ## 📊 Test Status
 
 **Current Test Results (as of latest run):**

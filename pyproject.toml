@@ -67,7 +67,6 @@ dependencies = [
     
     # Web Scraping and HTML Processing
     "beautifulsoup4>=4.11.0,<5.0.0",
-    "lxml>=4.9.0,<5.0.0",
     
     # Template Engine and Reporting
     "jinja2>=3.1.0,<4.0.0",
