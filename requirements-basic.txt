@@ -19,8 +19,14 @@ toml>=0.10.2,<1.0.0
 python-dotenv>=1.0.0,<2.0.0
 
 # Web Scraping and HTML/XML Processing
+# Note: lxml is OPTIONAL - beautifulsoup4 works as the default parser
+# Only install lxml if you need advanced XML parsing features
+# Installation: pip install njordscan[advanced-parsing]
 beautifulsoup4>=4.11.0,<5.0.0
-lxml>=4.9.0,<5.0.0
+html5lib>=1.1,<2.0.0
+
+# OPTIONAL: Advanced parsing (requires system libraries on Linux)
+# lxml>=4.9.0,<5.0.0
 
 # Template Engine and Reporting
 jinja2>=3.1.0,<4.0.0
