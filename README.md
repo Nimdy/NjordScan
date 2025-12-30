@@ -11,17 +11,26 @@
 
 ## 🚀 Quick Start
 
+**⚠️ IMPORTANT: Always use a virtual environment to avoid dependency conflicts!**
+
 **New to NjordScan? Get started in 5 commands:**
 
 ```bash
-python3 -m venv venv && source venv/bin/activate
+# Step 1: Create virtual environment (REQUIRED!)
+python3 -m venv venv && source venv/bin/activate  # Linux/Mac
+# OR: venv\Scripts\activate  # Windows
+
+# Step 2-5: Install and run
 pip install -e .
 python -m njordscan update        # Download latest CVE/exploit data
 python -m njordscan legal --accept # Accept terms (one-time)
-python -m njordscan scan          # Start scanning!
+python -m njordscan scan .        # Start scanning!
 ```
 
-📖 **Full Guide:** See [QUICK_INSTALL.md](QUICK_INSTALL.md) | [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
+📖 **Complete Guides:**
+- 🆕 **[BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)** - Step-by-step for absolute beginners
+- ⚡ **[QUICK_INSTALL.md](QUICK_INSTALL.md)** - Copy/paste installation
+- 📚 **[Full Documentation](docs/README.md)** - Comprehensive reference
 
 ---
 
@@ -122,20 +131,27 @@ python -m pytest tests/ --cov=njordscan --cov-report=html
 
 **Every contribution matters, no matter how small!** 🚀
 
-## 🚀 Quick Start
+## � Usage Examples
 
+**⚠️ Note:** Always activate your virtual environment first:
 ```bash
-# Install NjordScan
-pip install njordscan
+source venv/bin/activate  # Linux/Mac
+# OR: venv\Scripts\activate  # Windows
+```
 
+### Basic Commands
+```bash
 # Basic scan
-njordscan scan .
+python -m njordscan scan .
+
+# Scan a website
+python -m njordscan scan https://example.com
 
 # Advanced scan with AI
-njordscan scan . --mode deep --ai-enhanced --behavioral-analysis
+python -m njordscan scan . --mode deep --ai-enhanced --behavioral-analysis
 
 # Penetration testing
-njordscan scan http://localhost:3000 --mode enterprise --pentest
+python -m njordscan scan http://localhost:3000 --mode enterprise --pentest
 ```
 
 ### 🐳 Docker Usage
@@ -198,17 +214,44 @@ NjordScan now includes cutting-edge AI-powered detection for sophisticated npm p
 
 ## 🔧 Installation Options
 
+### ⚠️ ALWAYS Use Virtual Environment (REQUIRED)
+
+**Why?** Virtual environments prevent dependency conflicts and keep your system Python clean.
+
 ### Standard Installation
 ```bash
+# Step 1: Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# OR: venv\Scripts\activate  # Windows
+
+# Step 2: Install NjordScan
 pip install njordscan
 ```
 
-### Development Installation
+### Development Installation (Recommended for Contributors)
 ```bash
+# Step 1: Clone repository
 git clone https://github.com/nimdy/njordscan.git
 cd njordscan
+
+# Step 2: Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# OR: venv\Scripts\activate  # Windows
+
+# Step 3: Install in development mode
 pip install -e .
+
+# Step 4: Update vulnerability database
+python -m njordscan update
+
+# Step 5: Accept legal terms (one-time)
+python -m njordscan legal --accept
 ```
+
+### First-Time User?
+📖 **Read the [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)** - Complete walkthrough for absolute beginners!
 
 ### Troubleshooting
 - [**Wheel Installation Issues**](docs/getting-started/WHEEL_INSTALLATION_GUIDE.md)
@@ -234,53 +277,62 @@ pip install -e .
 
 ### Basic Scanning
 ```bash
-# Scan current directory
-njordscan scan .
+# ALWAYS activate your venv first!
+source venv/bin/activate  # Linux/Mac
 
-# Scan specific URL
-njordscan scan https://example.com
+# Scan current directory
+python -m njordscan scan .
+
+# Scan specific URL (scans live website!)
+python -m njordscan scan https://example.com
 
 # Scan with specific framework
-njordscan scan . --framework nextjs
+python -m njordscan scan . --framework nextjs
+
+# Exclude common folders
+python -m njordscan scan . --exclude venv --exclude node_modules
 ```
 
 ### Advanced Scanning
 ```bash
 # AI-enhanced deep scan
-njordscan scan . --mode deep --ai-enhanced --behavioral-analysis
+python -m njordscan scan . --mode deep --ai-enhanced --behavioral-analysis
 
 # AI NPM Attack Detection (NEW!)
-njordscan scan . --ai-npm-detection --typosquatting --dependency-confusion
+python -m njordscan scan . --ai-npm-detection --typosquatting --dependency-confusion
 
 # Penetration testing mode
-njordscan scan http://localhost:3000 --pentest --threat-intel
+python -m njordscan scan http://localhost:3000 --pentest --threat-intel
 
 # Custom output format
-njordscan scan . --format json --output security-report.json
+python -m njordscan scan . --format json --output security-report.json
+
+# HTML report
+python -m njordscan scan . --format html --output report.html
 ```
 
 ### AI NPM Attack Detection
 ```bash
 # Scan for AI-generated malicious packages
-njordscan scan . --ai-npm-detection --ai-generated-malware
+python -m njordscan scan . --ai-npm-detection --ai-generated-malware
 
 # Detect typosquatting and dependency confusion
-njordscan scan . --typosquatting --dependency-confusion --maintainer-analysis
+python -m njordscan scan . --typosquatting --dependency-confusion --maintainer-analysis
 
 # Comprehensive AI security scan
-njordscan scan . --ai-enhanced --ai-npm-detection --crypto-targeting --data-exfiltration
+python -m njordscan scan . --ai-enhanced --ai-npm-detection --crypto-targeting --data-exfiltration
 
 # Scan specific package for threats
-njordscan scan-package react-dom-router --ai-analysis --similarity-check
+python -m njordscan scan-package react-dom-router --ai-analysis --similarity-check
 ```
 
 ### CI/CD Integration
 ```bash
 # Quick scan for CI/CD
-njordscan scan . --mode quick --ci --fail-on high
+python -m njordscan scan . --mode quick --ci --fail-on high
 
 # Quality gate integration
-njordscan scan . --quality-gate policy.yaml --fail-on critical
+python -m njordscan scan . --quality-gate policy.yaml --fail-on critical
 ```
 
 ## 🤝 Contributing
@@ -293,7 +345,14 @@ njordscan scan . --quality-gate policy.yaml --fail-on critical
 ```bash
 git clone https://github.com/nimdy/njordscan.git
 cd njordscan
+
+# ALWAYS create a virtual environment!
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# OR: venv\Scripts\activate  # Windows
+
 pip install -e .
+python -m njordscan update
 ```
 
 **2. Make Your Changes**
