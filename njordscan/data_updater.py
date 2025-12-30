@@ -10,6 +10,7 @@ import aiohttp
 import json
 import hashlib
 import time
+import os
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
@@ -63,7 +64,7 @@ class VulnerabilityDataManager:
             ),
             'npm_security': UpdateSource(
                 name='npm_security',
-                url='https://api.npmjs.org/advisories',
+                url='https://api.github.com/advisories?ecosystem=npm&per_page=100',
                 update_frequency=6  # Update every 6 hours
             ),
             'github_advisories': UpdateSource(
@@ -71,14 +72,18 @@ class VulnerabilityDataManager:
                 url='https://api.github.com/advisories',
                 update_frequency=12
             ),
-            'snyk_js': UpdateSource(
-                name='snyk_js',
-                url='https://snyk.io/api/v1/vulnerabilities/npm',
-                update_frequency=24
-            ),
+            # Snyk requires API key - disabled by default
+            # To enable: set SNYK_API_TOKEN environment variable
+            # 'snyk_js': UpdateSource(
+            #     name='snyk_js',
+            #     url='https://snyk.io/api/v1/vulnerabilities/npm',
+            #     update_frequency=24,
+            #     api_key=os.environ.get('SNYK_API_TOKEN'),
+            #     enabled=bool(os.environ.get('SNYK_API_TOKEN'))
+            # ),
             'mitre_attck': UpdateSource(
                 name='mitre_attck',
-                url='https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json',
+                url='https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack.json',
                 update_frequency=24  # Update daily
             ),
             'nextjs_security': UpdateSource(
@@ -164,7 +169,27 @@ class VulnerabilityDataManager:
                 if response.status != 200:
                     return {'success': False, 'error': f'HTTP {response.status}'}
                 
-                data = await response.json()
+                # Handle different content types
+                content_type = response.headers.get('Content-Type', '')
+                
+                if 'json' in content_type or source.name == 'mitre_attck':
+                    # Try JSON first (MITRE returns text/plain but is actually JSON)
+                    try:
+                        data = await response.json()
+                    except Exception as e:
+                        # If JSON fails, try text
+                        text_data = await response.text()
+                        try:
+                            data = json.loads(text_data)
+                        except:
+                            return {'success': False, 'error': f'Could not parse response: {str(e)}'}
+                else:
+                    # For other types, get text and try to parse
+                    text_data = await response.text()
+                    try:
+                        data = json.loads(text_data)
+                    except:
+                        return {'success': False, 'error': 'Response is not JSON'}
                 
                 # Save raw data to cache
                 cache_file = self.cache_dir / f'{source.name}_cache.json'
@@ -517,30 +542,67 @@ class VulnerabilityDataManager:
             })
         return normalized
     
-    def _normalize_npm_advisories(self, advisories: Dict) -> Dict[str, Any]:
-        """Normalize npm audit advisories format."""
+    def _normalize_npm_advisories(self, advisories) -> Dict[str, Any]:
+        """Normalize npm audit advisories format (handles both dict and list formats)."""
         packages = {}
         
-        for advisory_id, advisory in advisories.items():
-            package_name = advisory.get('module_name')
-            if not package_name:
-                continue
+        # Handle GitHub Advisory format (list)
+        if isinstance(advisories, list):
+            for advisory in advisories:
+                # Extract package name from affected packages
+                affected = advisory.get('vulnerabilities', [])
+                if not affected:
+                    continue
+                    
+                for vuln_pkg in affected:
+                    # Handle both dict and other formats
+                    if isinstance(vuln_pkg, dict):
+                        pkg_info = vuln_pkg.get('package', {})
+                        package_name = pkg_info.get('name') if isinstance(pkg_info, dict) else None
+                    else:
+                        continue
+                        
+                    if not package_name:
+                        continue
+                    
+                    vuln = {
+                        'id': advisory.get('ghsa_id') or advisory.get('id'),
+                        'cve_ids': [advisory.get('cve_id')] if advisory.get('cve_id') else [],
+                        'title': advisory.get('summary'),
+                        'severity': advisory.get('severity', 'unknown').lower(),
+                        'vulnerable_versions': vuln_pkg.get('vulnerable_version_range'),
+                        'patched_versions': [vuln_pkg.get('first_patched_version')] if vuln_pkg.get('first_patched_version') else [],
+                        'published_at': advisory.get('published_at'),
+                        'references': advisory.get('references', [])
+                    }
+                    
+                    if package_name not in packages:
+                        packages[package_name] = {'vulnerabilities': []}
+                    
+                    packages[package_name]['vulnerabilities'].append(vuln)
+        
+        # Handle original npm advisories format (dict)
+        elif isinstance(advisories, dict):
+            for advisory_id, advisory in advisories.items():
+                package_name = advisory.get('module_name')
+                if not package_name:
+                    continue
+                    
+                vuln = {
+                    'id': advisory_id,
+                    'cve_ids': advisory.get('cves', []),
+                    'title': advisory.get('title'),
+                    'severity': advisory.get('severity', 'unknown').lower(),
+                    'vulnerable_versions': advisory.get('vulnerable_versions'),
+                    'patched_versions': advisory.get('patched_versions'),
+                    'published_at': advisory.get('created'),
+                    'references': [advisory.get('url')] if advisory.get('url') else []
+                }
                 
-            vuln = {
-                'id': advisory_id,
-                'cve_ids': advisory.get('cves', []),
-                'title': advisory.get('title'),
-                'severity': advisory.get('severity', 'unknown').lower(),
-                'vulnerable_versions': advisory.get('vulnerable_versions'),
-                'patched_versions': advisory.get('patched_versions'),
-                'published_at': advisory.get('created'),
-                'references': [advisory.get('url')] if advisory.get('url') else []
-            }
-            
-            if package_name not in packages:
-                packages[package_name] = {'vulnerabilities': []}
-            
-            packages[package_name]['vulnerabilities'].append(vuln)
+                if package_name not in packages:
+                    packages[package_name] = {'vulnerabilities': []}
+                
+                packages[package_name]['vulnerabilities'].append(vuln)
         
         return packages
     
