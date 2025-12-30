@@ -13,10 +13,10 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install system dependencies needed for building Python packages
+# Note: lxml dependencies (libxml2-dev, libxslt1-dev) are optional
+# Install them if you need advanced XML parsing: docker build --build-arg INSTALL_LXML=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libxml2-dev \
-    libxslt1-dev \
     libffi-dev \
     libssl-dev \
     gcc \
@@ -39,7 +39,13 @@ WORKDIR /app
 COPY requirements.txt pyproject.toml setup.py ./
 
 # Install Python dependencies
+# Note: lxml is optional and commented out in requirements.txt
+# BeautifulSoup4 will use html5lib as the default parser
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Optional: Install lxml if you need advanced XML parsing
+# Uncomment the next line to enable lxml (requires adding libxml2-dev, libxslt1-dev above)
+# RUN pip install --no-cache-dir lxml>=4.9.0,<5.0.0 || echo "Warning: lxml installation failed, continuing without it"
 
 # Copy the entire project
 COPY . .
@@ -59,9 +65,8 @@ ENV PYTHONUNBUFFERED=1 \
     HOME="/home/njordscan"
 
 # Install only runtime system dependencies
+# Note: lxml libraries (libxml2, libxslt1.1) removed - now optional
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libxml2 \
-    libxslt1.1 \
     libffi8 \
     libssl3 \
     curl \
