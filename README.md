@@ -150,7 +150,8 @@ python -m njordscan scan https://example.com
 # Advanced scan with AI
 python -m njordscan scan . --mode deep --ai-enhanced --behavioral-analysis
 
-# Penetration testing
+# Framework-specific pentesting (React/Next.js/Vite) - requires permission!
+# ⚠️ Only use --pentest on systems you own or have explicit permission to test
 python -m njordscan scan http://localhost:3000 --mode enterprise --pentest
 ```
 
@@ -301,7 +302,8 @@ python -m njordscan scan . --mode deep --ai-enhanced --behavioral-analysis
 # AI NPM Attack Detection (NEW!)
 python -m njordscan scan . --ai-npm-detection --typosquatting --dependency-confusion
 
-# Penetration testing mode
+# Framework-specific pentesting (React/Next.js/Vite)
+# ⚠️ WARNING: Only use on systems you own or have written permission
 python -m njordscan scan http://localhost:3000 --pentest --threat-intel
 
 # Custom output format
