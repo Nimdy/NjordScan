@@ -52,9 +52,9 @@ def show_pentest_warning() -> bool:
     """Show ethical warning for pentest mode."""
     warning_text = Text()
     warning_text.append("⚠️  PENTEST MODE WARNING ⚠️\n\n", style="bold red")
-    warning_text.append("Pentest mode enables aggressive security testing that may:\n", style="yellow")
-    warning_text.append("• Generate significant network traffic\n", style="white")
-    warning_text.append("• Test for vulnerabilities that could affect system stability\n", style="white")
+    warning_text.append("Pentest mode enables aggressive framework-specific security testing that may:\n", style="yellow")
+    warning_text.append("• Test React, Next.js, and Vite apps with exploit payloads\n", style="white")
+    warning_text.append("• Attempt authentication bypasses and middleware exploits\n", style="white")
     warning_text.append("• Trigger security monitoring systems\n", style="white")
     warning_text.append("\nOnly use pentest mode on systems you own or have explicit permission to test.\n\n", style="red")
     warning_text.append("Do you have permission to test this target? (y/N): ", style="bold white")
@@ -303,7 +303,7 @@ def main(ctx):
 @click.option('--verbose', '-v', is_flag=True, help='Verbose output')
 @click.option('--quiet', '-q', is_flag=True, help='Quiet mode (errors only)')
 @click.option('--no-cache', is_flag=True, help='Disable caching')
-@click.option('--pentest', is_flag=True, help='Enable pentest mode (requires ethical consent)')
+@click.option('--pentest', is_flag=True, help='Enable framework-specific pentest mode for React/Next.js/Vite (requires ethical consent)')
 @click.option('--explain', help='Explain a specific vulnerability by ID')
 @click.option('--interactive', is_flag=True, help='Launch interactive mode with setup wizard')
 @click.option('--theme', default='default', 
