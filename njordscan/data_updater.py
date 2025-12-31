@@ -457,20 +457,193 @@ class VulnerabilityDataManager:
         return npm_data
     
     async def _process_ai_libraries(self) -> Dict[str, Any]:
-        """Process AI library-specific vulnerabilities."""
+        """Process AI library-specific vulnerabilities with comprehensive AI security patterns."""
         ai_data = {
             'libraries': {
                 'openai': [],
                 'anthropic': [],
                 'langchain': [],
-                'huggingface': []
+                'huggingface': [],
+                'cohere': [],
+                'google_ai': [],
+                'azure_openai': []
             },
             'patterns': {
-                'api_key_exposure': [],
-                'prompt_injection': [],
-                'unsafe_execution': []
+                'api_key_exposure': [
+                    # OpenAI keys
+                    r'sk-[a-zA-Z0-9]{48}',
+                    r'sk-[a-zA-Z0-9]{20}T3BlbkFJ[a-zA-Z0-9]{20}',  # Legacy format
+                    r'sk-proj-[a-zA-Z0-9_-]{43,}',  # Project keys
+                    r'sk-org-[a-zA-Z0-9_-]{43,}',  # Org keys
+                    r'OPENAI_API_KEY\s*[=:]\s*["\']?sk-[a-zA-Z0-9]{20,}',
+                    
+                    # Anthropic keys
+                    r'sk-ant-api03-[a-zA-Z0-9_-]{95,}',
+                    r'sk-ant-[a-zA-Z0-9\-_]{95,}',
+                    r'ANTHROPIC_API_KEY\s*[=:]\s*["\']?sk-ant-',
+                    
+                    # HuggingFace tokens
+                    r'hf_[a-zA-Z0-9]{30,}',
+                    r'HUGGINGFACE_TOKEN\s*[=:]\s*["\']?hf_',
+                    r'HF_TOKEN\s*[=:]\s*["\']?hf_',
+                    
+                    # Google AI
+                    r'AIzaSy[a-zA-Z0-9_-]{33}',
+                    r'GOOGLE_AI_API_KEY\s*[=:]\s*["\']?AIza',
+                    
+                    # Cohere
+                    r'[a-zA-Z0-9]{40}-[a-zA-Z0-9]{40}',  # Cohere API key format
+                    r'COHERE_API_KEY\s*[=:]\s*',
+                    
+                    # Azure OpenAI
+                    r'AZURE_OPENAI_KEY\s*[=:]\s*',
+                    r'AZURE_OPENAI_ENDPOINT\s*[=:]\s*https?://[^\\s]+\.openai\.azure\.com'
+                ],
+                'prompt_injection': [
+                    # Classic injection patterns
+                    r'Ignore\s+(all\s+)?(previous|prior|above)\s+instructions?',
+                    r'Disregard\s+(all\s+)?(previous|prior|above)',
+                    r'Override\s+system\s+prompt',
+                    r'Forget\s+(all\s+)?(previous|prior)\s+instructions?',
+                    
+                    # Context manipulation
+                    r'---\s*END\s+(OF\s+)?CONTEXT\s*---',
+                    r'<\s*/?\s*system\s*>',
+                    r'<\s*/?\s*instructions?\s*>',
+                    r'\[\s*SYSTEM\s*\]',
+                    
+                    # Role confusion
+                    r'You\s+are\s+now\s+(in\s+)?(developer|admin|debug)\s+mode',
+                    r'Switch\s+to\s+(developer|admin|debug)\s+mode',
+                    r'Enable\s+(developer|admin|debug)\s+mode',
+                    r'Act\s+as\s+if\s+you\s+(are|were)',
+                    
+                    # Jailbreak attempts
+                    r'DAN\s+mode',  # Do Anything Now
+                    r'Developer\s+Mode\s+enabled',
+                    r'Simulation\s+Mode',
+                    r'Unrestricted\s+Mode',
+                    
+                    # Instruction termination
+                    r'Stop\s+following\s+guidelines',
+                    r'Bypass\s+content\s+policy',
+                    r'Ignore\s+safety\s+constraints',
+                    
+                    # Payload markers
+                    r'New\s+instruction[s]?\s*:',
+                    r'Real\s+instruction[s]?\s*:',
+                    r'Actual\s+task\s*:'
+                ],
+                'unsafe_execution': [
+                    # Direct code execution
+                    r'eval\s*\(\s*[^)]*(?:completion|response|output|result|answer)',
+                    r'exec\s*\(\s*[^)]*(?:completion|response|output|result|answer)',
+                    r'Function\s*\(\s*[^)]*(?:ai_output|prompt_result|completion)',
+                    r'new\s+Function\s*\(\s*[^)]*(?:ai_output|prompt_result)',
+                    
+                    # Shell execution
+                    r'child_process\.exec\s*\([^)]*(?:completion|response)',
+                    r'subprocess\.(?:run|call|Popen)\s*\([^)]*(?:completion|response)',
+                    r'os\.system\s*\([^)]*(?:completion|response)',
+                    r'shell_exec\s*\([^)]*(?:completion|response)',
+                    
+                    # Template injection
+                    r'template\.render\s*\([^)]*(?:completion|response)',
+                    r'eval_template\s*\([^)]*(?:ai_output|prompt)',
+                    
+                    # Unsafe deserialization
+                    r'pickle\.loads\s*\([^)]*(?:completion|response)',
+                    r'json\.loads\s*\([^)]*(?:completion|response)(?!\s*\))',  # Without validation
+                    r'yaml\.(?:load|unsafe_load)\s*\([^)]*(?:completion|response)'
+                ],
+                'data_leakage': [
+                    # Sensitive data in prompts
+                    r'prompt\s*[=:]\s*["\'][^"\']*(?:password|secret|token|key|api_key)',
+                    r'(?:messages|context)\s*\.\s*append\s*\([^)]*(?:env\.|process\.env)',
+                    r'(?:prompt|message)\s*\+\s*(?:password|secret|token)',
+                    
+                    # Logging AI responses with sensitive data
+                    r'console\.log\s*\([^)]*(?:completion|response).*(?:token|key)',
+                    r'logger\.(?:info|debug|warn)\s*\([^)]*(?:completion|response)',
+                    
+                    # Database storage without sanitization
+                    r'db\.(?:insert|save|create)\s*\([^)]*(?:completion|response)',
+                    r'\.(?:save|insert)\s*\(\s*\{[^}]*completion[^}]*\}'
+                ],
+                'token_manipulation': [
+                    # Token stealing
+                    r'(?:openai|anthropic)\.api_key\s*=\s*(?:input|prompt|user)',
+                    r'Authorization\s*:\s*Bearer\s*\$\{[^}]*(?:input|user|prompt)',
+                    
+                    # Token exfiltration
+                    r'fetch\s*\([^)]*\).*\.then.*api_key',
+                    r'axios\.post\s*\([^)]*[^)]*api_key',
+                    r'requests\.post\s*\([^)]*[^)]*api_key',
+                    
+                    # Environment variable manipulation
+                    r'process\.env\.OPENAI_API_KEY\s*=',
+                    r'os\.environ\[[\'"](OPENAI|ANTHROPIC)_API_KEY[\'"]\]\s*='
+                ],
+                'model_abuse': [
+                    # Excessive API calls
+                    r'while\s*\(\s*true\s*\).*(?:openai|anthropic|completion)',
+                    r'for\s*\(.*\).*(?:createCompletion|chat\.completions)',
+                    r'setInterval\s*\([^)]*(?:completion|chat\.completions)',
+                    
+                    # No rate limiting
+                    r'(?:openai|anthropic)\.(?:chat\.)?completions\.create(?!\s*\).*catch)',
+                    
+                    # Cost manipulation
+                    r'max_tokens\s*:\s*(?:100000|Infinity|Number\.MAX)',
+                    r'temperature\s*:\s*[2-9]',  # Unusual temperature values
+                    
+                    # Model hijacking
+                    r'model\s*:\s*["\'][^"\']*(?:\$\{|user_input|prompt)'
+                ],
+                'system_prompt_extraction': [
+                    # Attempts to extract system prompts
+                    r'(?:print|echo|output|return|say)\s+(?:your\s+)?(?:system\s+)?(?:prompt|instructions)',
+                    r'What\s+(?:are|were)\s+your\s+(?:original\s+)?instructions',
+                    r'Repeat\s+your\s+(?:system\s+)?(?:prompt|instructions)',
+                    r'Show\s+me\s+your\s+(?:system\s+)?prompt',
+                    
+                    # Hidden instruction revelation
+                    r'Reveal\s+hidden\s+instructions',
+                    r'Display\s+your\s+programming',
+                    r'What\s+are\s+you\s+not\s+allowed\s+to\s+do'
+                ],
+                'vector_db_injection': [
+                    # Vector database manipulation
+                    r'embedding\s*=.*(?:eval|exec)\s*\(',
+                    r'vector_store\.(?:add|insert).*(?:<script|javascript:)',
+                    r'chromadb\.add.*(?:prompt_injection|malicious)',
+                    r'pinecone\.upsert.*eval\s*\(',
+                    
+                    # Retrieval poisoning
+                    r'similarity_search.*(?:ORDER\s+BY|UNION\s+SELECT)',
+                    r'query_vector.*(?:\$\{|template)'
+                ],
+                'chain_exploitation': [
+                    # LangChain exploitation
+                    r'LLMChain\s*\([^)]*verbose\s*=\s*True',  # Debug mode exposure
+                    r'\.run\s*\([^)]*(?:eval|exec)',
+                    r'AgentExecutor.*allow_dangerous',
+                    
+                    # Tool injection
+                    r'tools\s*=\s*\[.*eval.*\]',
+                    r'Tool\s*\([^)]*func\s*=\s*(?:eval|exec)',
+                    
+                    # Memory manipulation
+                    r'memory\.(?:save_context|chat_memory).*(?:password|secret|token)'
+                ]
             },
-            'last_updated': datetime.now().isoformat()
+            'last_updated': datetime.now().isoformat(),
+            'note': 'Comprehensive AI security patterns covering OWASP Top 10 for LLM Applications',
+            'references': [
+                'https://owasp.org/www-project-top-10-for-large-language-model-applications/',
+                'https://atlas.mitre.org/matrices/ATLAS',
+                'https://learnprompting.org/docs/prompt_hacking/injection'
+            ]
         }
         
         # Process GitHub advisories for AI libraries

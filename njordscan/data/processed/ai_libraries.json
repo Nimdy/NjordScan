@@ -3,12 +3,128 @@
     "openai": [],
     "anthropic": [],
     "langchain": [],
-    "huggingface": []
+    "huggingface": [],
+    "cohere": [],
+    "google_ai": [],
+    "azure_openai": []
   },
   "patterns": {
-    "api_key_exposure": [],
-    "prompt_injection": [],
-    "unsafe_execution": []
+    "api_key_exposure": [
+      "sk-[a-zA-Z0-9]{48}",
+      "sk-[a-zA-Z0-9]{20}T3BlbkFJ[a-zA-Z0-9]{20}",
+      "sk-proj-[a-zA-Z0-9_-]{43,}",
+      "sk-org-[a-zA-Z0-9_-]{43,}",
+      "OPENAI_API_KEY\\s*[=:]\\s*[\"\\']?sk-[a-zA-Z0-9]{20,}",
+      "sk-ant-api03-[a-zA-Z0-9_-]{95,}",
+      "sk-ant-[a-zA-Z0-9\\-_]{95,}",
+      "ANTHROPIC_API_KEY\\s*[=:]\\s*[\"\\']?sk-ant-",
+      "hf_[a-zA-Z0-9]{30,}",
+      "HUGGINGFACE_TOKEN\\s*[=:]\\s*[\"\\']?hf_",
+      "HF_TOKEN\\s*[=:]\\s*[\"\\']?hf_",
+      "AIzaSy[a-zA-Z0-9_-]{33}",
+      "GOOGLE_AI_API_KEY\\s*[=:]\\s*[\"\\']?AIza",
+      "[a-zA-Z0-9]{40}-[a-zA-Z0-9]{40}",
+      "COHERE_API_KEY\\s*[=:]\\s*",
+      "AZURE_OPENAI_KEY\\s*[=:]\\s*",
+      "AZURE_OPENAI_ENDPOINT\\s*[=:]\\s*https?://[^\\\\s]+\\.openai\\.azure\\.com"
+    ],
+    "prompt_injection": [
+      "Ignore\\s+(all\\s+)?(previous|prior|above)\\s+instructions?",
+      "Disregard\\s+(all\\s+)?(previous|prior|above)",
+      "Override\\s+system\\s+prompt",
+      "Forget\\s+(all\\s+)?(previous|prior)\\s+instructions?",
+      "---\\s*END\\s+(OF\\s+)?CONTEXT\\s*---",
+      "<\\s*/?\\s*system\\s*>",
+      "<\\s*/?\\s*instructions?\\s*>",
+      "\\[\\s*SYSTEM\\s*\\]",
+      "You\\s+are\\s+now\\s+(in\\s+)?(developer|admin|debug)\\s+mode",
+      "Switch\\s+to\\s+(developer|admin|debug)\\s+mode",
+      "Enable\\s+(developer|admin|debug)\\s+mode",
+      "Act\\s+as\\s+if\\s+you\\s+(are|were)",
+      "DAN\\s+mode",
+      "Developer\\s+Mode\\s+enabled",
+      "Simulation\\s+Mode",
+      "Unrestricted\\s+Mode",
+      "Stop\\s+following\\s+guidelines",
+      "Bypass\\s+content\\s+policy",
+      "Ignore\\s+safety\\s+constraints",
+      "New\\s+instruction[s]?\\s*:",
+      "Real\\s+instruction[s]?\\s*:",
+      "Actual\\s+task\\s*:"
+    ],
+    "unsafe_execution": [
+      "eval\\s*\\(\\s*[^)]*(?:completion|response|output|result|answer)",
+      "exec\\s*\\(\\s*[^)]*(?:completion|response|output|result|answer)",
+      "Function\\s*\\(\\s*[^)]*(?:ai_output|prompt_result|completion)",
+      "new\\s+Function\\s*\\(\\s*[^)]*(?:ai_output|prompt_result)",
+      "child_process\\.exec\\s*\\([^)]*(?:completion|response)",
+      "subprocess\\.(?:run|call|Popen)\\s*\\([^)]*(?:completion|response)",
+      "os\\.system\\s*\\([^)]*(?:completion|response)",
+      "shell_exec\\s*\\([^)]*(?:completion|response)",
+      "template\\.render\\s*\\([^)]*(?:completion|response)",
+      "eval_template\\s*\\([^)]*(?:ai_output|prompt)",
+      "pickle\\.loads\\s*\\([^)]*(?:completion|response)",
+      "json\\.loads\\s*\\([^)]*(?:completion|response)(?!\\s*\\))",
+      "yaml\\.(?:load|unsafe_load)\\s*\\([^)]*(?:completion|response)"
+    ],
+    "data_leakage": [
+      "prompt\\s*[=:]\\s*[\"\\'][^\"\\']*(?:password|secret|token|key|api_key)",
+      "(?:messages|context)\\s*\\.\\s*append\\s*\\([^)]*(?:env\\.|process\\.env)",
+      "(?:prompt|message)\\s*\\+\\s*(?:password|secret|token)",
+      "console\\.log\\s*\\([^)]*(?:completion|response).*(?:token|key)",
+      "logger\\.(?:info|debug|warn)\\s*\\([^)]*(?:completion|response)",
+      "db\\.(?:insert|save|create)\\s*\\([^)]*(?:completion|response)",
+      "\\.(?:save|insert)\\s*\\(\\s*\\{[^}]*completion[^}]*\\}"
+    ],
+    "token_manipulation": [
+      "(?:openai|anthropic)\\.api_key\\s*=\\s*(?:input|prompt|user)",
+      "Authorization\\s*:\\s*Bearer\\s*\\$\\{[^}]*(?:input|user|prompt)",
+      "fetch\\s*\\([^)]*\\).*\\.then.*api_key",
+      "axios\\.post\\s*\\([^)]*[^)]*api_key",
+      "requests\\.post\\s*\\([^)]*[^)]*api_key",
+      "process\\.env\\.OPENAI_API_KEY\\s*=",
+      "os\\.environ\\[[\\'\"](OPENAI|ANTHROPIC)_API_KEY[\\'\"]\\]\\s*="
+    ],
+    "model_abuse": [
+      "while\\s*\\(\\s*true\\s*\\).*(?:openai|anthropic|completion)",
+      "for\\s*\\(.*\\).*(?:createCompletion|chat\\.completions)",
+      "setInterval\\s*\\([^)]*(?:completion|chat\\.completions)",
+      "(?:openai|anthropic)\\.(?:chat\\.)?completions\\.create(?!\\s*\\).*catch)",
+      "max_tokens\\s*:\\s*(?:100000|Infinity|Number\\.MAX)",
+      "temperature\\s*:\\s*[2-9]",
+      "model\\s*:\\s*[\"\\'][^\"\\']*(?:\\$\\{|user_input|prompt)"
+    ],
+    "system_prompt_extraction": [
+      "(?:print|echo|output|return|say)\\s+(?:your\\s+)?(?:system\\s+)?(?:prompt|instructions)",
+      "What\\s+(?:are|were)\\s+your\\s+(?:original\\s+)?instructions",
+      "Repeat\\s+your\\s+(?:system\\s+)?(?:prompt|instructions)",
+      "Show\\s+me\\s+your\\s+(?:system\\s+)?prompt",
+      "Reveal\\s+hidden\\s+instructions",
+      "Display\\s+your\\s+programming",
+      "What\\s+are\\s+you\\s+not\\s+allowed\\s+to\\s+do"
+    ],
+    "vector_db_injection": [
+      "embedding\\s*=.*(?:eval|exec)\\s*\\(",
+      "vector_store\\.(?:add|insert).*(?:<script|javascript:)",
+      "chromadb\\.add.*(?:prompt_injection|malicious)",
+      "pinecone\\.upsert.*eval\\s*\\(",
+      "similarity_search.*(?:ORDER\\s+BY|UNION\\s+SELECT)",
+      "query_vector.*(?:\\$\\{|template)"
+    ],
+    "chain_exploitation": [
+      "LLMChain\\s*\\([^)]*verbose\\s*=\\s*True",
+      "\\.run\\s*\\([^)]*(?:eval|exec)",
+      "AgentExecutor.*allow_dangerous",
+      "tools\\s*=\\s*\\[.*eval.*\\]",
+      "Tool\\s*\\([^)]*func\\s*=\\s*(?:eval|exec)",
+      "memory\\.(?:save_context|chat_memory).*(?:password|secret|token)"
+    ]
   },
-  "last_updated": "2025-12-30T09:02:32.534096"
+  "last_updated": "2025-12-31T09:11:50.785343",
+  "note": "Comprehensive AI security patterns covering OWASP Top 10 for LLM Applications",
+  "references": [
+    "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+    "https://atlas.mitre.org/matrices/ATLAS",
+    "https://learnprompting.org/docs/prompt_hacking/injection"
+  ]
 }
