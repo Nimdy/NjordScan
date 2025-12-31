@@ -1,5 +1,95 @@
 {
   "packages": {
+    "qs": {
+      "vulnerabilities": [
+        {
+          "id": "GHSA-6rw7-vpxm-498p",
+          "cve_ids": [
+            "CVE-2025-15284"
+          ],
+          "title": "qs's arrayLimit bypass in its bracket notation allows DoS via memory exhaustion",
+          "severity": "high",
+          "vulnerable_versions": "< 6.14.1",
+          "patched_versions": [
+            "6.14.1"
+          ],
+          "published_at": "2025-12-30T21:02:54Z",
+          "references": [
+            "https://github.com/ljharb/qs/security/advisories/GHSA-6rw7-vpxm-498p",
+            "https://nvd.nist.gov/vuln/detail/CVE-2025-15284",
+            "https://github.com/ljharb/qs/commit/3086902ecf7f088d0d1803887643ac6c03d415b9",
+            "https://github.com/advisories/GHSA-6rw7-vpxm-498p"
+          ]
+        }
+      ]
+    },
+    "psitransfer": {
+      "vulnerabilities": [
+        {
+          "id": "GHSA-xphh-5v4r-r3rx",
+          "cve_ids": [],
+          "title": "PsiTransfer has Zip Slip Path Traversal via TAR Archive Download",
+          "severity": "high",
+          "vulnerable_versions": "< 2.3.1",
+          "patched_versions": [
+            "2.3.1"
+          ],
+          "published_at": "2025-12-30T19:25:04Z",
+          "references": [
+            "https://github.com/psi-4ward/psitransfer/security/advisories/GHSA-xphh-5v4r-r3rx",
+            "https://github.com/psi-4ward/psitransfer/commit/6c71bc0b8afa1ffa7aabd6c5fb28677651fd57b6",
+            "https://github.com/psi-4ward/psitransfer/releases/tag/v2.3.1",
+            "https://github.com/advisories/GHSA-xphh-5v4r-r3rx"
+          ]
+        }
+      ]
+    },
+    "axios-cache-interceptor": {
+      "vulnerabilities": [
+        {
+          "id": "GHSA-x4m5-4cw8-vc44",
+          "cve_ids": [
+            "CVE-2025-69202"
+          ],
+          "title": "axios-cache-interceptor Vulnerable to Cache Poisoning via Ignored HTTP Vary Header",
+          "severity": "medium",
+          "vulnerable_versions": "< 1.11.1",
+          "patched_versions": [
+            "1.11.1"
+          ],
+          "published_at": "2025-12-30T15:37:55Z",
+          "references": [
+            "https://github.com/arthurfiorette/axios-cache-interceptor/security/advisories/GHSA-x4m5-4cw8-vc44",
+            "https://nvd.nist.gov/vuln/detail/CVE-2025-69202",
+            "https://github.com/arthurfiorette/axios-cache-interceptor/commit/49a808059dfc081b9cc23d48f243d55dfce15f01",
+            "https://github.com/advisories/GHSA-x4m5-4cw8-vc44"
+          ]
+        }
+      ]
+    },
+    "@nestjs/platform-fastify": {
+      "vulnerabilities": [
+        {
+          "id": "GHSA-8wpr-639p-ccrj",
+          "cve_ids": [
+            "CVE-2025-69211"
+          ],
+          "title": "Nest has a Fastify URL Encoding Middleware Bypass (TOCTOU)",
+          "severity": "medium",
+          "vulnerable_versions": "< 11.1.10",
+          "patched_versions": [
+            "11.1.11"
+          ],
+          "published_at": "2025-12-30T15:32:44Z",
+          "references": [
+            "https://github.com/nestjs/nest/security/advisories/GHSA-8wpr-639p-ccrj",
+            "https://nvd.nist.gov/vuln/detail/CVE-2025-69211",
+            "https://github.com/nestjs/nest/commit/c4cedda15a05aafec1e6045b36b0335ab850e771",
+            "https://github.com/advisories/GHSA-8wpr-639p-ccrj"
+          ]
+        }
+      ]
+    },
     "hemmelig": {
       "vulnerabilities": [
         {
@@ -52,7 +142,7 @@
           ],
           "title": "Self-hosted n8n has Legacy Code node that enables arbitrary file read/write",
           "severity": "high",
-          "vulnerable_versions": "< 2.0.0",
+          "vulnerable_versions": ">= 1.2.1, < 2.0.0",
           "patched_versions": [
             "2.0.0"
           ],
@@ -4575,179 +4665,7 @@
           ]
         }
       ]
-    },
-    "@dependencytrack/frontend": {
-      "vulnerabilities": [
-        {
-          "id": "GHSA-7xvh-c266-cfr5",
-          "cve_ids": [
-            "CVE-2025-64758"
-          ],
-          "title": "@dependencytrack/frontend vulnerable to Persistent Cross-Site-Scripting via welcome message",
-          "severity": "medium",
-          "vulnerable_versions": ">= 4.12.0, < 4.13.6",
-          "patched_versions": [
-            "4.13.6"
-          ],
-          "published_at": "2025-11-17T18:15:55Z",
-          "references": [
-            "https://github.com/DependencyTrack/frontend/security/advisories/GHSA-7xvh-c266-cfr5",
-            "https://github.com/DependencyTrack/frontend/pull/1378",
-            "https://github.com/DependencyTrack/frontend/pull/986",
-            "https://nvd.nist.gov/vuln/detail/CVE-2025-64758",
-            "https://github.com/DependencyTrack/frontend/commit/8fd757be612eaf4f35eadbe4c334204d7bd711be",
-            "https://github.com/advisories/GHSA-7xvh-c266-cfr5"
-          ]
-        }
-      ]
-    },
-    "glob": {
-      "vulnerabilities": [
-        {
-          "id": "GHSA-5j98-mcp5-4vw2",
-          "cve_ids": [
-            "CVE-2025-64756"
-          ],
-          "title": "glob CLI: Command injection via -c/--cmd executes matches with shell:true",
-          "severity": "high",
-          "vulnerable_versions": ">= 11.0.0, < 11.1.0",
-          "patched_versions": [
-            "11.1.0"
-          ],
-          "published_at": "2025-11-17T17:38:56Z",
-          "references": [
-            "https://github.com/isaacs/node-glob/security/advisories/GHSA-5j98-mcp5-4vw2",
-            "https://github.com/isaacs/node-glob/commit/47473c046b91c67269df7a66eab782a6c2716146",
-            "https://nvd.nist.gov/vuln/detail/CVE-2025-64756",
-            "https://github.com/isaacs/node-glob/commit/1e4e297342a09f2aa0ced87fcd4a70ddc325d75f",
-            "https://github.com/advisories/GHSA-5j98-mcp5-4vw2"
-          ]
-        },
-        {
-          "id": "GHSA-5j98-mcp5-4vw2",
-          "cve_ids": [
-            "CVE-2025-64756"
-          ],
-          "title": "glob CLI: Command injection via -c/--cmd executes matches with shell:true",
-          "severity": "high",
-          "vulnerable_versions": ">= 10.2.0, < 10.5.0",
-          "patched_versions": [
-            "10.5.0"
-          ],
-          "published_at": "2025-11-17T17:38:56Z",
-          "references": [
-            "https://github.com/isaacs/node-glob/security/advisories/GHSA-5j98-mcp5-4vw2",
-            "https://github.com/isaacs/node-glob/commit/47473c046b91c67269df7a66eab782a6c2716146",
-            "https://nvd.nist.gov/vuln/detail/CVE-2025-64756",
-            "https://github.com/isaacs/node-glob/commit/1e4e297342a09f2aa0ced87fcd4a70ddc325d75f",
-            "https://github.com/advisories/GHSA-5j98-mcp5-4vw2"
-          ]
-        }
-      ]
-    },
-    "@apollo/composition": {
-      "vulnerabilities": [
-        {
-          "id": "GHSA-m8jr-fxqx-8xx6",
-          "cve_ids": [],
-          "title": "Apollo Federation has Improper Enforcement of Access Control on Transitive Fields",
-          "severity": "high",
-          "vulnerable_versions": "< 2.9.5",
-          "patched_versions": [
-            "2.9.5"
-          ],
-          "published_at": "2025-11-14T21:49:26Z",
-          "references": [
-            "https://github.com/apollographql/federation/security/advisories/GHSA-m8jr-fxqx-8xx6",
-            "https://github.com/apollographql/federation/commit/09e596e6a0c753071ca822e84f525d73ada395cf",
-            "https://github.com/apollographql/federation/commit/0d8fca1c8cc375bb8486f11f339984b69267417d",
-            "https://github.com/apollographql/federation/commit/20c75d1d60a48fc289d88c8d29652f1afc7553e4",
-            "https://github.com/apollographql/federation/commit/e1c58611c3c996b4fff98a54e49f00549ff2115d",
-            "https://github.com/advisories/GHSA-m8jr-fxqx-8xx6"
-          ]
-        },
-        {
-          "id": "GHSA-m8jr-fxqx-8xx6",
-          "cve_ids": [],
-          "title": "Apollo Federation has Improper Enforcement of Access Control on Transitive Fields",
-          "severity": "high",
-          "vulnerable_versions": ">= 2.10.0-alpha.3, < 2.10.4",
-          "patched_versions": [
-            "2.10.4"
-          ],
-          "published_at": "2025-11-14T21:49:26Z",
-          "references": [
-            "https://github.com/apollographql/federation/security/advisories/GHSA-m8jr-fxqx-8xx6",
-            "https://github.com/apollographql/federation/commit/09e596e6a0c753071ca822e84f525d73ada395cf",
-            "https://github.com/apollographql/federation/commit/0d8fca1c8cc375bb8486f11f339984b69267417d",
-            "https://github.com/apollographql/federation/commit/20c75d1d60a48fc289d88c8d29652f1afc7553e4",
-            "https://github.com/apollographql/federation/commit/e1c58611c3c996b4fff98a54e49f00549ff2115d",
-            "https://github.com/advisories/GHSA-m8jr-fxqx-8xx6"
-          ]
-        },
-        {
-          "id": "GHSA-m8jr-fxqx-8xx6",
-          "cve_ids": [],
-          "title": "Apollo Federation has Improper Enforcement of Access Control on Transitive Fields",
-          "severity": "high",
-          "vulnerable_versions": ">= 2.11.0-preview.1, < 2.11.5",
-          "patched_versions": [
-            "2.11.5"
-          ],
-          "published_at": "2025-11-14T21:49:26Z",
-          "references": [
-            "https://github.com/apollographql/federation/security/advisories/GHSA-m8jr-fxqx-8xx6",
-            "https://github.com/apollographql/federation/commit/09e596e6a0c753071ca822e84f525d73ada395cf",
-            "https://github.com/apollographql/federation/commit/0d8fca1c8cc375bb8486f11f339984b69267417d",
-            "https://github.com/apollographql/federation/commit/20c75d1d60a48fc289d88c8d29652f1afc7553e4",
-            "https://github.com/apollographql/federation/commit/e1c58611c3c996b4fff98a54e49f00549ff2115d",
-            "https://github.com/advisories/GHSA-m8jr-fxqx-8xx6"
-          ]
-        },
-        {
-          "id": "GHSA-m8jr-fxqx-8xx6",
-          "cve_ids": [],
-          "title": "Apollo Federation has Improper Enforcement of Access Control on Transitive Fields",
-          "severity": "high",
-          "vulnerable_versions": ">= 2.12.0-preview.0, < 2.12.1",
-          "patched_versions": [
-            "2.12.1"
-          ],
-          "published_at": "2025-11-14T21:49:26Z",
-          "references": [
-            "https://github.com/apollographql/federation/security/advisories/GHSA-m8jr-fxqx-8xx6",
-            "https://github.com/apollographql/federation/commit/09e596e6a0c753071ca822e84f525d73ada395cf",
-            "https://github.com/apollographql/federation/commit/0d8fca1c8cc375bb8486f11f339984b69267417d",
-            "https://github.com/apollographql/federation/commit/20c75d1d60a48fc289d88c8d29652f1afc7553e4",
-            "https://github.com/apollographql/federation/commit/e1c58611c3c996b4fff98a54e49f00549ff2115d",
-            "https://github.com/advisories/GHSA-m8jr-fxqx-8xx6"
-          ]
-        }
-      ]
-    },
-    "directus": {
-      "vulnerabilities": [
-        {
-          "id": "GHSA-vv2v-pw69-8crf",
-          "cve_ids": [
-            "CVE-2025-64747"
-          ],
-          "title": "Directus is Vulnerable to Stored Cross-site Scripting",
-          "severity": "medium",
-          "vulnerable_versions": "< 11.13.0",
-          "patched_versions": [
-            "11.13.0"
-          ],
-          "published_at": "2025-11-14T21:45:36Z",
-          "references": [
-            "https://github.com/directus/directus/security/advisories/GHSA-vv2v-pw69-8crf",
-            "https://nvd.nist.gov/vuln/detail/CVE-2025-64747",
-            "https://github.com/directus/directus/commit/d23525317f0780f04aa1fe7a99171a358e43cb2e",
-            "https://github.com/advisories/GHSA-vv2v-pw69-8crf"
-          ]
-        }
-      ]
     }
   },
-  "last_updated": "2025-12-30T09:02:32.530025"
+  "last_updated": "2025-12-31T09:11:50.781439"
 }
