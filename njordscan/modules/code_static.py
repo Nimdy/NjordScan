@@ -110,14 +110,29 @@ class CodeStaticModule(BaseModule):
             ],
             'path_traversal': [
                 {
-                    'pattern': r'\.\./',
-                    'severity': 'medium',
-                    'description': 'Potential path traversal sequence'
-                },
-                {
                     'pattern': r'fs\.readFile\s*\([\'"]?\$\{.*\}[\'"]?\)',
                     'severity': 'high',
                     'description': 'File reading with dynamic paths'
+                },
+                {
+                    'pattern': r'fs\.readFileSync\s*\([\'"]?\$\{.*\}[\'"]?\)',
+                    'severity': 'high',
+                    'description': 'Synchronous file reading with dynamic paths'
+                },
+                {
+                    'pattern': r'fs\.writeFile\s*\([\'"]?\$\{.*\}[\'"]?\)',
+                    'severity': 'high',
+                    'description': 'File writing with dynamic paths'
+                },
+                {
+                    'pattern': r'path\.join\s*\([^)]*\.\.[^)]*\)',
+                    'severity': 'medium',
+                    'description': 'Path construction with parent directory traversal'
+                },
+                {
+                    'pattern': r'require\s*\([\'"]?\$\{.*\}[\'"]?\)',
+                    'severity': 'high',
+                    'description': 'Dynamic require with user input'
                 }
             ],
             'ssrf': [
@@ -163,12 +178,7 @@ class CodeStaticModule(BaseModule):
                 {
                     'pattern': r'Math\.random\(\)',
                     'severity': 'low',
-                    'description': 'Use of cryptographically insecure Math.random()'
-                },
-                {
-                    'pattern': r'Date\.now\(\)',
-                    'severity': 'low',
-                    'description': 'Use of timestamp for random values'
+                    'description': 'Use of cryptographically insecure Math.random() - avoid for security-sensitive operations like tokens or IDs'
                 }
             ]
         }
@@ -528,22 +538,36 @@ class CodeStaticModule(BaseModule):
         """Scan JavaScript files for specific patterns."""
         vulnerabilities = []
         lines = content.split('\n')
-        
+
         # Check for console.log in production files
-        if 'production' not in str(file_path).lower() and 'dev' not in str(file_path).lower():
+        # Skip directories that are expected to have console statements
+        excluded_dirs = {'e2e', 'test', 'tests', '__tests__', 'spec', 'scripts', 'cypress', 'playwright'}
+        # Skip files that are expected to have console statements
+        excluded_files = {'logger', 'logging', 'console', 'debug'}
+
+        file_path_str = str(file_path).lower()
+        file_name_stem = file_path.stem.lower()
+
+        # Check if file is in an excluded directory
+        is_excluded_dir = any(f'/{excluded}/' in file_path_str or file_path_str.startswith(f'{excluded}/')
+                             for excluded in excluded_dirs)
+        # Check if file is an excluded file type (logger, etc.)
+        is_excluded_file = any(excluded in file_name_stem for excluded in excluded_files)
+
+        if not is_excluded_dir and not is_excluded_file:
             for line_num, line in enumerate(lines, 1):
                 if re.search(r'console\.(log|debug|info)', line) and not line.strip().startswith('//'):
                     vulnerabilities.append(self.create_vulnerability(
                         title="Console Statement in Production Code",
-                        description="Console statements may leak sensitive information",
+                        description="Console statements may leak sensitive information in production builds",
                         severity="low",
                         vuln_type="console_leak",
                         file_path=str(file_path),
                         line_number=line_num,
                         code_snippet=line.strip(),
-                        fix="Remove console statements from production code"
+                        fix="Remove console statements or use a proper logging library that can be disabled in production"
                     ))
-        
+
         return vulnerabilities
     
     def _is_false_positive(self, line: str, match: str, vuln_type: str) -> bool:
