@@ -120,7 +120,7 @@
       "memory\\.(?:save_context|chat_memory).*(?:password|secret|token)"
     ]
   },
-  "last_updated": "2025-12-31T09:11:50.785343",
+  "last_updated": "2026-01-16T11:57:36.810944",
   "note": "Comprehensive AI security patterns covering OWASP Top 10 for LLM Applications",
   "references": [
     "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
