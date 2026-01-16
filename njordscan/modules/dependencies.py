@@ -596,17 +596,36 @@ class DependenciesModule(BaseModule):
     
     def _is_package_name_suspicious(self, package_name: str) -> bool:
         """Check if package name appears suspicious."""
+        # Whitelist of known legitimate short-named and popular packages
+        # These are verified, widely-used packages that shouldn't trigger false positives
+        trusted_packages = {
+            # Short names (1-3 chars) that are legitimate
+            'zod', 'tsx', 'ics', 'vue', 'swr', 'npm', 'pnpm', 'bun', 'ora', 'got',
+            'ws', 'ms', 'fs', 'os', 'ip', 'pg', 'qs', 'rx', 'pm2', 'jwt', 'csv',
+            'xml', 'tar', 'ini', 'tmp', 'uid', 'url', 'yup', 'joi', 'ci', 'cli',
+            'arg', 'aws', 'gcp', 'env', 'api', 'dom', 'css', 'svg', 'md', 'ast',
+            # Common packages ending in -js that are legitimate
+            'three.js', 'pdf.js', 'monaco-editor', 'highlight.js', 'chart.js',
+            'fabric.js', 'paper.js', 'anime.js', 'tone.js', 'particles.js',
+            # Other commonly flagged legitimate packages
+            'dayjs', 'luxon', 'nanoid', 'uuid', 'cuid', 'ulid',
+        }
+
+        # Check if package is in the trusted whitelist
+        if package_name.lower() in trusted_packages:
+            return False
+
         suspicious_patterns = [
             r'.*-js$',  # Many typosquats end with -js
             r'.*\.js$',  # Or .js
             r'[0-9]+$',  # Ending with numbers
             r'^[a-z]{1,3}$',  # Very short names
         ]
-        
+
         for pattern in suspicious_patterns:
             if re.match(pattern, package_name):
                 return True
-        
+
         return False
     
     def _parse_python_package_spec(self, line: str) -> Optional[tuple]:
