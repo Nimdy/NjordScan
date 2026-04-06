@@ -1,8 +1,8 @@
 """
-AI-Powered Security Advisor
+Security Advisor
 
-Provides intelligent security recommendations, remediation guidance,
-and strategic security insights based on analysis results.
+Provides security recommendations and remediation guidance based on
+vulnerability type lookup tables and rule-based logic.
 """
 
 import re

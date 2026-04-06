@@ -542,105 +542,33 @@ vulnerabilities = analyzer.analyze_project(Path("./vite-project"))
 
 ## 🔌 **Plugin API**
 
-### **PluginInterface**
-**Location**: `njordscan.plugins_v2.plugin_manager.PluginInterface`
+### **Plugin System**
+**Location**: `njordscan.plugins.PluginManager`
 
-Base interface for all plugins.
-
-```python
-from njordscan.plugins_v2 import PluginInterface, PluginMetadata
-
-class CustomPlugin(PluginInterface):
-    """Custom security plugin."""
-    
-    async def initialize(self) -> bool:
-        """Initialize the plugin."""
-        return True
-    
-    async def activate(self) -> bool:
-        """Activate the plugin."""
-        return True
-    
-    def get_metadata(self) -> PluginMetadata:
-        """Get plugin metadata."""
-        return PluginMetadata(
-            id="custom-plugin",
-            name="Custom Security Plugin",
-            version="1.0.0",
-            description="Custom security analysis plugin",
-            author="Your Name",
-            plugin_type=PluginType.SCANNER
-        )
-```
-
-#### **Plugin Methods**
-```python
-async def initialize(self) -> bool:
-    """Initialize the plugin. Return True if successful."""
-
-async def activate(self) -> bool:
-    """Activate the plugin. Return True if successful."""
-
-async def deactivate(self) -> bool:
-    """Deactivate the plugin. Return True if successful."""
-
-async def cleanup(self) -> bool:
-    """Cleanup plugin resources. Return True if successful."""
-
-def get_metadata(self) -> PluginMetadata:
-    """Get plugin metadata."""
-
-def register_service(self, service_name: str, service: Any):
-    """Register a service provided by this plugin."""
-
-def get_service(self, service_name: str) -> Any:
-    """Get a service by name."""
-
-def register_hook(self, hook_name: str, callback: Callable):
-    """Register a hook callback."""
-```
-
-### **PluginManager**
-**Location**: `njordscan.plugins_v2.plugin_manager.PluginManager`
-
-Advanced plugin management system.
+Plugins are Python modules with a `scan()` method, loaded from `plugins/` directories.
 
 ```python
-from njordscan.plugins_v2 import PluginManager
+from njordscan.plugins import PluginManager
 
-# Initialize plugin manager
 plugin_manager = PluginManager()
-
-# Load plugins
-await plugin_manager.initialize()
-
-# Get plugin
-plugin = plugin_manager.get_plugin("plugin-name")
-
-# Register plugin
-plugin_manager.register_plugin(plugin_instance)
+plugins = plugin_manager.list_plugins()
 ```
 
-#### **PluginManager Methods**
+#### **Writing a Plugin**
 ```python
-async def initialize(self):
-    """Initialize the plugin manager."""
+class MySecurityPlugin:
+    """Custom security scanner plugin."""
 
-async def load_plugin(self, plugin_path: str) -> bool:
-    """Load a plugin from file path."""
+    async def scan(self, target: str) -> list:
+        """Return list of vulnerability dicts."""
+        return []
 
-async def unload_plugin(self, plugin_id: str) -> bool:
-    """Unload a plugin by ID."""
-
-def get_plugin(self, plugin_id: str) -> Optional[PluginInstance]:
-    """Get plugin instance by ID."""
-
-def list_plugins(self) -> List[PluginInstance]:
-    """List all loaded plugins."""
-
-def register_plugin(self, plugin: PluginInterface):
-    """Register a plugin instance."""
+    def supports_framework(self, framework: str) -> bool:
+        """Return True if this plugin supports the given framework."""
+        return framework in ['nextjs', 'react']
 ```
+
+Place your plugin in `plugins/community/` and enable it in your config.
 
 ---
 
@@ -751,7 +679,7 @@ async def correlate_threats(self,
 ### **AISecurityOrchestrator**
 **Location**: `njordscan.ai.ai_orchestrator.AISecurityOrchestrator`
 
-AI-powered security analysis orchestrator.
+Heuristic security analysis orchestrator.
 
 ```python
 from njordscan.ai import AISecurityOrchestrator
@@ -773,7 +701,7 @@ async def perform_comprehensive_analysis(self,
                                        data: Dict[str, Any],
                                        context: Dict[str, Any] = None) -> AIAnalysisResult:
     """
-    Perform comprehensive AI-powered analysis.
+    Perform comprehensive heuristic analysis.
     
     Args:
         target: Analysis target
@@ -1009,38 +937,19 @@ if __name__ == "__main__":
 
 ### **Plugin Development**
 ```python
-from njordscan.plugins_v2 import PluginInterface, PluginMetadata, PluginType
+class CustomPlugin:
+    """Custom security plugin.
+    
+    Place in plugins/community/ and enable in config.
+    """
 
-class CustomPlugin(PluginInterface):
-    """Custom security plugin."""
-    
-    async def initialize(self) -> bool:
-        """Initialize the plugin."""
-        self.logger.info("Custom plugin initialized")
-        return True
-    
-    async def activate(self) -> bool:
-        """Activate the plugin."""
-        self.logger.info("Custom plugin activated")
-        return True
-    
-    def get_metadata(self) -> PluginMetadata:
-        """Get plugin metadata."""
-        return PluginMetadata(
-            id="custom-security-plugin",
-            name="Custom Security Plugin",
-            version="1.0.0",
-            description="Custom security analysis plugin",
-            author="Your Name",
-            plugin_type=PluginType.SCANNER,
-            frameworks=["nextjs", "react"],
-            categories=["static_analysis"]
-        )
-    
-    async def scan(self, target: str) -> List[Vulnerability]:
-        """Perform custom security scan."""
+    async def scan(self, target: str) -> list:
+        """Perform custom security scan. Return list of vulnerability dicts."""
         # Your custom scanning logic here
         return []
+
+    def supports_framework(self, framework: str) -> bool:
+        return framework in ["nextjs", "react"]
 ```
 
 ---

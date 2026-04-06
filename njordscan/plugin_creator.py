@@ -1,8 +1,7 @@
 """
-🛡️ Legacy Plugin Creator for NjordScan v1.0.0
+Plugin Creator for NjordScan v1.0.0
 
-Basic plugin creation from templates - maintained for backward compatibility.
-For advanced plugin creation, use plugins_v2.PluginManager.create_plugin_template().
+Plugin creation from templates.
 """
 
 import os
@@ -11,11 +10,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 class PluginCreator:
-    """Legacy plugin creator - maintained for backward compatibility.
-    
-    For advanced plugin creation with marketplace integration,
-    use plugins_v2.PluginManager.create_plugin_template() instead.
-    """
+    """Plugin creator for generating plugin templates."""
     
     def __init__(self):
         self.base_dir = Path(__file__).parent.parent

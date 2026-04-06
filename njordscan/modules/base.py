@@ -42,9 +42,9 @@ class BaseModule(ABC):
             Boolean indicating if module should run
         """
         mode_mappings = {
-            'static': ['configs', 'code_static', 'dependencies'],
+            'static': ['configs', 'code_static', 'dependencies', 'supply_chain'],
             'dynamic': ['headers', 'runtime', 'ai_endpoints'],
-            'full': ['headers', 'configs', 'code_static', 'dependencies', 'runtime', 'ai_endpoints']
+            'full': ['headers', 'configs', 'code_static', 'dependencies', 'supply_chain', 'runtime', 'ai_endpoints']
         }
         
         return self.name in mode_mappings.get(mode, [])

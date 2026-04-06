@@ -38,11 +38,15 @@ try:
     from .intelligence.intelligence_orchestrator import IntelligenceOrchestrator
     from .ai.ai_orchestrator import AISecurityOrchestrator
     from .performance.performance_orchestrator import PerformanceOrchestrator
-    from .developer_experience.dx_orchestrator import DeveloperExperienceOrchestrator as DXOrchestrator
-    from .community.community_orchestrator import CommunityOrchestrator
     ADVANCED_FEATURES = True
 except ImportError:
     ADVANCED_FEATURES = False
+
+try:
+    from .community.community_orchestrator import CommunityOrchestrator
+    COMMUNITY_AVAILABLE = True
+except ImportError:
+    COMMUNITY_AVAILABLE = False
     
 from . import __version__, BANNER, FEATURES
 
@@ -333,13 +337,17 @@ def main(ctx):
 @click.option('--custom-rules', is_flag=True, help='Enable custom security rules')
 @click.option('--false-positive-filter', is_flag=True, help='Enable false positive filtering')
 @click.option('--trend-analysis', is_flag=True, help='Enable trend analysis')
+@click.option('--sbom', 'sbom_output', help='Generate SBOM (Software Bill of Materials) to file')
+@click.option('--sbom-format', type=click.Choice(['cyclonedx', 'spdx']),
+              default='cyclonedx', help='SBOM output format')
 @click.pass_context
 @require_legal_acceptance
-def scan(ctx, target, output_format, output, mode, framework, severity, verbose, quiet, 
+def scan(ctx, target, output_format, output, mode, framework, severity, verbose, quiet,
          no_cache, pentest, explain, interactive, theme, ai_enhanced, behavioral_analysis,
          threat_intel, community_rules, web, threads, cache_strategy, fail_on, quality_gate,
          ci, show_progress, include_remediation, executive_summary, skip, only, timeout,
-         memory_limit, no_color, enhanced, custom_rules, false_positive_filter, trend_analysis):
+         memory_limit, no_color, enhanced, custom_rules, false_positive_filter, trend_analysis,
+         sbom_output, sbom_format):
     """🔍 Scan a target for security vulnerabilities."""
     # Show banner unless in quiet mode
     if not quiet and not ci:
@@ -350,16 +358,10 @@ def scan(ctx, target, output_format, output, mode, framework, severity, verbose,
         explain_vulnerability(explain)
         return
     
-    # Handle interactive mode
+    # Handle interactive mode (not yet implemented)
     if interactive:
-        if ADVANCED_FEATURES:
-            from .developer_experience.interactive_cli import InteractiveCLI
-            interactive_cli = InteractiveCLI(theme=theme)
-            asyncio.run(interactive_cli.run())
-            return
-        else:
-            console.print("❌ Interactive mode requires advanced features. Please check installation.", style="red")
-            return
+        console.print("Interactive mode is not yet available.", style="yellow")
+        return
     
     # Auto-detect web mode for URLs
     if web or (target and target.startswith(('http://', 'https://'))):
@@ -472,8 +474,54 @@ def scan(ctx, target, output_format, output, mode, framework, severity, verbose,
                 # Save report without displaying
                 orchestrator.display_results(results)
         
-        console.print("✅ Security scan completed successfully!", style="green")
-        
+        # Generate SBOM if requested
+        if sbom_output:
+            try:
+                from .dependencies.sbom_generator import SBOMGenerator, SBOMFormat
+                sbom_gen = SBOMGenerator()
+                format_map = {
+                    'cyclonedx': SBOMFormat.CYCLONEDX_JSON,
+                    'spdx': SBOMFormat.SPDX_JSON,
+                }
+                sbom_fmt = format_map.get(sbom_format, SBOMFormat.CYCLONEDX_JSON)
+
+                # Build dependency graph from package.json if available
+                dep_graph = {}
+                pkg_path = Path(target) / 'package.json' if Path(target).is_dir() else None
+                if pkg_path and pkg_path.exists():
+                    import json as _json
+                    with open(pkg_path) as _f:
+                        pkg = _json.load(_f)
+                    for name, ver in {**pkg.get('dependencies', {}), **pkg.get('devDependencies', {})}.items():
+                        dep_graph[name] = {'version': ver.lstrip('^~>=<'), 'type': 'npm'}
+
+                project_info = {
+                    'name': Path(target).name,
+                    'version': '0.0.0',
+                    'framework': framework,
+                }
+
+                sbom_list = asyncio.run(sbom_gen.generate_sbom(dep_graph, project_info, [sbom_fmt]))
+                if sbom_list:
+                    asyncio.run(sbom_gen.export_sbom(sbom_list[0], sbom_fmt, sbom_output))
+                    console.print(f"SBOM written to {sbom_output}", style="green")
+            except ImportError:
+                console.print("SBOM generation requires the dependencies module.", style="yellow")
+            except Exception as e:
+                console.print(f"SBOM generation failed: {e}", style="yellow")
+
+        # Auto-generate SARIF in CI mode
+        if ci and output_format != 'sarif' and not output:
+            try:
+                sarif_path = 'njordscan-results.sarif'
+                orchestrator.report_formatter.generate_sarif_report(results, sarif_path)
+                if verbose:
+                    console.print(f"SARIF report written to {sarif_path}", style="blue")
+            except Exception:
+                pass  # Best-effort in CI mode
+
+        console.print("Scan completed successfully.", style="green")
+
     except KeyboardInterrupt:
         console.print("\n❌ Scan interrupted by user", style="yellow")
         sys.exit(1)
@@ -513,11 +561,7 @@ def scan(ctx, target, output_format, output, mode, framework, severity, verbose,
               default='standard', help='Security level')
 def setup(ide, ci, framework, level):
     """🧙‍♂️ Interactive setup wizard for first-time configuration."""
-    if ADVANCED_FEATURES:
-        from .developer_experience.interactive_cli import setup_wizard
-        asyncio.run(setup_wizard(ide=ide, ci=ci, framework=framework, level=level))
-    else:
-        console.print("❌ Setup wizard requires advanced features. Please check installation.", style="red")
+    console.print("Setup wizard is not yet available. Use 'njordscan configure --init' to create a configuration file.", style="yellow")
 
 @main.command()
 @click.option('--interactive', is_flag=True, help='Interactive configuration editor')
@@ -528,9 +572,9 @@ def setup(ide, ci, framework, level):
 @click.option('--framework', type=click.Choice(['nextjs', 'react', 'vite']), help='Framework preset')
 def configure(interactive, init, validate, show, export, framework):
     """⚙️ Configuration management and validation."""
-    if interactive and ADVANCED_FEATURES:
-        from .developer_experience.interactive_cli import interactive_configure
-        asyncio.run(interactive_configure())
+    if interactive:
+        console.print("Interactive configuration is not yet available.", style="yellow")
+        return
     elif init:
         config = Config()
         config.save_to_file('.njordscan.json')
@@ -564,9 +608,9 @@ def configure(interactive, init, validate, show, export, framework):
 @click.option('--trends', is_flag=True, help='Show security trends')
 def results(interactive, list_scans, compare, export, export_format, trends):
     """📊 Browse and analyze scan results."""
-    if interactive and ADVANCED_FEATURES:
-        from .developer_experience.interactive_cli import interactive_results
-        asyncio.run(interactive_results())
+    if interactive:
+        console.print("Interactive results browser is not yet available.", style="yellow")
+        return
     elif list_scans:
         # List recent scans
         cache_manager = CacheManager()
@@ -602,11 +646,7 @@ def results(interactive, list_scans, compare, export, export_format, trends):
 @click.option('--all', 'fix_all', is_flag=True, help='Fix all auto-fixable issues')
 def fix(interactive, issue, dry_run, safe_only, fix_all):
     """🛠️ Interactive fix suggestions and automated remediation."""
-    if interactive and ADVANCED_FEATURES:
-        from .developer_experience.interactive_cli import interactive_fix
-        asyncio.run(interactive_fix())
-    else:
-        console.print("❌ Fix functionality requires recent scan results.", style="red")
+    console.print("Fix functionality is not yet available.", style="yellow")
 
 @main.command()
 @click.option('--show', is_flag=True, help='Show legal disclaimer')
@@ -765,15 +805,10 @@ def plugins(action, plugin_name, template, marketplace):
             console.print(table)
             
         elif action == 'browse':
-            if marketplace and ADVANCED_FEATURES:
-                from .plugins_v2.plugin_marketplace import PluginMarketplace
-                marketplace_client = PluginMarketplace()
-                asyncio.run(marketplace_client.browse_plugins())
-            else:
-                console.print("Available plugins:", style="bold")
-                console.print("• nextjs-advanced-security - Advanced Next.js security patterns")
-                console.print("• react-security-pro - Professional React security analysis")
-                console.print("• vite-security-plus - Enhanced Vite security scanning")
+            console.print("Available plugins:", style="bold")
+            console.print("  nextjs-advanced-security - Advanced Next.js security patterns")
+            console.print("  react-security-pro - Professional React security analysis")
+            console.print("  vite-security-plus - Enhanced Vite security scanning")
                 
         elif action == 'install' and plugin_name:
             console.print(f"🔄 Installing plugin: {plugin_name}", style="blue")
@@ -807,73 +842,7 @@ def plugins(action, plugin_name, template, marketplace):
 @click.option('--file', help='File to share or download to')
 def community(action, category, file):
     """🌟 Community features and collaboration."""
-    if not ADVANCED_FEATURES:
-        console.print("❌ Community features require advanced installation", style="red")
-        return
-        
-    try:
-        from .community.community_orchestrator import CommunityOrchestrator
-        community_orch = CommunityOrchestrator()
-        
-        if action == 'register':
-            console.print("🌟 Welcome to NjordScan Community!", style="bold cyan")
-            console.print("\n🚀 Benefits:")
-            console.print("• Access to community security rules")
-            console.print("• Share and discover security patterns")
-            console.print("• Connect with security experts")
-            console.print("• Early access to new features")
-            console.print("\n🌐 Visit: https://community.njordscan.dev/register")
-            console.print("✅ Community registration information displayed")
-        elif action == 'browse':
-            console.print("🔍 Community Security Rules Browser", style="bold cyan")
-            console.print("\n📚 Available Categories:")
-            console.print("• Next.js Security Patterns")
-            console.print("• React Security Best Practices")
-            console.print("• API Security Rules")
-            console.print("• Authentication Patterns")
-            console.print("\n🌐 Browse: https://community.njordscan.dev/rules")
-            console.print("✅ Community browsing information displayed")
-        elif action == 'challenges':
-            console.print("🏆 Security Challenges", style="bold cyan")
-            console.print("\n🎯 Current Challenges:")
-            console.print("• Find XSS in sample applications")
-            console.print("• Implement secure authentication")
-            console.print("• Create secure API endpoints")
-            console.print("• Design secure user interfaces")
-            console.print("\n🌐 Join: https://community.njordscan.dev/challenges")
-            console.print("✅ Security challenges information displayed")
-        elif action == 'mentorship':
-            console.print("👥 Security Mentorship Program", style="bold cyan")
-            console.print("\n🤝 Available Mentors:")
-            console.print("• Web Security Experts")
-            console.print("• Next.js Security Specialists")
-            console.print("• React Security Consultants")
-            console.print("• API Security Architects")
-            console.print("\n🌐 Connect: https://community.njordscan.dev/mentorship")
-            console.print("✅ Mentorship program information displayed")
-        elif action == 'share-rule' and file:
-            console.print("📤 Share Security Rule", style="bold cyan")
-            console.print("\n📝 What to Share:")
-            console.print("• Custom security patterns")
-            console.print("• Framework-specific rules")
-            console.print("• Vulnerability prevention tips")
-            console.print("• Security testing strategies")
-            console.print("\n🌐 Submit: https://community.njordscan.dev/share")
-            console.print("✅ Security rule sharing information displayed")
-        elif action == 'download-rules':
-            console.print("⬇️ Download Community Rules", style="bold cyan")
-            console.print("\n📦 Available Downloads:")
-            console.print("• Next.js Security Rules Pack")
-            console.print("• React Security Guidelines")
-            console.print("• API Security Standards")
-            console.print("• Authentication Best Practices")
-            console.print("\n🌐 Download: https://community.njordscan.dev/download")
-            console.print("✅ Community rules download information displayed")
-        else:
-            console.print("❌ Invalid community action or missing arguments", style="red")
-            
-    except Exception as e:
-        console.print(f"❌ Community error: {str(e)}", style="red")
+    console.print("Community features are not yet available.", style="yellow")
 
 @main.command()
 @click.option('--topic', type=click.Choice(['xss', 'sql-injection', 'csrf', 'ssrf', 'nextjs', 'react', 'vite', 'headers', 'authentication']))
@@ -881,11 +850,11 @@ def community(action, category, file):
 @click.option('--interactive', is_flag=True, help='Interactive learning mode')
 def learn(topic, framework, interactive):
     """🎓 Interactive security tutorials and learning."""
-    if interactive and ADVANCED_FEATURES:
-        from .developer_experience.interactive_cli import interactive_learning
-        asyncio.run(interactive_learning(topic=topic, framework=framework))
+    if interactive:
+        console.print("Interactive learning is not yet available.", style="yellow")
+        return
     else:
-        console.print("📚 NjordScan Learning Resources", style="bold cyan")
+        console.print("NjordScan Learning Resources", style="bold cyan")
         
         # Enhanced topic explanations
         if topic:

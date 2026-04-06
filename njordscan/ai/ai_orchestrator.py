@@ -1,8 +1,9 @@
 """
-AI Security Orchestrator
+Security Analysis Orchestrator
 
-Coordinates all AI-powered security analysis components and provides
-a unified interface for intelligent security scanning and analysis.
+Coordinates heuristic security analysis components (pattern matching,
+fingerprinting, similarity scoring) and provides a unified interface.
+All analysis is rule/heuristic-based, not ML-powered.
 """
 
 import asyncio

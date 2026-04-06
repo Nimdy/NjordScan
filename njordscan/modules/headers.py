@@ -76,28 +76,34 @@ class HeadersModule(BaseModule):
         return await self.scan_url(target)
     
     async def scan_url(self, url: str) -> List[Vulnerability]:
-        """Scan a URL for HTTP security headers."""
-        vulnerabilities = []
-        
+        """Scan a URL for HTTP security headers.
+
+        Tests the main page and framework-specific endpoints, then
+        deduplicates findings so each unique header issue is reported
+        only once (with all affected endpoints listed in metadata).
+        """
+        # Collect raw per-endpoint findings
+        raw_vulns: List[Vulnerability] = []
+
         try:
             async with aiohttp.ClientSession(
                 timeout=aiohttp.ClientTimeout(total=self.config.timeout)
             ) as session:
                 # Test main page
-                vulnerabilities.extend(await self._scan_url(session, url))
-                
+                raw_vulns.extend(await self._scan_url(session, url))
+
                 # Test framework-specific endpoints
                 test_endpoints = self._get_framework_endpoints()
                 for endpoint in test_endpoints:
                     test_url = urljoin(url, endpoint)
                     endpoint_vulns = await self._scan_url(session, test_url, endpoint)
-                    vulnerabilities.extend(endpoint_vulns)
-                
+                    raw_vulns.extend(endpoint_vulns)
+
         except Exception as e:
             if self.config.verbose:
                 print(f"Headers scan error: {e}")
-        
-        return vulnerabilities
+
+        return self._deduplicate_header_vulns(raw_vulns)
     
     async def _scan_url(self, session, url: str, endpoint: str = "") -> List[Vulnerability]:
         """Scan a specific URL for header issues."""
@@ -295,3 +301,28 @@ class HeadersModule(BaseModule):
             ])
         
         return endpoints
+
+    def _deduplicate_header_vulns(self, vulns: List[Vulnerability]) -> List[Vulnerability]:
+        """Collapse duplicate header findings across endpoints.
+
+        Groups by title so that e.g. five identical "Missing CSP" findings
+        become one finding with all affected endpoints listed.
+        """
+        seen: dict[str, Vulnerability] = {}  # title -> first vuln
+
+        for v in vulns:
+            if v.title in seen:
+                # Merge endpoint info into the first occurrence
+                first = seen[v.title]
+                existing = first.metadata.get('endpoints', [])
+                new_ep = v.metadata.get('url', v.metadata.get('endpoint', ''))
+                if new_ep and new_ep not in existing:
+                    existing.append(new_ep)
+                    first.metadata['endpoints'] = existing
+            else:
+                # Keep the first occurrence; seed the endpoints list
+                ep = v.metadata.get('url', v.metadata.get('endpoint', ''))
+                v.metadata['endpoints'] = [ep] if ep else []
+                seen[v.title] = v
+
+        return list(seen.values())

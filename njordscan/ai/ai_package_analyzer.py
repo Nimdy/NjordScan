@@ -1,8 +1,9 @@
 """
-AI Package Analyzer for NPM Attack Detection
+Package Analyzer for NPM Attack Detection
 
-Advanced AI-powered analysis for detecting AI-generated malicious packages,
-typosquatting attempts, and sophisticated supply chain attacks.
+Heuristic analysis for detecting malicious packages, typosquatting attempts,
+and supply chain attacks using regex pattern matching, string similarity
+scoring, and statistical heuristics. Does not use ML models or LLM APIs.
 """
 
 import asyncio

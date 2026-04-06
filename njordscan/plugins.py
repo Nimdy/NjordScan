@@ -1,8 +1,7 @@
 """
-🛡️ Legacy Plugin System for NjordScan v1.0.0
+Plugin System for NjordScan v1.0.0
 
-Basic plugin loading system - maintained for backward compatibility.
-For advanced plugin features, use the plugins_v2 system.
+Plugin loading and management system.
 """
 
 import os
@@ -27,10 +26,7 @@ class PluginInfo:
     plugin_type: str = "scanner"  # scanner or reporter
 
 class PluginManager:
-    """Legacy plugin manager - maintained for backward compatibility.
-    
-    For advanced features, use plugins_v2.PluginManager instead.
-    """
+    """Plugin manager for loading and managing scanner plugins."""
     
     def __init__(self, plugin_dirs: List[str] = None):
         self.console = Console()
