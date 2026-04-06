@@ -1,113 +1,73 @@
-# 📚 NjordScan Documentation
+# NjordScan Documentation
 
-Welcome to the comprehensive documentation for NjordScan - The Ultimate Security Scanner for Next.js, React, and Vite Applications.
+Documentation for NjordScan — a security scanner for Next.js, React, and Vite applications.
 
-## 🚀 Quick Navigation
-
-### Getting Started
+## Getting Started
 - [**Installation Guide**](getting-started/installation.md) - Complete installation instructions
 - [**Quick Start**](getting-started/quick-start.md) - Get up and running in minutes
-- [**Kali Linux Guide**](getting-started/KALI_LINUX_GUIDE.md) - Specialized installation for Kali Linux
-- [**Wheel Installation Guide**](getting-started/WHEEL_INSTALLATION_GUIDE.md) - Resolve wheel installation issues
-- [**Kali Quick Fix**](getting-started/KALI_USER_QUICK_FIX.md) - Quick fixes for Kali Linux users
+- [**Kali Linux Guide**](getting-started/KALI_LINUX_GUIDE.md) - Installation for Kali Linux
+- [**Wheel Installation Guide**](getting-started/WHEEL_INSTALLATION_GUIDE.md) - Resolve wheel issues
 
-### User Guide
-- [**CLI Reference**](user-guide/cli-reference.md) - Complete command-line interface documentation
-- [**AI NPM Attack Detection**](ai-npm-detection.md) - **NEW!** AI-powered npm package attack detection
-- [**Vulnerability Types**](security/vulnerability-types.md) - Comprehensive vulnerability detection types
+## User Guide
+- [**CLI Reference**](user-guide/cli-reference.md) - Command-line interface documentation
+- [**Vulnerability Types**](security/vulnerability-types.md) - Detection types with CWE/OWASP mapping
 
-### Advanced Topics
-- [**Troubleshooting**](advanced/troubleshooting.md) - Common issues and solutions
-- [**LXML Troubleshooting**](advanced/LXML_TROUBLESHOOTING.md) - Resolve lxml installation issues
-- [**Kali Linux Fixes**](advanced/KALI_LINUX_FIXES.md) - Advanced Kali Linux troubleshooting
-
-### Development
+## Development
+- [**Architecture**](development/architecture.md) - System architecture and components
 - [**API Documentation**](development/api.md) - Programmatic API reference
-- [**Architecture**](development/architecture.md) - System architecture and design
 
-### Security
-- [**Vulnerability Types**](security/vulnerability-types.md) - Complete vulnerability type reference
-- **Security** - Community-driven security research
+## Advanced
+- [**Troubleshooting**](advanced/troubleshooting.md) - Common issues and solutions
+- [**LXML Troubleshooting**](advanced/LXML_TROUBLESHOOTING.md) - Resolve lxml issues
+- [**Framework Pentesting**](security/framework-pentesting.md) - Framework-specific security testing
 
-## 🎯 Documentation Structure
+## Documentation Structure
 
 ```
 docs/
-├── README.md                    # This file - documentation index
-├── getting-started/             # Installation and setup guides
+├── README.md                         # This file
+├── getting-started/
 │   ├── installation.md
 │   ├── quick-start.md
 │   ├── KALI_LINUX_GUIDE.md
-│   ├── WHEEL_INSTALLATION_GUIDE.md
-│   └── KALI_USER_QUICK_FIX.md
-├── user-guide/                  # User documentation
+│   └── WHEEL_INSTALLATION_GUIDE.md
+├── user-guide/
 │   └── cli-reference.md
-├── advanced/                    # Advanced topics and troubleshooting
-│   ├── troubleshooting.md
-│   ├── LXML_TROUBLESHOOTING.md
-│   └── KALI_LINUX_FIXES.md
-├── development/                 # Developer documentation
+├── development/
 │   ├── api.md
 │   └── architecture.md
-└── security/                    # Security documentation
-    └── vulnerability-types.md
+├── security/
+│   ├── vulnerability-types.md
+│   └── framework-pentesting.md
+├── advanced/
+│   ├── troubleshooting.md
+│   └── LXML_TROUBLESHOOTING.md
+└── docker/
+    └── README.md
 ```
 
-## 🔍 What is NjordScan?
+## What NjordScan Does
 
-NjordScan is a comprehensive security scanner designed specifically for modern web applications built with Next.js, React, and Vite. It combines:
+NjordScan scans web applications for security vulnerabilities using pattern matching, heuristic analysis, and threat intelligence:
 
-- **🔍 Static Analysis** - Deep code analysis for security vulnerabilities
-- **⚡ Dynamic Testing** - Runtime security testing and penetration testing
-- **🤖 AI-Enhanced Detection** - Machine learning-powered vulnerability detection
-- **🛡️ AI NPM Attack Detection** - **NEW!** Advanced detection of AI-generated malicious packages
-- **🛡️ Threat Intelligence** - Real-time CVE and MITRE ATT&CK integration
-- **📊 Behavioral Analysis** - Advanced behavioral pattern detection
-- **🔌 Plugin System** - Extensible architecture with community plugins
+- **Static Analysis** — regex-based code scanning for XSS, injection, secrets, and misconfigurations
+- **Supply Chain Security** — install script analysis, lockfile integrity, typosquatting detection
+- **Dynamic Testing** — HTTP header analysis and runtime testing against live applications
+- **Dependency Auditing** — npm audit integration, known-malicious package detection
+- **Framework-Specific** — specialized patterns for Next.js, React, and Vite
+- **Pattern Engine** — extensible pattern system with CWE/OWASP mapping and custom rule support
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# Install NjordScan
-pip install njordscan
-
-# Basic scan
-njordscan scan .
-
-# Advanced scan with AI
-njordscan scan . --mode deep --ai-enhanced --behavioral-analysis
-
-# Penetration testing
-njordscan scan http://localhost:3000 --mode enterprise --pentest
+python3 -m venv venv && source venv/bin/activate
+pip install -e .
+python -m njordscan update
+python -m njordscan legal --accept
+python -m njordscan scan .
 ```
 
-## 📖 Documentation Sections
-
-### Getting Started
-Perfect for new users who want to install and start using NjordScan immediately.
-
-### User Guide
-Comprehensive guides for using NjordScan effectively, including CLI reference and vulnerability types.
-
-### Advanced Topics
-For power users and administrators who need to troubleshoot issues or understand advanced features.
-
-### Development
-For developers who want to contribute to NjordScan or integrate it into their own projects.
-
-### Security
-Security-focused documentation including vulnerability types and security policies.
-
-## 🤝 Contributing to Documentation
-
-We welcome contributions to improve our documentation! Please see our [Contributing Guide](../CONTRIBUTING.md) for details.
-
-## 📞 Support
+## Support
 
 - **Issues**: [GitHub Issues](https://github.com/nimdy/njordscan/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/nimdy/njordscan/discussions)
-- **Security**: Community-driven security research
-
----
-
-*Last updated: September 2025*

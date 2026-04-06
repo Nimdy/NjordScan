@@ -84,7 +84,7 @@ njordscan --show-progress
 ⚙️  Configuration         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   0% Queued
 🏃 Runtime Testing        ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   0% Queued
 
-💡 Tip: Use --deep for comprehensive AI-powered analysis
+Tip: Use --mode deep for comprehensive analysis
 ```
 
 ---
@@ -109,14 +109,14 @@ njordscan --mode standard
 - 🔄 **Regular security checks**
 - 🎯 **Balanced speed vs coverage**
 
-### 🧠 **Deep AI Scan** (5-15 minutes)
+### **Deep Scan** (5-15 minutes)
 ```bash
-njordscan --mode deep --ai-enhanced
+njordscan --mode deep
 ```
 **Perfect for:**
-- 🚀 **Pre-production checks**
-- 🔒 **Security audits**
-- 🧠 **AI-powered analysis**
+- Pre-production checks
+- Security audits
+- Comprehensive analysis
 
 ---
 

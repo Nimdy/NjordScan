@@ -1,17 +1,16 @@
 """
-🛡️ NjordScan v1.0.0 - The Ultimate Security Scanner
+NjordScan v1.0.0 - Security Scanner
 
-The most advanced, comprehensive, and developer-friendly security scanner for modern 
-JavaScript applications. Built specifically for Next.js, React, and Vite applications,
-combining cutting-edge AI, community-driven intelligence, and enterprise-grade performance.
+Security scanner for Next.js, React, and Vite applications.
+Combines heuristic pattern analysis, supply chain auditing, and
+threat intelligence for comprehensive vulnerability detection.
 
 Features:
-- 🧠 AI-Powered Intelligence with ML-enhanced vulnerability detection
-- ⚡ Enterprise-Grade Performance with multi-threaded scanning
-- 🎨 Amazing Developer Experience with interactive CLI and IDE integration
-- 🌟 Community Ecosystem with shared security rules and threat intelligence
-- 🔄 Complete CI/CD Integration for all major platforms
-- 🛡️ Comprehensive Security Coverage with 25+ standardized vulnerability types aligned with OWASP Top 10 2021
+- Heuristic vulnerability detection with pattern matching and code fingerprinting
+- Supply chain security: install script analysis, lockfile integrity, typosquatting detection
+- Multi-threaded scanning with circuit breaker and rate limiting
+- CI/CD integration for GitHub Actions, GitLab CI, Jenkins, Azure DevOps
+- Comprehensive security coverage with 35+ vulnerability types aligned with OWASP Top 10 2021
 
 Author: NjordScan Contributors
 License: MIT

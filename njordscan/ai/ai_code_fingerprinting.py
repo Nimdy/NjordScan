@@ -1,8 +1,8 @@
 """
-AI Code Fingerprinting and Pattern Detection
+Code Fingerprinting and Pattern Detection
 
-Advanced fingerprinting system for detecting AI-generated code patterns,
-obfuscation techniques, and malicious code signatures.
+Fingerprinting system for detecting obfuscation techniques, suspicious code
+patterns, and malicious code signatures using regex and heuristic scoring.
 """
 
 import re

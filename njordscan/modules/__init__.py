@@ -48,6 +48,13 @@ except ImportError:
     AI_ENDPOINTS_AVAILABLE = False
     AIEndpointsModule = None
 
+try:
+    from .supply_chain import SupplyChainModule
+    SUPPLY_CHAIN_AVAILABLE = True
+except ImportError:
+    SUPPLY_CHAIN_AVAILABLE = False
+    SupplyChainModule = None
+
 # Enhanced modules (with fallback if not available)
 try:
     from .code_static_enhanced import CodeStaticEnhancedModule
@@ -64,7 +71,8 @@ __all__ = [
     'CodeStaticModule',
     'DependenciesModule',
     'RuntimeModule',
-    'AIEndpointsModule'
+    'AIEndpointsModule',
+    'SupplyChainModule'
 ]
 
 # Add enhanced modules if available
@@ -86,6 +94,8 @@ if RUNTIME_AVAILABLE:
     MODULE_REGISTRY['runtime'] = RuntimeModule
 if AI_ENDPOINTS_AVAILABLE:
     MODULE_REGISTRY['ai_endpoints'] = AIEndpointsModule
+if SUPPLY_CHAIN_AVAILABLE:
+    MODULE_REGISTRY['supply_chain'] = SupplyChainModule
 if ENHANCED_STATIC_AVAILABLE:
     MODULE_REGISTRY['static_enhanced'] = CodeStaticEnhancedModule
 
@@ -104,7 +114,7 @@ def is_module_available(module_name: str) -> bool:
 # Module categories for organization
 MODULE_CATEGORIES = {
     'security': ['headers', 'configs', 'static', 'static_enhanced'],
-    'dependencies': ['dependencies'],
+    'dependencies': ['dependencies', 'supply_chain'],
     'runtime': ['runtime'],
     'ai': ['ai_endpoints'],
 }
@@ -157,6 +167,13 @@ MODULE_METADATA = {
         'category': 'ai',
         'frameworks': ['all'],
         'ai_enhanced': True
+    },
+    'supply_chain': {
+        'name': 'Supply Chain Security',
+        'description': 'Detects malicious install scripts, lockfile tampering, and dependency integrity issues',
+        'category': 'dependencies',
+        'frameworks': ['all'],
+        'ai_enhanced': False
     }
 }
 

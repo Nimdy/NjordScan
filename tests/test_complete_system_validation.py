@@ -29,7 +29,7 @@ from njordscan.ai.ai_orchestrator import AISecurityOrchestrator
 from njordscan.intelligence.intelligence_orchestrator import IntelligenceOrchestrator
 from njordscan.intelligence.behavioral_analyzer import BehavioralAnalyzer
 from njordscan.intelligence.false_positive_filter import FalsePositiveFilter
-from njordscan.plugins_v2.plugin_orchestrator import PluginOrchestrator
+from njordscan.plugins import PluginManager
 from njordscan.frameworks.framework_detector import FrameworkDetector
 from njordscan.data_updater import VulnerabilityDataManager
 
@@ -64,7 +64,7 @@ async def test_core_imports():
         from njordscan.intelligence.false_positive_filter import FalsePositiveFilter
         
         # Test plugins
-        from njordscan.plugins_v2.plugin_orchestrator import PluginOrchestrator
+        from njordscan.plugins import PluginManager
         
         # Test frameworks
         from njordscan.frameworks.framework_detector import FrameworkDetector

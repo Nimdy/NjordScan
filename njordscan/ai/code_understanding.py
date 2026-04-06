@@ -1,8 +1,9 @@
 """
-AI-Powered Code Understanding Engine
+Code Understanding Engine
 
-Uses natural language processing concepts and semantic analysis to understand code intent,
-detect suspicious patterns, and provide intelligent security insights.
+Lexical and structural analysis of code to detect suspicious patterns.
+Uses regex matching, entropy calculation, and statistical heuristics
+rather than NLP or ML models.
 """
 
 import re

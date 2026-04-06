@@ -1,8 +1,9 @@
 """
 Package Name Similarity Analysis for Typosquatting Detection
 
-Advanced ML-based similarity analysis for detecting typosquatting attempts,
-dependency confusion attacks, and package name manipulation.
+String-distance similarity analysis (SequenceMatcher / Levenshtein) for
+detecting typosquatting attempts, dependency confusion attacks, and package
+name manipulation.  No ML models — purely algorithmic string comparison.
 """
 
 import asyncio

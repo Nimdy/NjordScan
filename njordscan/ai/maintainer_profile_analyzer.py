@@ -1,8 +1,10 @@
 """
 Maintainer Profile Analysis for NPM Attack Detection
 
-Advanced analysis of package maintainers to detect suspicious patterns,
-account takeovers, and social engineering attempts.
+Heuristic analysis of package maintainer metadata to detect suspicious
+patterns, account takeovers, and social engineering indicators.
+Uses rule-based checks on email domains, username patterns, and commit
+history — no ML models.
 """
 
 import asyncio
