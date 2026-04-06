@@ -16,6 +16,12 @@ from typing import List, Dict, Any, Optional
 from .base import BaseModule
 from ..vulnerability import Vulnerability
 
+try:
+    from ..analysis.dep_graph import DepGraphAnalyzer
+    DEP_GRAPH_AVAILABLE = True
+except ImportError:
+    DEP_GRAPH_AVAILABLE = False
+
 # Patterns that are strong indicators of malicious install scripts
 DANGEROUS_SCRIPT_PATTERNS = [
     # Network exfiltration during install
@@ -110,6 +116,11 @@ class SupplyChainModule(BaseModule):
         # 2. Lockfile integrity checks
         lockfile_vulns = self._scan_lockfile_integrity(target_path)
         vulnerabilities.extend(lockfile_vulns)
+
+        # 3. Dependency graph risk analysis
+        if DEP_GRAPH_AVAILABLE:
+            dep_vulns = self._scan_dep_graph(target_path)
+            vulnerabilities.extend(dep_vulns)
 
         return vulnerabilities
 
@@ -423,6 +434,45 @@ class SupplyChainModule(BaseModule):
                 file_path=str(lock_path),
                 fix="Pin to a specific commit hash or publish to a registry.",
                 metadata={'entry_name': entry_name, 'resolved_url': resolved}
+            ))
+
+        return vulnerabilities
+
+    def _scan_dep_graph(self, target_path: Path) -> List[Vulnerability]:
+        """Analyze the dependency graph for transitive risks."""
+        vulnerabilities = []
+        try:
+            analyzer = DepGraphAnalyzer()
+            result = analyzer.analyze(target_path)
+        except Exception:
+            return vulnerabilities
+
+        if not result:
+            return vulnerabilities
+
+        for risk in result.risks:
+            if risk.risk_score < 0.2:
+                continue  # Skip low-risk noise
+
+            vulnerabilities.append(self.create_vulnerability(
+                title=f"Risky dependency: {risk.name}@{risk.version}",
+                description=(
+                    f"Package '{risk.name}' (v{risk.version}, depth {risk.depth}) "
+                    f"has risk factors: {'; '.join(risk.risk_factors)}"
+                ),
+                severity=risk.severity,
+                confidence='high' if risk.risk_score >= 0.7 else 'medium',
+                vuln_type='malicious_package' if risk.risk_score >= 0.7 else 'vulnerable_dependency',
+                fix=f"Review '{risk.name}' and its risk factors. Consider replacing with a vetted alternative.",
+                metadata={
+                    'package_name': risk.name,
+                    'version': risk.version,
+                    'depth': risk.depth,
+                    'risk_score': risk.risk_score,
+                    'risk_factors': risk.risk_factors,
+                    'total_packages': result.total_packages,
+                    'max_depth': result.max_depth,
+                }
             ))
 
         return vulnerabilities

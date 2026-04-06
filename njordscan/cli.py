@@ -340,6 +340,9 @@ def main(ctx):
 @click.option('--sbom', 'sbom_output', help='Generate SBOM (Software Bill of Materials) to file')
 @click.option('--sbom-format', type=click.Choice(['cyclonedx', 'spdx']),
               default='cyclonedx', help='SBOM output format')
+@click.option('--explain-with-ai', is_flag=True, help='Use LLM to explain findings and suggest fixes (requires API key)')
+@click.option('--ai-provider', type=click.Choice(['claude', 'openai']),
+              default='claude', help='LLM provider for --explain-with-ai')
 @click.pass_context
 @require_legal_acceptance
 def scan(ctx, target, output_format, output, mode, framework, severity, verbose, quiet,
@@ -347,7 +350,7 @@ def scan(ctx, target, output_format, output, mode, framework, severity, verbose,
          threat_intel, community_rules, web, threads, cache_strategy, fail_on, quality_gate,
          ci, show_progress, include_remediation, executive_summary, skip, only, timeout,
          memory_limit, no_color, enhanced, custom_rules, false_positive_filter, trend_analysis,
-         sbom_output, sbom_format):
+         sbom_output, sbom_format, explain_with_ai, ai_provider):
     """🔍 Scan a target for security vulnerabilities."""
     # Show banner unless in quiet mode
     if not quiet and not ci:
@@ -451,6 +454,48 @@ def scan(ctx, target, output_format, output, mode, framework, severity, verbose,
             orchestrator = ScanOrchestrator(config)
             results = asyncio.run(orchestrator.scan())
         
+        # LLM-powered analysis (opt-in)
+        if explain_with_ai:
+            try:
+                from .analysis.llm_analyzer import LLMAnalyzer, LLMConfig, LLMProvider
+                provider = LLMProvider.CLAUDE if ai_provider == 'claude' else LLMProvider.OPENAI
+                llm = LLMAnalyzer(LLMConfig(provider=provider))
+
+                # Flatten vulnerabilities for LLM analysis
+                all_vulns = []
+                grouped = results.get('vulnerabilities', {})
+                if isinstance(grouped, dict):
+                    for mod_vulns in grouped.values():
+                        if isinstance(mod_vulns, list):
+                            all_vulns.extend(mod_vulns)
+
+                if all_vulns:
+                    console.print(f"\nAnalyzing {len(all_vulns)} finding(s) with {ai_provider}...", style="blue")
+                    for v in all_vulns[:20]:  # Limit to 20 findings
+                        vuln_dict = v if isinstance(v, dict) else (v.to_dict() if hasattr(v, 'to_dict') else {})
+                        fp = vuln_dict.get('file_path', '')
+                        code_ctx = ''
+                        if fp and Path(fp).exists():
+                            try:
+                                code_ctx = Path(fp).read_text(encoding='utf-8')[:2000]
+                            except Exception:
+                                pass
+                        try:
+                            explanation = asyncio.run(llm.explain_finding(vuln_dict, code_ctx, fp))
+                            console.print(f"\n[bold]{vuln_dict.get('title', '')}[/bold]")
+                            console.print(f"  {explanation.summary}")
+                            if explanation.fix_suggestion:
+                                console.print(f"  Fix: {explanation.fix_suggestion}", style="green")
+                            if explanation.is_false_positive:
+                                console.print("  (LLM suggests this may be a false positive)", style="yellow")
+                        except Exception as e:
+                            if verbose:
+                                console.print(f"  LLM analysis failed: {e}", style="red")
+                else:
+                    console.print("No findings to analyze with LLM.", style="yellow")
+            except (ImportError, ValueError) as e:
+                console.print(f"LLM analysis unavailable: {e}", style="yellow")
+
         # Handle CI/CD exit codes
         if ci and fail_on:
             severity_levels = ['info', 'low', 'medium', 'high', 'critical']

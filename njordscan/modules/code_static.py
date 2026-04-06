@@ -13,6 +13,12 @@ from typing import List, Dict, Any, Optional
 from .base import BaseModule
 from ..vulnerability import Vulnerability
 
+try:
+    from ..analysis.taint_tracker import TaintTracker, TREE_SITTER_AVAILABLE
+except ImportError:
+    TREE_SITTER_AVAILABLE = False
+    TaintTracker = None
+
 class CodeStaticModule(BaseModule):
     """Module for static code analysis."""
     
@@ -205,16 +211,77 @@ class CodeStaticModule(BaseModule):
                 files = list(target_path.rglob(f'*{ext}'))
                 source_files.extend([(f, lang) for f in files])
         
-        # Scan each file
+        # Scan each file (regex patterns)
         for file_path, language in source_files:
             if self._should_skip_file(file_path):
                 continue
-            
+
             file_vulns = await self._scan_source_file(file_path, language)
             vulnerabilities.extend(file_vulns)
-        
+
+        # Run taint tracking on JS/TS files (tree-sitter)
+        if TREE_SITTER_AVAILABLE:
+            taint_vulns = self._run_taint_analysis(source_files)
+            vulnerabilities.extend(taint_vulns)
+
         return vulnerabilities
     
+    def _run_taint_analysis(self, source_files) -> List[Vulnerability]:
+        """Run tree-sitter taint tracking on JS/TS files."""
+        vulns = []
+        js_extensions = {'.js', '.jsx', '.ts', '.tsx', '.mjs'}
+        try:
+            tracker = TaintTracker()
+        except Exception:
+            return vulns
+
+        for file_path, language in source_files:
+            if file_path.suffix.lower() not in js_extensions:
+                continue
+            if self._should_skip_file(file_path):
+                continue
+            try:
+                content = file_path.read_text(encoding='utf-8')
+            except (IOError, UnicodeDecodeError):
+                continue
+
+            flows = tracker.analyze_file(file_path, content)
+            for flow in flows:
+                vulns.append(self.create_vulnerability(
+                    title=f"Taint flow: {flow.source.source_type} -> {flow.sink.sink_type}",
+                    description=flow.description,
+                    severity=flow.sink.severity.value,
+                    confidence="high",
+                    vuln_type=self._cwe_to_vuln_type(flow.cwe_id),
+                    file_path=flow.file_path,
+                    line_number=flow.sink.line,
+                    code_snippet=f"Source (line {flow.source.line}): {flow.source.source_type} | Sink (line {flow.sink.line}): {flow.sink.sink_type}",
+                    fix=f"Sanitize or validate data from {flow.source.source_type} before passing to {flow.sink.sink_type}.",
+                    metadata={
+                        'analysis': 'taint_tracking',
+                        'source_line': flow.source.line,
+                        'sink_line': flow.sink.line,
+                        'source_type': flow.source.source_type,
+                        'sink_type': flow.sink.sink_type,
+                        'cwe_id': flow.cwe_id,
+                        'taint_path': flow.path,
+                        'confidence': flow.confidence,
+                    }
+                ))
+        return vulns
+
+    @staticmethod
+    def _cwe_to_vuln_type(cwe: str) -> str:
+        mapping = {
+            'CWE-79': 'xss_dom',
+            'CWE-95': 'code_injection',
+            'CWE-78': 'command_injection',
+            'CWE-89': 'sql_injection',
+            'CWE-22': 'path_traversal',
+            'CWE-601': 'open_redirect',
+        }
+        return mapping.get(cwe, 'code_injection')
+
     def _should_skip_file(self, file_path: Path) -> bool:
         """Check if file should be skipped."""
         skip_dirs = {
