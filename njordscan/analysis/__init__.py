@@ -1,19 +1,21 @@
 """
-Advanced Static Analysis Components for NjordScan.
+Static Analysis Components for NjordScan.
 """
 
 from .ast_analyzer import JavaScriptASTAnalyzer, TypeScriptASTAnalyzer
 from .pattern_engine import PatternEngine, SecurityPattern
-from .code_flow_analyzer import CodeFlowAnalyzer
-from .vulnerability_classifier import VulnerabilityClassifier
-from .semantic_analyzer import SemanticAnalyzer
+
+try:
+    from .taint_tracker import TaintTracker, TREE_SITTER_AVAILABLE
+except ImportError:
+    TaintTracker = None
+    TREE_SITTER_AVAILABLE = False
 
 __all__ = [
     'JavaScriptASTAnalyzer',
-    'TypeScriptASTAnalyzer', 
+    'TypeScriptASTAnalyzer',
     'PatternEngine',
     'SecurityPattern',
-    'CodeFlowAnalyzer',
-    'VulnerabilityClassifier',
-    'SemanticAnalyzer'
+    'TaintTracker',
+    'TREE_SITTER_AVAILABLE',
 ]

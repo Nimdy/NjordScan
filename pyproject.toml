@@ -109,7 +109,12 @@ dependencies = [
     "lz4>=4.3.0,<5.0.0",
     
     # Additional Security Tools
-    "bandit>=1.7.0,<2.0.0"
+    "bandit>=1.7.0,<2.0.0",
+
+    # AST Parsing for Taint Tracking
+    "tree-sitter>=0.23.0",
+    "tree-sitter-javascript>=0.23.0",
+    "tree-sitter-typescript>=0.23.0"
 ]
 
 [project.optional-dependencies]

@@ -445,58 +445,133 @@ class ReportFormatter:
             f.write(html_content)
     
     def _save_sarif_report(self, results: Dict[str, Any], output_path: Path):
-        """Save report in SARIF format for integration with security tools."""
-        sarif_report = {
-            "version": "2.1.0",
-            "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
-            "runs": [
-                {
-                    "tool": {
-                        "driver": {
-                            "name": "NjordScan",
-                            "version": "0.1.0",
-                            "informationUri": "https://github.com/njordscan/njordscan",
-                            "rules": []
-                        }
-                    },
-                    "results": []
-                }
-            ]
-        }
-        
-        # Convert vulnerabilities to SARIF format
-        for module_name, module_vulns in results['vulnerabilities'].items():
+        """Save report in SARIF 2.1.0 format for GitHub Code Scanning / security tools."""
+        from .. import __version__
+
+        rules_map: Dict[str, dict] = {}  # ruleId -> rule object
+        sarif_results: list = []
+
+        for module_name, module_vulns in results.get('vulnerabilities', {}).items():
             for vuln in module_vulns:
+                vuln_type = vuln.get('vuln_type', f"{module_name}_issue")
+                rule_id = vuln_type
+
+                # Build rule entry (once per type)
+                if rule_id not in rules_map:
+                    rule = {
+                        "id": rule_id,
+                        "name": vuln_type.replace('_', ' ').title(),
+                        "shortDescription": {"text": vuln.get('title', rule_id)},
+                        "fullDescription": {"text": vuln.get('description', '')[:512]},
+                        "helpUri": vuln.get('reference', ''),
+                        "defaultConfiguration": {
+                            "level": self._map_severity_to_sarif(vuln.get('severity', 'info'))
+                        },
+                        "properties": {}
+                    }
+                    # Add CWE if present in metadata
+                    meta = vuln.get('metadata', {})
+                    cwe_codes = meta.get('cwe_codes', [])
+                    cwe_id = meta.get('cwe_id', '')
+                    if cwe_id and cwe_id not in cwe_codes:
+                        cwe_codes = [cwe_id] + cwe_codes
+                    if cwe_codes:
+                        rule["properties"]["tags"] = [c if c.startswith('CWE') else f"CWE-{c}" for c in cwe_codes]
+                        rule["properties"]["security-severity"] = self._severity_to_score(vuln.get('severity', 'info'))
+                    owasp = meta.get('owasp_category', '')
+                    if owasp:
+                        rule["properties"].setdefault("tags", []).append(owasp)
+                    rules_map[rule_id] = rule
+
+                # Build result
                 sarif_result = {
-                    "ruleId": vuln.get('id', f"{module_name}_unknown"),
+                    "ruleId": rule_id,
                     "level": self._map_severity_to_sarif(vuln.get('severity', 'info')),
                     "message": {
                         "text": vuln.get('description', vuln.get('title', 'Security issue detected'))
                     },
-                    "locations": []
+                    "locations": [],
                 }
-                
-                # Add location if available
+
+                # Fix suggestion
+                fix_text = vuln.get('fix', '')
+                if fix_text:
+                    sarif_result["fixes"] = [{"description": {"text": fix_text}}]
+
+                # Location
                 if vuln.get('file_path'):
                     location = {
                         "physicalLocation": {
                             "artifactLocation": {
-                                "uri": vuln['file_path']
+                                "uri": vuln['file_path'],
+                                "uriBaseId": "%SRCROOT%"
                             }
                         }
                     }
-                    
                     if vuln.get('line_number'):
-                        location["physicalLocation"]["region"] = {
-                            "startLine": vuln['line_number']
-                        }
-                    
+                        region = {"startLine": vuln['line_number']}
+                        if vuln.get('code_snippet'):
+                            region["snippet"] = {"text": vuln['code_snippet'][:500]}
+                        location["physicalLocation"]["region"] = region
                     sarif_result["locations"].append(location)
-                
-                sarif_report["runs"][0]["results"].append(sarif_result)
-        
+
+                # Taint flow (code flow)
+                meta = vuln.get('metadata', {})
+                if meta.get('analysis') == 'taint_tracking':
+                    source_line = meta.get('source_line')
+                    sink_line = meta.get('sink_line')
+                    if source_line and sink_line and vuln.get('file_path'):
+                        sarif_result["codeFlows"] = [{
+                            "threadFlows": [{
+                                "locations": [
+                                    {
+                                        "location": {
+                                            "physicalLocation": {
+                                                "artifactLocation": {"uri": vuln['file_path'], "uriBaseId": "%SRCROOT%"},
+                                                "region": {"startLine": source_line}
+                                            },
+                                            "message": {"text": f"Taint source: {meta.get('source_type', '')}"}
+                                        }
+                                    },
+                                    {
+                                        "location": {
+                                            "physicalLocation": {
+                                                "artifactLocation": {"uri": vuln['file_path'], "uriBaseId": "%SRCROOT%"},
+                                                "region": {"startLine": sink_line}
+                                            },
+                                            "message": {"text": f"Taint sink: {meta.get('sink_type', '')}"}
+                                        }
+                                    }
+                                ]
+                            }]
+                        }]
+
+                sarif_results.append(sarif_result)
+
+        sarif_report = {
+            "version": "2.1.0",
+            "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+            "runs": [{
+                "tool": {
+                    "driver": {
+                        "name": "NjordScan",
+                        "version": __version__,
+                        "semanticVersion": __version__,
+                        "informationUri": "https://github.com/nimdy/njordscan",
+                        "rules": list(rules_map.values())
+                    }
+                },
+                "results": sarif_results
+            }]
+        }
+
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(sarif_report, f, indent=2)
+
+    @staticmethod
+    def _severity_to_score(severity: str) -> str:
+        """Map severity to SARIF security-severity score (0.0-10.0)."""
+        return {"critical": "9.5", "high": "7.5", "medium": "5.0", "low": "2.5", "info": "1.0"}.get(severity, "5.0")
     
     def _save_text_report(self, results: Dict[str, Any], output_path: Path):
         """Save report as enhanced plain text."""
