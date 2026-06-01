@@ -8,10 +8,11 @@ Catches the attacks that happen before you even run your code:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 from ..core.finding import Finding
 from ..core.project import Project
@@ -21,6 +22,8 @@ _LIFECYCLE_SCRIPTS = (
     "preinstall", "install", "postinstall",
     "preuninstall", "postuninstall", "prepare", "prepublish",
 )
+
+_MAX_DEP_PKGS = 8000   # cap how many node_modules package.json files we read, for perf
 
 # (regex, human reason). Ordered most-to-least specific.
 _DANGEROUS_PATTERNS: List[tuple[re.Pattern[str], str]] = [
@@ -55,7 +58,94 @@ class SupplyChainDetector(Detector):
         findings: List[Finding] = []
         findings.extend(self._check_install_scripts(project))
         findings.extend(self._check_lockfile(project))
+        findings.extend(self._audit_installed_deps(project))
         return findings
+
+    # -- installed dependency audit (node_modules) ---------------------------
+
+    def _audit_installed_deps(self, project: Project) -> List[Finding]:
+        """Scan installed dependencies for dangerous install scripts, and flag any
+        install script that is NEW or CHANGED since the last scan — the signature of
+        a freshly-compromised package picked up on a redeploy."""
+        nm = project.root / "node_modules"
+        if not nm.is_dir():
+            return []
+        findings: List[Finding] = []
+        current: Dict[str, Dict[str, str]] = {}   # dep -> {script_name: sha1}
+        count = 0
+        try:
+            paths = nm.rglob("package.json")
+        except OSError:
+            return []
+        for pj in paths:
+            if count >= _MAX_DEP_PKGS:
+                break
+            count += 1
+            try:
+                if pj.stat().st_size > 1_000_000:
+                    continue
+                data = json.loads(pj.read_text(encoding="utf-8", errors="replace"))
+            except (OSError, ValueError):
+                continue
+            scripts = data.get("scripts")
+            if not isinstance(scripts, dict):
+                continue
+            name = str(data.get("name") or pj.parent.name)
+            version = str(data.get("version") or "")
+            current.setdefault(name, {})   # record EVERY dep, so "gained a script" is detectable
+            for sname, cmd in scripts.items():
+                if sname not in _LIFECYCLE_SCRIPTS or not isinstance(cmd, str):
+                    continue
+                current[name][sname] = hashlib.sha1(cmd.encode("utf-8")).hexdigest()
+                for pattern, reason in _DANGEROUS_PATTERNS:
+                    if pattern.search(cmd):
+                        findings.append(Finding(
+                            rule_id="supply-chain.dependency-install-script",
+                            file=f"node_modules/{name}/package.json", line=1,
+                            code_snippet=f'"{sname}": "{cmd[:160]}"', detector=self.id, confidence="high",
+                            reachable=True,
+                            message=(f"Installed dependency '{name}@{version}' has a dangerous '{sname}' "
+                                     f"script: {reason}."),
+                        ))
+                        break
+
+        # change detection vs the previous scan's baseline
+        baseline = self._load_dep_baseline(project)
+        if baseline:   # skip on the very first scan (no baseline yet)
+            for name, scripts in current.items():
+                old = baseline.get(name)
+                if old is None:
+                    continue   # a dependency you newly added is not a "change"
+                for sname, digest in scripts.items():
+                    if sname not in old or old[sname] != digest:
+                        kind = "added a new" if sname not in old else "changed its"
+                        findings.append(Finding(
+                            rule_id="supply-chain.dependency-script-changed",
+                            file=f"node_modules/{name}/package.json", line=1,
+                            detector=self.id, confidence="high", reachable=True,
+                            message=(f"Dependency '{name}' {kind} '{sname}' install script since your "
+                                     "last scan — investigate before deploying (possible compromised update)."),
+                        ))
+        self._save_dep_baseline(project, current)
+        return findings
+
+    @staticmethod
+    def _dep_baseline_path(project: Project) -> Path:
+        return project.root / ".njordscan" / "dep-scripts.json"
+
+    def _load_dep_baseline(self, project: Project) -> Dict[str, Dict[str, str]]:
+        try:
+            return json.loads(self._dep_baseline_path(project).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+
+    def _save_dep_baseline(self, project: Project, current: Dict[str, Dict[str, str]]) -> None:
+        try:
+            path = self._dep_baseline_path(project)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(current, sort_keys=True), encoding="utf-8")
+        except OSError:
+            pass
 
     def _check_install_scripts(self, project: Project) -> List[Finding]:
         pkg = project.package_json

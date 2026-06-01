@@ -275,6 +275,55 @@ RULES: Dict[str, Rule] = dict(
             references=["https://docs.npmjs.com/cli/v10/using-npm/scripts#best-practices"],
         )),
         _rule(Rule(
+            id="supply-chain.dependency-install-script",
+            title="An installed dependency has a dangerous install script",
+            severity=Severity.CRITICAL,
+            cwe="CWE-506",
+            owasp="A08:2021-Software and Data Integrity Failures",
+            why=(
+                "One of your installed dependencies (in node_modules) runs a dangerous "
+                "install script — it pipes remote content into a shell, opens a reverse "
+                "shell, or reads your credentials, automatically, with your permissions, "
+                "during `npm install`. This is exactly how real supply-chain attacks work: "
+                "a popular package gets compromised and a malicious `postinstall` is added. "
+                "You don't have to run the app — installing it is enough to be hit."
+            ),
+            fix=(
+                "Do NOT run the app or `npm ci` again until you've investigated. Pin the "
+                "dependency to a known-good earlier version, report it to npm, and install "
+                "with `--ignore-scripts` in the meantime. Rotate any credentials the script "
+                "could have read (npm token, cloud keys, SSH)."
+            ),
+            secure_example="npm install --ignore-scripts\n# then pin the package to a prior, trusted version",
+            references=[
+                "https://docs.npmjs.com/cli/v10/using-npm/scripts#best-practices",
+                "https://owasp.org/www-community/attacks/Software_Supply_Chain_Attacks",
+            ],
+        )),
+        _rule(Rule(
+            id="supply-chain.dependency-script-changed",
+            title="A dependency's install script is NEW or CHANGED since your last scan",
+            severity=Severity.CRITICAL,
+            cwe="CWE-506",
+            owasp="A08:2021-Software and Data Integrity Failures",
+            why=(
+                "Since the last time NjordScan scanned this project, a dependency either "
+                "GAINED an install script or its install script CHANGED. That is the #1 "
+                "signal of a freshly-compromised package version — an attacker pushes a "
+                "malicious patch release and your next `npm install` / redeploy picks it up "
+                "before anyone has published an advisory. A trusted library does not normally "
+                "start running new install-time code."
+            ),
+            fix=(
+                "Treat this as a possible compromise. Diff the dependency against its previous "
+                "version, check the npm release history and the maintainer, and do not deploy "
+                "until you've confirmed the change is legitimate. Pin back to the last "
+                "known-good version if in doubt."
+            ),
+            secure_example="npm view <pkg> versions   # inspect what changed; pin to a trusted version",
+            references=["https://owasp.org/www-community/attacks/Software_Supply_Chain_Attacks"],
+        )),
+        _rule(Rule(
             id="supply-chain.missing-lockfile",
             title="No lockfile committed",
             severity=Severity.MEDIUM,

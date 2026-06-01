@@ -49,7 +49,7 @@ njordscan mcp                          # run as an MCP server for AI coding assi
 | **XSS / DOM** | `innerHTML`, `document.write`, `javascript:` URLs, unsanitized markdown, `postMessage` without origin checks |
 | **Injection** | `eval`, command injection, SQL/NoSQL injection, path traversal, prototype pollution |
 | **Dependencies** | Known-vulnerable versions (bundled CVE/GHSA DB, refreshable from OSV.dev) and typosquatting |
-| **Supply chain** | Dangerous `postinstall` scripts (`curl \| sh`, reverse shells), missing lockfiles |
+| **Supply chain** | Dangerous `postinstall` scripts (`curl \| sh`, reverse shells) in your code **and in installed dependencies**; **catches a compromised package on redeploy** by flagging install scripts that are *new or changed since your last scan*; missing lockfiles |
 | **Next.js** | Env leaks from `getServerSideProps`/API routes, wildcard CORS, open redirects in middleware, SVG/image foot-guns |
 | **Vite** | `import.meta.env` secrets, `define` inlining, exposed dev server, prod sourcemaps |
 | **Crypto / JWT** | Weak hashes, insecure randomness, hard-coded JWT secrets, `alg: none`, weak ciphers |
@@ -104,6 +104,26 @@ njordscan scan . --diff origin/main --fail-on high   # only fail on issues this 
 
 Reports only findings on the lines your change touched — perfect for adopting NjordScan on an
 existing codebase without fixing the whole backlog at once.
+
+## Catch a compromised dependency on redeploy
+
+Most npm supply-chain attacks work by sneaking a malicious `postinstall` into a patch release of a
+package you already trust — and they run on `npm install`, before your app even starts, often with
+no advisory for days. NjordScan scans your **installed dependencies** (`node_modules`) and:
+
+- flags any dependency whose install script does something dangerous (`curl | sh`, reverse shell,
+  reads `~/.ssh`/`~/.npmrc`, decodes an obfuscated payload) — **no advisory required**;
+- remembers each dependency's install scripts and, on your next scan, flags any that are **new or
+  changed** — so a freshly-compromised version is caught the moment it lands:
+
+```
+🔴 [CRITICAL] Dependency 'left-pad' added a new 'postinstall' install script since your last scan
+             — investigate before deploying (possible compromised update).
+```
+
+Run it in CI after `npm ci`, or on every redeploy. (Honest scope: this catches the *common* attack
+patterns — malicious/obfuscated install behavior — which is how most real npm compromises work; a
+sophisticated backdoor hidden in legit-looking code can still evade behavioral analysis.)
 
 ## Reachability — fix what's actually exploitable first
 

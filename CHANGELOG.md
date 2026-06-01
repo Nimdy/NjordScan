@@ -18,7 +18,10 @@ positives on a clean app, and explains every finding in plain English.
 - **Secrets** detection in code *and* committed `.env*` files, with output masking.
 - **Dependency** scanning against a bundled CVE/GHSA database, refreshable from OSV.dev
   (`njordscan update`).
-- **Supply-chain** checks (dangerous `postinstall` scripts, missing lockfiles).
+- **Supply-chain** checks: dangerous `postinstall` scripts (in your code and **in installed
+  dependencies**), missing lockfiles, and **install-script change detection** — NjordScan baselines
+  each dependency's install scripts and flags any that are new or changed since the last scan, so a
+  freshly-compromised package version is caught on redeploy without waiting for an advisory.
 - **Git-hygiene** detector — catches a `.env` that is committed or not in `.gitignore`.
 - **AI / LLM application security** (`ai.*`): prompt injection, LLM output flowing to a sink or
   rendered as HTML, provider keys in client code, `dangerouslyAllowBrowser`, unauthenticated AI

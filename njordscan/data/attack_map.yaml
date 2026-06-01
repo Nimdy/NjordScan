@@ -290,6 +290,10 @@ rules:
   - T1190
   supply-chain.dangerous-install-script:
   - T1195.002
+  supply-chain.dependency-install-script:
+  - T1195.002
+  supply-chain.dependency-script-changed:
+  - T1195.002
   supply-chain.missing-lockfile:
   - T1195.001
   vite.define-inlines-secret:
