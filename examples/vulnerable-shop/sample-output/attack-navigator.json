@@ -6,20 +6,8 @@
     "attack": "15"
   },
   "domain": "enterprise-attack",
-  "description": "Attack surface of vulnerable-shop from a NjordScan v2.0.0b1 scan: 30 findings across 8 ATT&CK techniques. Score = number of findings mapping to each technique.",
+  "description": "Attack surface of vulnerable-shop from a NjordScan v2.0.0b1 scan: 18 findings across 8 ATT&CK techniques. Score = number of findings mapping to each technique.",
   "techniques": [
-    {
-      "techniqueID": "T1195.001",
-      "score": 14,
-      "enabled": true,
-      "comment": "14 finding(s) — Supply Chain Compromise: Compromise Software Dependencies and Development Tools [Initial Access]. Rules: deps.known-vulnerability",
-      "metadata": [
-        {
-          "name": "njordscan-findings",
-          "value": "14"
-        }
-      ]
-    },
     {
       "techniqueID": "T1190",
       "score": 7,
@@ -61,6 +49,18 @@
       "score": 2,
       "enabled": true,
       "comment": "2 finding(s) — Unsecured Credentials: Credentials In Files [Credential Access]. Rules: secret.aws-access-key, secret.generic",
+      "metadata": [
+        {
+          "name": "njordscan-findings",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1195.001",
+      "score": 2,
+      "enabled": true,
+      "comment": "2 finding(s) — Supply Chain Compromise: Compromise Software Dependencies and Development Tools [Initial Access]. Rules: deps.known-vulnerability",
       "metadata": [
         {
           "name": "njordscan-findings",
@@ -112,7 +112,7 @@
       "#cc0000"
     ],
     "minValue": 0,
-    "maxValue": 14
+    "maxValue": 7
   },
   "legendItems": [
     {

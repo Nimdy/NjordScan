@@ -11,7 +11,10 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import TYPE_CHECKING, Dict, List
+
+if TYPE_CHECKING:
+    from ..analysis import AttackPath
 
 from ..detectors import load_detectors
 from ..detectors.base import Detector
@@ -29,6 +32,10 @@ class ScanResult:
     errors: List[str] = field(default_factory=list)
     duration_s: float = 0.0
     files_scanned: int = 0
+    # correlated multi-step attack paths synthesized from the findings (the "how do
+    # I actually get hacked?" view). Populated by the orchestrator; recomputed by the
+    # CLI when findings are filtered (--diff / --baseline). See njordscan.analysis.
+    attack_paths: List["AttackPath"] = field(default_factory=list)
 
     @property
     def counts(self) -> Dict[Severity, int]:
@@ -78,12 +85,16 @@ class Orchestrator:
         # reachable findings sort first within a severity tier
         findings.sort(key=lambda f: (-f.effective_severity.rank, f.reachable is False, f.file, f.line))
 
+        from ..analysis import synthesize
+        attack_paths = synthesize(findings)
+
         return ScanResult(
             project=project,
             findings=findings,
             errors=errors,
             duration_s=time.perf_counter() - started,
             files_scanned=len(project.source_files),
+            attack_paths=attack_paths,
         )
 
     # 'quick' mode skips the heavier detectors (tree-sitter taint parsing, advisory

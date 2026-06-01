@@ -39,10 +39,69 @@ def render_terminal(result: ScanResult, console: Console, *, verbose: bool = Fal
     _summary_table(result, console)
     console.print()
 
+    # The headline: how these findings actually chain into a breach. Shown before the
+    # individual findings because it's the part a developer should read first.
+    if result.attack_paths and show_fix:
+        _render_attack_paths(result.attack_paths, console)
+
     for idx, finding in enumerate(result.findings, start=1):
         _render_finding(idx, finding, console, show_fix=show_fix)
 
     _footer(result, console)
+
+
+def _render_attack_paths(paths: List, console: Console, *, limit: int = 5) -> None:
+    intro = Text.assemble(
+        ("🎯 Attack paths", "bold red"),
+        ("  ·  how these issues chain into a real breach", "dim"),
+    )
+    console.print(intro)
+    console.print(Text("These are the routes an attacker can actually walk. Fix the ★ step in "
+                       "each — it collapses the whole chain.\n", style="dim"))
+
+    for path in paths[:limit]:
+        band = path.band
+        score = Text.assemble(
+            (f"{band.emoji} ", ""),
+            (f"score {path.score}", f"bold {band.color.split()[-1]}"),
+            (f" · {band.value}", band.color),
+        )
+        if path.kev:
+            score.append("  🚨 actively exploited", style="bold red")
+        title = Text.assemble((f"{path.title}", "bold"))
+
+        body: List = [score, Text(f"Impact: {path.impact}", style="italic")]
+        body.append(Text(""))
+        for step in path.steps:
+            star = "★ " if step.breakpoint else "  "
+            head = Text.assemble(
+                (star, "bold green" if step.breakpoint else "dim"),
+                (f"{step.order}. ", "bold"),
+                (f"[{step.tactic}] ", "cyan"),
+                (step.title, "bold"),
+            )
+            body.append(head)
+            loc = Text(f"     {step.location}", style="dim")
+            body.append(loc)
+            body.append(Text(f"     {step.narrative}\n"))
+        if path.advice:
+            body.append(Text.assemble(("🛠  ", ""), (path.advice, "green")))
+        if path.score_factors:
+            body.append(Text("\nWhy this scores " + str(path.score) + ": "
+                             + "; ".join(path.score_factors) + ".", style="dim italic"))
+
+        console.print(Panel(
+            Group(*body),
+            title=Text.assemble((f" {path.id}  ", "dim"), title),
+            title_align="left",
+            border_style=band.color.split()[-1],
+            padding=(1, 2),
+        ))
+        console.print()
+
+    if len(paths) > limit:
+        console.print(Text(f"   …and {len(paths) - limit} more attack path(s). "
+                           "See JSON output for the full set.\n", style="dim"))
 
 
 def _header(result: ScanResult, console: Console) -> None:

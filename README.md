@@ -63,6 +63,52 @@ njordscan mcp                          # run as an MCP server for AI coding assi
 Each finding maps to a CWE and OWASP category. Silence any line with a trailing
 `// njordscan-ignore` comment.
 
+## 🎯 Attack paths — it tells you *how you get hacked*, not just what's wrong
+
+Every other scanner hands you a flat list — "40 issues, good luck." NjordScan does something
+no other free tool does: it **correlates your findings into the actual multi-step attack an
+adversary would walk**, as a plain-English story, scored by real-world exploitability, with the
+single cheapest place to **break the chain**.
+
+```
+🎯 Attack paths  ·  how these issues chain into a real breach
+
+╭─ path-1  Cloud/account pivot: server access → harvested secret ───────────────╮
+│  🔴 score 100 · critical                                                      │
+│  Impact: Compromise of external systems the leaked credential unlocks         │
+│                                                                               │
+│  ★ 1. [Execution] Server-side code/query execution   lib/db.ts:7              │
+│        Untrusted input reaches a query/eval — an attacker can run code or      │
+│        queries on the server.                                                  │
+│    2. [Credential Access] A real secret is sitting right there   .env.local:2 │
+│        An AWS access key committed to the repo is within reach of that         │
+│        primitive.                                                             │
+│    3. [Lateral Movement] Pivot beyond the app with stolen keys   .env.local:2 │
+│        With the key, the attacker authenticates to your cloud — the blast      │
+│        radius now extends past this app.                                       │
+│                                                                               │
+│  🛠  Break the chain at step 1 — parameterise the query / stop running          │
+│      attacker-controlled input (lib/db.ts:7). Fixing that one thing stops it.  │
+│  Why this scores 100: critical finding; server-side reachable; reaches a       │
+│  concrete impact; exposes a credential (blast radius); distinct weaknesses     │
+│  align.                                                                        │
+╰───────────────────────────────────────────────────────────────────────────────╯
+```
+
+This is the part a non-expert actually needs: **which of your forty findings line up into a
+breach, and the one fix that collapses it.** It's powered entirely by signals NjordScan already
+computes — taint data-flow, reachability from real framework entrypoints, exposed secrets, and
+live exploit intel (CISA KEV/EPSS) — so the chains are grounded in your actual code, not guessed.
+
+It's deliberately **conservative and honest**, not dramatic for its own sake: the score factors
+are always shown (never a magic number), a path's band is **capped to the worst real finding**,
+every step cites a real `file:line`, and the engine refuses to invent connections — it won't
+stitch an auth gap on one route to an injection on an unrelated route, won't call a server-side
+DOM write "XSS in your users' browser," and won't pivot off a test-fixture or already-public
+secret. Unrelated and dead-code findings produce **no** path. Attack paths appear in the terminal
+report and in the `--format json` / `sarif` / `html` output (`attack_paths`) — and in the MCP
+response, so your AI assistant gets the kill chain too.
+
 ## AI / LLM application security
 
 Vibe coders are building AI apps — so NjordScan covers the risks unique to them, which most

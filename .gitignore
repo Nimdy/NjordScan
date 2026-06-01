@@ -52,6 +52,8 @@ njordscan-baseline.json
 # Generated rules feed — built by scripts/gen_rules_feed.py and published to the
 # hosting endpoint per release; never committed (would duplicate data/ and drift).
 feed/
+# Local Claude Code session runtime state (scheduler locks, etc.) — not project files.
+.claude/
 
 # ─── Local secrets / env (but KEEP the intentional test/example fixtures) ──────
 .env

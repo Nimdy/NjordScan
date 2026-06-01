@@ -28,6 +28,19 @@
   .flow { margin: 0; padding-left: 20px; } .muted { color: #64748b; }
   .ai { background: #1e1b4b; border: 1px solid #4338ca; border-radius: 8px; padding: 4px 14px; }
   a { color: #60a5fa; } ul { margin: 6px 0; padding-left: 20px; }
+  .paths { margin: 8px 0 30px; } .paths h2 { font-size: 19px; margin: 0 0 4px; }
+  .psub { color: #94a3b8; font-size: 13px; margin: 0 0 14px; }
+  .path { background: #111827; border: 1px solid #1f2937; border-left: 5px solid #888;
+           border-radius: 10px; margin: 12px 0; padding: 14px 18px; }
+  .phead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .score { color: #fff; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 6px; }
+  .kev { color: #fca5a5; font-weight: 700; font-size: 12px; }
+  .ptitle { font-weight: 700; font-size: 15px; }
+  .impact { color: #cbd5e1; font-style: italic; margin: 8px 0; }
+  .steps { margin: 6px 0; padding-left: 22px; } .steps li { margin: 8px 0; }
+  .steps .narr { color: #cbd5e1; font-size: 14px; margin-top: 2px; }
+  .star { color: #4ade80; font-weight: 700; }
+  .advice { color: #86efac; margin: 8px 0 2px; }
   footer { color: #64748b; font-size: 12px; margin-top: 32px; text-align: center; }
 </style></head>
 <body><div class="wrap">
@@ -35,8 +48,56 @@
     <h1>🛡 NjordScan report</h1>
     <div class="sub">Security scan — explained in plain English</div>
   </header>
-  <div class="meta">/home/megatron/Coding/NjordScan/examples/vulnerable-shop · nextjs · 7 files · 0.15s · 30 issue(s)</div>
-  <div class="chips"><span class="chip" style="background:#dc2626">3 critical</span><span class="chip" style="background:#ea580c">10 high</span><span class="chip" style="background:#ca8a04">14 medium</span><span class="chip" style="background:#0891b2">3 low</span></div>
+  <div class="meta">/home/megatron/Coding/NjordScan/examples/vulnerable-shop · nextjs · 7 files · 0.15s · 18 issue(s)</div>
+  <div class="chips"><span class="chip" style="background:#dc2626">3 critical</span><span class="chip" style="background:#ea580c">8 high</span><span class="chip" style="background:#ca8a04">5 medium</span><span class="chip" style="background:#0891b2">2 low</span></div>
+  <section class="paths"><h2>🎯 Attack paths — how these issues chain into a breach</h2><p class="psub">The routes an attacker can actually walk. Fix the ★ step in each — it collapses the whole chain.</p>
+    <div class="path" style="border-left-color:#dc2626">
+      <div class="phead">
+        <span class="score" style="background:#dc2626">score 100 · critical</span>
+        
+        <span class="ptitle">Cloud/account pivot: server access → harvested secret</span>
+      </div>
+      <p class="impact">Impact: Compromise of external systems the leaked credential unlocks</p>
+      <ol class="steps"><li><span class="star">★</span> <b>[Execution]</b> Server-side code/query execution <span class="muted">lib/db.ts:7</span><div class="narr">SQL query built by glueing strings together (lib/db.ts:7) can run code or queries on the server.</div></li><li><b>[Credential Access]</b> A real secret is sitting right there <span class="muted">.env.local:2</span><div class="narr">AWS access key committed to the repository (.env.local:2) puts a live credential within reach of that primitive.</div></li><li><b>[Lateral Movement]</b> Pivot beyond the app with stolen keys <span class="muted">.env.local:2</span><div class="narr">With the secret in hand, the attacker authenticates to your cloud / database / third-party services — the blast radius now extends past this app.</div></li></ol>
+      <p class="advice">🛠 Break the chain at step 1 — parameterise the query / stop running attacker-controlled input (lib/db.ts:7). Fixing that one thing stops this whole path.</p>
+      <p class="muted">Why this scores 100: critical finding (sqli.string-concatenation); server-side reachable from an entrypoint; chain reaches a concrete impact (data/system compromise); exposes a credential — blast radius beyond this app; 2 distinct weaknesses align into one chain; every step is high-confidence.</p>
+    </div>
+
+    <div class="path" style="border-left-color:#dc2626">
+      <div class="phead">
+        <span class="score" style="background:#dc2626">score 86 · critical</span>
+        
+        <span class="ptitle">Build/CI compromise via a malicious dependency</span>
+      </div>
+      <p class="impact">Impact: Code execution on your build server, CI, or developers&#x27; machines</p>
+      <ol class="steps"><li><span class="star">★</span> <b>[Initial Access]</b> Malicious code arrives via a dependency <span class="muted">package.json:8</span><div class="narr">Dangerous install lifecycle script in package.json (package.json:8) — Lifecycle script &#x27;postinstall&#x27;: Pipes remote content directly into a shell/interpreter.</div></li><li><b>[Execution]</b> It runs at install time, before your app starts <span class="muted">package.json:8</span><div class="narr">npm runs lifecycle scripts on `npm install` / CI — this executes on your build server or developer machine with no app code involved.</div></li></ol>
+      <p class="advice">🛠 Break the chain at step 1 — remove or pin this dependency and audit the script (package.json:8). Fixing that one thing stops this whole path.</p>
+      <p class="muted">Why this scores 86: critical finding (supply-chain.dangerous-install-script); server-side reachable from an entrypoint; chain reaches a concrete impact (data/system compromise).</p>
+    </div>
+
+    <div class="path" style="border-left-color:#ea580c">
+      <div class="phead">
+        <span class="score" style="background:#ea580c">score 74 · high</span>
+        
+        <span class="ptitle">Injection via untrusted input → paint() -&gt; el.innerHTML [in lib/render.ts]</span>
+      </div>
+      <p class="impact">Impact: Server-side code/query execution</p>
+      <ol class="steps"><li><b>[Initial Access]</b> Attacker controls untrusted input <span class="muted">app/api/products/route.ts:5</span><div class="narr">An attacker supplies a value via `req.body` (app/api/products/route.ts:5) reaching app/api/products/route.ts. Nothing about this input is trusted.</div></li><li><span class="star">★</span> <b>[Execution]</b> Untrusted input reaches a dangerous sink <span class="muted">app/api/products/route.ts:10</span><div class="narr">That value flows unsanitised into `paint() -&gt; el.innerHTML [in lib/render.ts]` (app/api/products/route.ts:10) — the attacker now controls what the server runs.</div></li></ol>
+      <p class="advice">🛠 Break the chain at step 2 — validate or parameterise the value at the sink (app/api/products/route.ts:10). Fixing that one thing stops this whole path.</p>
+      <p class="muted">Why this scores 74: high finding (xss.inner-html); server-side reachable from an entrypoint; chain reaches a concrete impact (data/system compromise).</p>
+    </div>
+
+    <div class="path" style="border-left-color:#ca8a04">
+      <div class="phead">
+        <span class="score" style="background:#ca8a04">score 58 · medium</span>
+        
+        <span class="ptitle">Exploitation of lodash via CVE-2021-23337</span>
+      </div>
+      <p class="impact">Impact: Compromise via a publicly-known dependency exploit</p>
+      <ol class="steps"><li><span class="star">★</span> <b>[Initial Access]</b> Exposed dependency with a public exploit <span class="muted">package.json:14</span><div class="narr">You ship `lodash` affected by CVE-2021-23337, reachable from code you actually call.</div></li><li><b>[Execution]</b> Attacker triggers the known vulnerability <span class="muted">package.json:14</span><div class="narr">Public exploit code exists; the attacker runs it against your deployment.</div></li></ol>
+      <p class="advice">🛠 Break the chain at step 1 — upgrade lodash to 4.17.21 (package.json:14). Fixing that one thing stops this whole path.</p>
+      <p class="muted">Why this scores 58: high finding (deps.known-vulnerability); chain reaches a concrete impact (data/system compromise).</p>
+    </div></section>
   
     <details class="finding" style="border-left-color:#dc2626">
       <summary>
@@ -254,52 +315,12 @@ export async function POST(req) {
       <summary>
         <span class="sev" style="background:#ea580c">HIGH</span>
         <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:11</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">next@12.1.0 is affected by CVE-2024-51479 (vulnerable &gt;=9.5.5,&lt;14.2.15). Upgrade to 14.2.15 or later. (EPSS 79% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js authorization bypass vulnerability</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2024-51479</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#ea580c">
-      <summary>
-        <span class="sev" style="background:#ea580c">HIGH</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
         <span class="floc">package.json:14</span>
       </summary>
       <div class="body">
         <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">lodash@4.17.15 is affected by CVE-2021-23337 (vulnerable &lt;4.17.21). Upgrade to 4.17.21 or later. (EPSS 4% 30-day exploit probability) 🎯 Reachable: your code calls the vulnerable `template` from `lodash`. Command injection in lodash via the template function: untrusted templates/options can execute arbitrary code.</p>
+        <p class="msg">lodash@4.17.15 is affected by CVE-2021-23337 (vulnerable &lt;4.17.21). Upgrade to 4.17.21 or later. 🎯 Reachable: your code calls the vulnerable `template` from `lodash`. Command injection in lodash via the template function: untrusted templates/options can execute arbitrary code.</p>
         <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2021-23337</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#ea580c">
-      <summary>
-        <span class="sev" style="background:#ea580c">HIGH</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:14</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">lodash@4.17.15 is affected by CVE-2026-4800 (vulnerable &gt;=4.0.0,&lt;4.18.0). Upgrade to 4.18.0 or later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in your code. lodash vulnerable to Code Injection via `_.template` imports key names</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2026-4800</code></pre></div>
         
         <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
         <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
@@ -364,186 +385,6 @@ export async function POST(req) {
         </div>
         
         <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" rel="noopener noreferrer" target="_blank">https://owasp.org/www-project-top-10-for-large-language-model-applications/</a></li><li><a href="https://upstash.com/docs/redis/sdks/ratelimit-ts/overview" rel="noopener noreferrer" target="_blank">https://upstash.com/docs/redis/sdks/ratelimit-ts/overview</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#ca8a04">
-      <summary>
-        <span class="sev" style="background:#ca8a04">MEDIUM</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:11</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">next@12.1.0 is affected by CVE-2025-57822 (vulnerable &gt;=0.9.9,&lt;14.2.32). Upgrade to 14.2.32 or later. (EPSS 8% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js Improper Middleware Redirect Handling Leads to SSRF</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2025-57822</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#ca8a04">
-      <summary>
-        <span class="sev" style="background:#ca8a04">MEDIUM</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:11</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">next@12.1.0 is affected by CVE-2025-59471 (vulnerable &gt;=10.0.0,&lt;15.5.10). Upgrade to 15.5.10 or later. (EPSS 0% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js self-hosted applications vulnerable to DoS via Image Optimizer remotePatterns configuration</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2025-59471</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#ca8a04">
-      <summary>
-        <span class="sev" style="background:#ca8a04">MEDIUM</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:11</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">next@12.1.0 is affected by CVE-2025-57752 (vulnerable &gt;=0.9.9,&lt;14.2.31). Upgrade to 14.2.31 or later. (EPSS 0% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js Affected by Cache Key Confusion for Image Optimization API Routes</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2025-57752</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#ca8a04">
-      <summary>
-        <span class="sev" style="background:#ca8a04">MEDIUM</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:11</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">next@12.1.0 is affected by CVE-2024-47831 (vulnerable &gt;=10.0.0,&lt;14.2.7). Upgrade to 14.2.7 or later. (EPSS 1% 30-day exploit probability) 🎯 `next` is imported and used in your code. Denial of Service condition in Next.js image optimization</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2024-47831</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#ca8a04">
-      <summary>
-        <span class="sev" style="background:#ca8a04">MEDIUM</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:11</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">next@12.1.0 is affected by CVE-2026-44577 (vulnerable &gt;=10.0.0,&lt;15.5.16). Upgrade to 15.5.16 or later. (EPSS 0% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js has a Denial of Service in the Image Optimization API</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2026-44577</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#ca8a04">
-      <summary>
-        <span class="sev" style="background:#ca8a04">MEDIUM</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:11</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">next@12.1.0 is affected by CVE-2025-55173 (vulnerable &gt;=0.9.9,&lt;14.2.31). Upgrade to 14.2.31 or later. (EPSS 1% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js Content Injection Vulnerability for Image Optimization</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2025-55173</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#ca8a04">
-      <summary>
-        <span class="sev" style="background:#ca8a04">MEDIUM</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:14</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">lodash@4.17.15 is affected by CVE-2020-28500 (vulnerable &gt;=4.0.0,&lt;4.17.21). Upgrade to 4.17.21 or later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in your code. Regular Expression Denial of Service (ReDoS) in lodash</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2020-28500</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#ca8a04">
-      <summary>
-        <span class="sev" style="background:#ca8a04">MEDIUM</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:14</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">lodash@4.17.15 is affected by CVE-2026-2950 (vulnerable &lt;4.18.0). Upgrade to 4.18.0 or later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in your code. lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit`</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2026-2950</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#ca8a04">
-      <summary>
-        <span class="sev" style="background:#ca8a04">MEDIUM</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:14</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">lodash@4.17.15 is affected by CVE-2025-13465 (vulnerable &gt;=4.0.0,&lt;4.17.23). Upgrade to 4.17.23 or later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in your code. Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2025-13465</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
       </div>
     </details>
 
@@ -676,31 +517,11 @@ a few hundred tokens). The exact field name depends on the SDK: `max_tokens`
       <summary>
         <span class="sev" style="background:#0891b2">LOW</span>
         <span class="ftitle">Dependency with a known security vulnerability</span>
-        <span class="floc">package.json:11</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">next@12.1.0 is affected by CVE-2025-32421 (vulnerable &gt;=0.9.9,&lt;14.2.24). Upgrade to 14.2.24 or later. (EPSS 1% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js Race Condition to Cache Poisoning</p>
-        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2025-32421</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
-          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
-      </div>
-    </details>
-
-    <details class="finding" style="border-left-color:#0891b2">
-      <summary>
-        <span class="sev" style="background:#0891b2">LOW</span>
-        <span class="ftitle">Dependency with a known security vulnerability</span>
         <span class="floc">package.json:14</span>
       </summary>
       <div class="body">
         <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
-        <p class="msg">lodash@4.17.15 is affected by CVE-2020-8203 (vulnerable &lt;4.17.20). Upgrade to 4.17.20 or later. (EPSS 3% 30-day exploit probability) ✅ Lower priority: you import `lodash` but never call the vulnerable `set, setWith, zipObjectDeep`. Prototype pollution in lodash via zipObjectDeep / set-like paths allowing modification of Object.prototype.</p>
+        <p class="msg">lodash@4.17.15 is affected by CVE-2020-8203 (vulnerable &lt;4.17.20). Upgrade to 4.17.20 or later. ✅ Lower priority: you import `lodash` but never call the vulnerable `set, setWith, zipObjectDeep`. Prototype pollution in lodash via zipObjectDeep / set-like paths allowing modification of Object.prototype.</p>
         <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2020-8203</code></pre></div>
         
         <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>

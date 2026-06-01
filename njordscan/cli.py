@@ -201,6 +201,12 @@ def scan(
     if explain_with_ai:
         _apply_ai_explanations(result, config)
 
+    # If findings were filtered (diff/baseline), re-synthesize attack paths so they
+    # only reflect what's actually shown.
+    if diff_hidden or hidden:
+        from .analysis import synthesize
+        result.attack_paths = synthesize(result.findings)
+
     _emit(result, fmt, output, verbose=verbose, quiet=quiet, show_fix=not brief)
     if hidden and not quiet and fmt == "terminal":
         console.print(f"[dim]({hidden} known finding(s) hidden by baseline.)[/dim]")

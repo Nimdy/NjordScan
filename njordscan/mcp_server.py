@@ -150,6 +150,21 @@ def _tool_scan(args: Dict[str, Any]) -> str:
         f"{c[Severity.CRITICAL]} critical, {c[Severity.HIGH]} high, {c[Severity.MEDIUM]} medium, "
         f"{c[Severity.LOW]} low.\n",
     ]
+
+    # Lead with the attack paths — the highest-leverage thing for an assistant to act on:
+    # fixing the ★ step of a path collapses several findings at once.
+    if result.attack_paths:
+        lines.append(f"🎯 {len(result.attack_paths)} ATTACK PATH(S) — how these issues chain into a breach:")
+        for p in result.attack_paths[:5]:
+            lines.append(f"\n  {p.id} [score {p.score}/{p.band.value}] {p.title}")
+            lines.append(f"    Impact: {p.impact}")
+            for s in p.steps:
+                star = "★ " if s.breakpoint else "  "
+                lines.append(f"    {star}{s.order}. [{s.tactic}] {s.title} — {s.location}")
+            if p.advice:
+                lines.append(f"    → {p.advice}")
+        lines.append("")
+
     for f in result.findings[:40]:
         sev = f.effective_severity.value.upper()
         lines.append(f"[{sev}] {f.title} — {f.location}  (rule: {f.rule_id})")

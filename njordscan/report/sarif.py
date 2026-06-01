@@ -85,20 +85,25 @@ def _result(finding: Finding) -> Dict[str, Any]:
 
 
 def build_sarif(result: ScanResult) -> Dict[str, Any]:
+    run: Dict[str, Any] = {
+        "tool": {
+            "driver": {
+                "name": "NjordScan",
+                "version": __version__,
+                "informationUri": "https://github.com/nimdy/njordscan",
+                "rules": _rules_metadata(),
+            }
+        },
+        "results": [_result(f) for f in result.findings],
+    }
+    # Attack paths are a cross-result correlation, so they live at the run level as a
+    # property (per the SARIF guidance to keep individual results atomic).
+    if result.attack_paths:
+        run["properties"] = {"njordscan/attackPaths": [p.to_dict() for p in result.attack_paths]}
     return {
         "$schema": SARIF_SCHEMA,
         "version": SARIF_VERSION,
-        "runs": [{
-            "tool": {
-                "driver": {
-                    "name": "NjordScan",
-                    "version": __version__,
-                    "informationUri": "https://github.com/nimdy/njordscan",
-                    "rules": _rules_metadata(),
-                }
-            },
-            "results": [_result(f) for f in result.findings],
-        }],
+        "runs": [run],
     }
 
 
