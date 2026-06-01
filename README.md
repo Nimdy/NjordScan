@@ -45,7 +45,7 @@ njordscan mcp                          # run as an MCP server for AI coding assi
 | Area | Examples |
 |------|----------|
 | **Secrets** | API keys, AWS keys, DB passwords, tokens — in code **and** `.env*` files; secrets exposed to the browser via `NEXT_PUBLIC_`/`VITE_` |
-| **Taint tracking** | User input → dangerous sink, **across functions** and through **JSX `dangerouslySetInnerHTML`** (tree-sitter AST) |
+| **Taint tracking** | User input → dangerous sink, **across functions, across files (interprocedural)**, and through **JSX `dangerouslySetInnerHTML`** (tree-sitter AST) |
 | **XSS / DOM** | `innerHTML`, `document.write`, `javascript:` URLs, unsanitized markdown, `postMessage` without origin checks |
 | **Injection** | `eval`, command injection, SQL/NoSQL injection, path traversal, prototype pollution |
 | **Dependencies** | Known-vulnerable versions (bundled CVE/GHSA DB, refreshable from OSV.dev) and typosquatting |

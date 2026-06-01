@@ -26,7 +26,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from pathlib import Path
+import re
+from pathlib import Path, PurePosixPath
 from typing import Dict, List, Optional, Set, Tuple
 
 from ..core.finding import Finding, TaintStep
@@ -185,41 +186,71 @@ class TaintDetector(Detector):
         if not self._languages:
             return []
         files = [p for p in project.source_files if _is_code(p)]
-        results = await asyncio.gather(
-            *(asyncio.to_thread(self._scan_file_safe, project, path) for path in files),
+        file_rels = {project.rel(p) for p in files}
+
+        # Phase A: parse every file once and summarise which functions forward a
+        # parameter into a sink (the per-file summary needed for interprocedural taint).
+        prep = await asyncio.gather(
+            *(asyncio.to_thread(self._parse_and_summarize, project, path) for path in files),
             return_exceptions=True,
+        )
+        parsed: Dict[str, Tuple[object, str]] = {}
+        summaries: Dict[str, Dict[str, Dict[int, Tuple[str, str]]]] = {}
+        imports: Dict[str, Dict[str, Tuple[str, str]]] = {}
+        for res in prep:
+            if isinstance(res, Exception) or res is None:
+                continue
+            rel, root, text, sink_funcs = res
+            parsed[rel] = (root, text)
+            summaries[rel] = sink_funcs
+            imports[rel] = _named_imports(text)
+
+        # Phase B: full analysis per file, injecting summaries of imported functions
+        # that are defined (and sink-forwarding) in another module (cross-file flows).
+        def analyze(rel: str) -> List[Finding]:
+            root, text = parsed[rel]
+            extra: Dict[str, Tuple[Dict[int, Tuple[str, str]], str]] = {}
+            for local, (spec, orig) in imports.get(rel, {}).items():
+                target = _resolve_import(rel, spec, file_rels)
+                if target and orig in summaries.get(target, {}):
+                    extra[local] = (summaries[target][orig], target)
+            try:
+                return _FileAnalyzer(rel, text, self.id).run(root, extra_sink_funcs=extra)
+            except Exception as exc:  # noqa: BLE001 — never crash on weird input
+                logger.debug("taint: analysis failed on %s: %r", rel, exc)
+                return []
+
+        results = await asyncio.gather(
+            *(asyncio.to_thread(analyze, rel) for rel in parsed), return_exceptions=True
         )
         findings: List[Finding] = []
         for res in results:
             if isinstance(res, Exception):
-                logger.debug("taint: file scan raised (ignored): %r", res)
                 continue
             findings.extend(res)
         return _dedup(findings)
 
     # -- per-file ------------------------------------------------------------
 
-    def _scan_file_safe(self, project: Project, path: Path) -> List[Finding]:
-        """Wrapper that guarantees we never propagate an exception out of a thread."""
+    def _parse_and_summarize(self, project: Project, path: Path):
+        """Parse a file and return (rel, root, text, sink_func_summary) or None."""
         try:
-            return self._scan_file(project, path)
-        except Exception as exc:  # noqa: BLE001 — a scanner must not crash on weird input
-            logger.debug("taint: failed on %s: %r", path, exc)
-            return []
-
-    def _scan_file(self, project: Project, path: Path) -> List[Finding]:
-        text = project.read_text(path)
-        if not text.strip():
-            return []
-        lang_key = "tsx" if path.suffix.lower() in (".ts", ".tsx") else "js"
-        language = self._languages.get(lang_key) or self._languages.get("js")
-        if language is None:
-            return []
-        parser = ts.Parser(language)
-        tree = parser.parse(text.encode("utf-8"))
-        rel = project.rel(path)
-        analyzer = _FileAnalyzer(rel, text, self.id)
-        return analyzer.run(tree.root_node)
+            text = project.read_text(path)
+            if not text.strip():
+                return None
+            lang_key = "tsx" if path.suffix.lower() in (".ts", ".tsx") else "js"
+            language = self._languages.get(lang_key) or self._languages.get("js")
+            if language is None:
+                return None
+            tree = ts.Parser(language).parse(text.encode("utf-8"))
+            root = tree.root_node   # Node keeps the Tree alive
+            rel = project.rel(path)
+            analyzer = _FileAnalyzer(rel, text, self.id)
+            analyzer._collect_sink_functions(root)
+            return rel, root, text, analyzer.sink_funcs
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("taint: parse failed on %s: %r", path, exc)
+            return None
 
 
 # --------------------------------------------------------------------------- #
@@ -236,15 +267,24 @@ class _FileAnalyzer:
         self.detector_id = detector_id
         # func name -> {param_index: (rule_id, sink_label, sink_prop)}
         self.sink_funcs: Dict[str, Dict[int, Tuple[str, str]]] = {}
+        # local imported name -> source file, for sink functions defined in another module
+        self.cross_file_src: Dict[str, str] = {}
         self.findings: List[Finding] = []
         self._seen: Set[Tuple[str, int, str]] = set()
 
     # -- entry point ---------------------------------------------------------
 
-    def run(self, root) -> List[Finding]:
+    def run(self, root, extra_sink_funcs: Optional[Dict[str, Tuple[Dict[int, Tuple[str, str]], str]]] = None) -> List[Finding]:
         # Pass 1: which user-defined functions forward a parameter into a sink?
         self._collect_sink_functions(root)
-        # Pass 2: track sources and detect direct + cross-function flows.
+        # Inject summaries of imported functions defined in OTHER files (interprocedural,
+        # cross-module). A local definition always wins over an injected one.
+        if extra_sink_funcs:
+            for name, (summary, src_file) in extra_sink_funcs.items():
+                if name not in self.sink_funcs:
+                    self.sink_funcs[name] = summary
+                    self.cross_file_src[name] = src_file
+        # Pass 2: track sources and detect direct + cross-function (+ cross-file) flows.
         self._walk(root, tainted={})
         return self.findings
 
@@ -438,14 +478,22 @@ class _FileAnalyzer:
             if taint is None:
                 continue
             rule_id, sink_label = spec[idx]
+            src_file = self.cross_file_src.get(fn_name)
+            if src_file:   # the sink lives in another module — make the flow say so
+                step_label = f"{fn_name}() in {src_file} (param {idx} -> {sink_label})"
+                sink_text = f"{fn_name}() -> {sink_label} [in {src_file}]"
+                step_file = src_file
+            else:
+                step_label = f"{fn_name}(... param {idx} -> sink)"
+                sink_text = f"{fn_name}() -> {sink_label}"
+                step_file = self.rel
             extra = [TaintStep(
-                label=f"{fn_name}(... param {idx} -> sink)",
-                file=self.rel, line=arg.start_point.row + 1,
+                label=step_label, file=step_file, line=arg.start_point.row + 1,
                 kind="propagation", code=_line_text(self.text, arg.start_point.row + 1),
             )]
             self._report(
                 rule_id=rule_id, node=arg, value_node=arg,
-                sink_label=f"{fn_name}() -> {sink_label}", taint=taint,
+                sink_label=sink_text, taint=taint,
                 confidence="high", record=record, extra_steps=extra,
             )
             return  # one finding per call is plenty
@@ -808,3 +856,57 @@ def _dedup(findings: List[Finding]) -> List[Finding]:
         seen.add(fp)
         out.append(f)
     return out
+
+
+# --------------------------------------------------------------------------- #
+#  Cross-file import resolution (for interprocedural taint)
+# --------------------------------------------------------------------------- #
+
+_NAMED_IMPORT = re.compile(r"""import\s*\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]""")
+_CODE_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
+
+
+def _named_imports(text: str) -> Dict[str, Tuple[str, str]]:
+    """{local_name: (module_spec, original_export)} for `import { a, b as c } from './m'`."""
+    out: Dict[str, Tuple[str, str]] = {}
+    for m in _NAMED_IMPORT.finditer(text):
+        spec = m.group(2)
+        if not spec.startswith("."):
+            continue  # only local modules can be cross-file-analyzed
+        for part in m.group(1).split(","):
+            part = part.strip()
+            if not part or part == "type" or part.startswith("type "):
+                continue  # type-only imports aren't runtime functions
+            bits = re.split(r"\s+as\s+", part)
+            orig, local = bits[0].strip(), bits[-1].strip()
+            if re.fullmatch(r"[A-Za-z0-9_$]+", local) and re.fullmatch(r"[A-Za-z0-9_$]+", orig):
+                out[local] = (spec, orig)
+    return out
+
+
+def _norm_parts(parts) -> List[str]:
+    out: List[str] = []
+    for part in parts:
+        if part == "..":
+            if out:
+                out.pop()
+        elif part not in (".", ""):
+            out.append(part)
+    return out
+
+
+def _resolve_import(importer_rel: str, spec: str, file_rels: Set[str]) -> Optional[str]:
+    """Resolve a relative import spec to a file path in the project."""
+    base = PurePosixPath(importer_rel).parent / spec
+    base = PurePosixPath(*_norm_parts(base.parts))
+    s = base.as_posix()
+    if s in file_rels:
+        return s
+    for ext in _CODE_EXT:
+        if s + ext in file_rels:
+            return s + ext
+    for ext in _CODE_EXT:
+        cand = (base / ("index" + ext)).as_posix()
+        if cand in file_rels:
+            return cand
+    return None

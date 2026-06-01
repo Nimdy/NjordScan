@@ -12,7 +12,8 @@ positives on a clean app, and explains every finding in plain English.
 ### Added
 - **120+ rules** across Next.js / React / Vite / web / AI-app security, each with a plain-English
   "why this matters" + "how to fix it" + a secure code example, mapped to CWE and OWASP.
-- **Tree-sitter taint tracking** that follows user input to dangerous sinks **across functions**
+- **Tree-sitter taint tracking** that follows user input to dangerous sinks **across functions**,
+  **across files (interprocedural)** — through an imported helper into a sink in another module —
   and through **JSX `dangerouslySetInnerHTML`**.
 - **Secrets** detection in code *and* committed `.env*` files, with output masking.
 - **Dependency** scanning against a bundled CVE/GHSA database, refreshable from OSV.dev
