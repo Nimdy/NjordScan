@@ -82,6 +82,7 @@ class Orchestrator:
         ]
         if self.config.reachability:
             self._annotate_reachability(findings, project)
+            self._escalate_data_egress(findings)
         # reachable findings sort first within a severity tier
         findings.sort(key=lambda f: (-f.effective_severity.rank, f.reachable is False, f.file, f.line))
 
@@ -149,6 +150,27 @@ class Orchestrator:
 
         if self.config.reachable_only:
             findings[:] = [f for f in findings if f.reachable is not False]
+
+    def _escalate_data_egress(self, findings: List[Finding]) -> None:
+        """A secret/credential whose egress happens in CLIENT-reachable code is bundled
+        into the JavaScript shipped to the browser — escalate to CRITICAL with
+        blast-radius context. Severity only ever RISES here."""
+        for f in findings:
+            if not f.rule_id.startswith("dataflow."):
+                continue
+            if f.metadata.get("data_asset") not in ("secret.env", "secret.credential"):
+                continue
+            reach = f.metadata.get("reachability") or {}
+            if reach.get("kind") == "client":
+                asset = f.metadata.get("data_asset")
+                f.severity = Severity.CRITICAL
+                # An env secret originates server-side and crosses to the client; a
+                # client-only credential never had a server boundary to cross.
+                boundary = "server->client" if asset == "secret.env" else "into-client-bundle"
+                f.metadata["blast_radius"] = {"boundary": boundary, "asset": asset}
+                f.message = (f.message or "").rstrip() + (
+                    " This runs in client code, so the value is bundled into the "
+                    "JavaScript shipped to every visitor — anyone can read it in devtools.")
 
     def _apply_rule_controls(self, findings: List[Finding]) -> List[Finding]:
         """Drop disabled rules and apply per-rule severity overrides from config."""

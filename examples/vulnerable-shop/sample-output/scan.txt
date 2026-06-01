@@ -1,5 +1,5 @@
 
-🛡  NjordScan  ·  nextjs  ·  7 files  ·  0.14s
+🛡  NjordScan  ·  nextjs  ·  7 files  ·  0.15s
 /home/megatron/Coding/NjordScan/examples/vulnerable-shop
 ╭────── Summary ───────╮
 │  Severity     Count  │

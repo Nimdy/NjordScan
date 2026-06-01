@@ -190,6 +190,8 @@ def _roles(f: Finding) -> Set[str]:
         roles.add("vuln_dep")
     if rid.startswith(_SUPPLY_PREFIX):
         roles.add("supply_foothold")
+    if rid.startswith("dataflow."):
+        roles.add("sensitive_egress")
     return roles
 
 
@@ -283,11 +285,15 @@ def _score_path(findings: List[Finding], reaches_impact: bool,
     kev = any(_kev(f) for f in findings)
     epss = max((_epss(f) for f in findings), default=0.0)
     server = any(_is_server(f) for f in findings)
+    bundled = any(f.metadata.get("blast_radius") for f in findings)  # secret in client JS
     client_reachable = any(_is_client(f) for f in findings)
     secret = any(("secret" in _roles(f)) and f.rule_id not in _PUBLIC_SECRET_IDS
                  for f in findings)
 
-    if server:
+    if bundled:
+        score += 16
+        factors.append("bundled into the client JavaScript — readable by every visitor")
+    elif server:
         score += 16
         factors.append("server-side reachable from an entrypoint")
     elif client_reachable:
@@ -406,6 +412,8 @@ def _t_taint_flow(ctx: "_Ctx") -> List[AttackPath]:
     for f in ctx.findings:
         if not f.taint_flow or f.reachable is False:
             continue
+        if f.rule_id.startswith("dataflow."):
+            continue  # data-egress flows are narrated by _t_data_egress, not as injection
         src = f.taint_flow[0]
         sink = f.taint_flow[-1]
         # Only call it browser XSS when the sink is reachable on the CLIENT. A DOM
@@ -651,6 +659,52 @@ def _t_supply_chain(ctx: "_Ctx") -> List[AttackPath]:
     return out[:4]
 
 
+def _t_data_egress(ctx: "_Ctx") -> List[AttackPath]:
+    """A named secret/credential traced out of the trust boundary (log/response/
+    browser/3rd-party). The data-flow IS the breach — no attacker step required."""
+    _DEST = {
+        "dataflow.sensitive-to-response": ("the HTTP response", "any user (and anyone watching the network tab)"),
+        "dataflow.sensitive-to-browser-storage": ("browser storage", "any script on the page, including an XSS payload"),
+        "dataflow.sensitive-to-thirdparty": ("a third-party SDK", "everyone with access to that vendor dashboard"),
+        "dataflow.sensitive-to-log": ("the logs", "anyone who can read your log aggregator"),
+    }
+    out: List[AttackPath] = []
+    for f in ctx.by_role("sensitive_egress"):
+        if not f.taint_flow or f.reachable is False:
+            continue
+        dest, who = _DEST.get(f.rule_id, ("outside the boundary", "an attacker"))
+        asset = f.metadata.get("data_asset")
+        asset_word = "environment secret" if asset == "secret.env" else "credential"
+        article = "An" if asset_word[0] in "aeiou" else "A"
+        src = f.taint_flow[0]
+        sink = f.taint_flow[-1]
+        bundle = f.metadata.get("blast_radius")
+        s1 = AttackStep(
+            order=0, tactic="Collection",
+            title=f"{article} {asset_word} is in reach of an exit",
+            narrative=(f"`{src.label}` ({src.file}:{src.line}) is a real {asset_word}."),
+            file=src.file, line=src.line, rule_ids=[f.rule_id], fingerprints=[f.fingerprint],
+        )
+        leave = ("is bundled into the JavaScript shipped to every visitor"
+                 if bundle else f"leaves your control into {dest}")
+        s2 = AttackStep(
+            order=0, tactic="Exfiltration",
+            title="It crosses the trust boundary",
+            narrative=(f"It {leave} via `{sink.label}` ({sink.file}:{sink.line}) — "
+                       f"now readable by {who}."),
+            file=sink.file, line=sink.line, rule_ids=[f.rule_id], fingerprints=[f.fingerprint],
+        )
+        out.append(_finalize(
+            f"data-egress-{f.fingerprint}",
+            title=("Secret shipped to the browser bundle" if bundle
+                   else f"{asset_word.capitalize()} leaked to {dest}"),
+            impact=f"Exposure of a live {asset_word} — assume it is compromised and rotate it",
+            raw_steps=[s1, s2], findings=[f], reaches_impact=True,
+            break_on=s2, fix_hint="stop sending the secret here (redact it / don't expose it)",
+        ))
+    return out[:5]
+
+
 _TEMPLATES = [
     _t_taint_flow,
     _t_unauth_exec,
@@ -659,6 +713,7 @@ _TEMPLATES = [
     _t_cors_token_theft,
     _t_known_exploited_dep,
     _t_supply_chain,
+    _t_data_egress,
 ]
 
 

@@ -1,6 +1,6 @@
 # NjordScan rules
 
-NjordScan ships **126 rules**. Every one is explained in plain English — why it matters and how to fix it — both here and inline when a scan finds it.
+NjordScan ships **130 rules**. Every one is explained in plain English — why it matters and how to fix it — both here and inline when a scan finds it.
 
 > Auto-generated from the knowledge base by `scripts/gen_docs.py`. Don't edit by hand.
 
@@ -37,6 +37,7 @@ Run `njordscan explain <rule-id>` for any of these in your terminal.
 - [Dynamic scan (DAST)](#dynamic-scan-dast) (3)
 - [Hardening & info-leak](#hardening--info-leak) (8)
 - [Information leakage](#information-leakage) (5)
+- [Dataflow](#dataflow) (4)
 
 ## Secrets & credentials
 
@@ -2564,4 +2565,83 @@ catch (err) {
   logger.error(err);
   return Response.json({ error: 'Request failed' }, { status: 500 });
 }
+```
+
+## Dataflow
+
+### `dataflow.sensitive-to-browser-storage` — A secret or credential is stored in the browser
+
+Severity: 🟠 **high**  ·  [CWE-922](https://cwe.mitre.org/data/definitions/922.html)  ·  A04:2021-Insecure Design  ·  [ATT&CK T1552](https://attack.mitre.org/techniques/T1552)
+
+**Why this matters.** A secret or credential is written to `localStorage`/`sessionStorage`. Web
+storage is plain-text and readable by ANY JavaScript on the page — including
+a single XSS payload or a malicious dependency. A token kept there can be
+stolen and replayed to impersonate the user; an API secret there is simply
+public.
+
+**How to fix it.** Keep session tokens in an `httpOnly` cookie the browser sends automatically
+and JavaScript cannot read. Never put API secrets or credentials in the
+browser at all — keep them server-side and proxy the call.
+
+```js
+// server sets an httpOnly cookie instead of the client storing a token:
+res.cookies.set("session", token, { httpOnly: true, secure: true, sameSite: "lax" });
+```
+
+### `dataflow.sensitive-to-log` — A secret or credential is written to a log
+
+Severity: 🟠 **high**  ·  [CWE-532](https://cwe.mitre.org/data/definitions/532.html)  ·  A09:2021-Security Logging and Monitoring Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
+
+**Why this matters.** NjordScan traced an environment secret or a credential into a `console`
+log call. Logs are not a safe place for secrets: they get shipped to log
+aggregators (Datadog, CloudWatch, Vercel logs), shared in screenshots, and
+are a top target once an attacker gets any foothold. A secret printed to a
+log is a secret you have to assume is compromised.
+
+**How to fix it.** Never log secrets or credentials. Log an identifier or a redacted value
+instead (e.g. the last 4 characters), and scrub secrets from error objects
+before logging them. If you logged a real secret, rotate it.
+
+```js
+// instead of: console.log("key", process.env.STRIPE_SECRET_KEY)
+console.log("stripe key loaded:", Boolean(process.env.STRIPE_SECRET_KEY));
+```
+
+### `dataflow.sensitive-to-response` — A secret or credential is sent in an HTTP response
+
+Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1552](https://attack.mitre.org/techniques/T1552)
+
+**Why this matters.** A secret or credential flows into a response body sent to the client
+(`res.json`/`NextResponse.json`/`Response.json`/`res.send`). Anything in a
+response is readable by the user — and often by anyone, via the browser
+devtools Network tab. Returning a whole database row, a password hash, or an
+API key exposes data the client should never see.
+
+**How to fix it.** Return only the fields the client needs — build an explicit DTO instead of
+sending a whole record. Never include secrets, password hashes, or internal
+tokens in a response. For Prisma, use `select`/`omit` to drop sensitive
+columns at the query.
+
+```js
+// instead of: return NextResponse.json(user)   // includes passwordHash!
+return NextResponse.json({ id: user.id, name: user.name, email: user.email });
+```
+
+### `dataflow.sensitive-to-thirdparty` — A secret or credential is sent to a third-party service
+
+Severity: 🟠 **high**  ·  [CWE-201](https://cwe.mitre.org/data/definitions/201.html)  ·  A09:2021-Security Logging and Monitoring Failures  ·  [ATT&CK T1567](https://attack.mitre.org/techniques/T1567)
+
+**Why this matters.** A secret or credential flows into a third-party SDK call (error tracking like
+Sentry, or analytics like PostHog/Segment/Mixpanel). Error and analytics
+payloads are stored on someone else's servers and seen by everyone with
+access to that dashboard. Shipping a secret, token, or PII field there leaks
+it outside your control and can breach data-handling agreements.
+
+**How to fix it.** Scrub sensitive fields before sending to any third party — most SDKs have a
+`beforeSend`/redaction hook. Never attach raw secrets, tokens, or PII to an
+event or error you report externally.
+
+```js
+// Sentry: strip secrets before the event leaves your server
+Sentry.init({ beforeSend(event) { delete event.extra?.token; return event; } });
 ```

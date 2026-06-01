@@ -109,6 +109,38 @@ secret. Unrelated and dead-code findings produce **no** path. Attack paths appea
 report and in the `--format json` / `sarif` / `html` output (`attack_paths`) — and in the MCP
 response, so your AI assistant gets the kill chain too.
 
+## 🔐 Data-leak tracing — it follows your *secrets out*, not just attacks in
+
+Every scanner traces attacker input flowing *into* a dangerous sink. NjordScan also runs the same
+data-flow engine **in reverse**: it follows a **named sensitive value** — an environment secret
+(`process.env.STRIPE_SECRET_KEY`), a credential (`passwordHash`, `accessToken`) — to the moment it
+**leaves your trust boundary**: a log, an HTTP response, the browser, or a third-party SDK.
+
+```
+🟠 [HIGH] A secret or credential is sent in an HTTP response   app/api/login/route.ts:42
+
+   Data flow (sensitive value → boundary exit):
+        source: user.passwordHash (lib/db.ts:8)
+          ↓
+          sink: NextResponse.json(...) (app/api/login/route.ts:42)
+
+💡 Why: anything in a response is readable by the user in the devtools Network tab — returning a
+   whole DB row ships the password hash to the client.
+```
+
+It carries a **typed data label** through the flow (no other SAST taint engine does this), so it
+can say *what* leaked and *where it went* in words a non-expert gets: *"your `STRIPE_SECRET_KEY`
+flows into a Sentry breadcrumb — you're shipping a secret to a third party."* And it crosses the
+label with reachability: a secret whose egress runs in **client code** is escalated to **CRITICAL**
+— *"this is bundled into the JavaScript shipped to every visitor; anyone can read it in devtools"* —
+and surfaces as a data-egress **attack path**.
+
+It's tuned for **zero theater**: labels come only from a literal `process.env` access or a
+high-precision credential name (generic words like `token`/`key`/`email` never match), public-by-
+design vars (`NEXT_PUBLIC_*`, `NODE_ENV`) are excluded, and it won't flag the very redaction it
+recommends (`secret.slice(-4)`, `secret.length`, `secret === x`). Nothing is flagged unless it
+actually reaches an exit.
+
 ## AI / LLM application security
 
 Vibe coders are building AI apps — so NjordScan covers the risks unique to them, which most

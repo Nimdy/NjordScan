@@ -170,6 +170,110 @@ _SQL_SINK_PROPS: Dict[str, Optional[Set[str]]] = {
     "raw": {"knex", "sequelize", "db", "sql", "Sequelize", "datasource"},
 }
 
+# ---- data-egress (sensitivity) tracking --------------------------------------
+# The same engine, run as a DATA-LEAK tracer: a *named sensitive value* is the
+# source, a *trust-boundary exit* is the sink. Sensitivity labels are assigned only
+# from mechanically-checkable facts (a literal process.env access, or an exact
+# high-precision credential/PII identifier) — never inference.
+
+# Credential / PII identifier detection by TOKENISING the name (camelCase / snake /
+# kebab) so compound names match (userPassword, stripeSecretKey, dbPassword) while
+# generic words ("token", "key", "secret", "email", "displayName") and look-alikes
+# ("passwordless", "tokenizer", "keyboard", "secretSauce") do NOT.
+_SENS_STANDALONE = frozenset({
+    "password", "passwd", "pwd", "ssn", "cvv", "cvc", "jwt", "mnemonic", "passphrase",
+})
+_SENS_QUALIFIER = frozenset({
+    "api", "secret", "private", "access", "refresh", "session", "auth", "bearer",
+    "client", "signing", "encryption", "totp", "csrf", "recovery", "id", "seed",
+})
+_SENS_NOUN = frozenset({"key", "token", "secret", "password", "credential", "phrase", "code"})
+_SENS_PAIR = frozenset({
+    ("credit", "card"), ("card", "number"), ("social", "security"),
+    ("seed", "phrase"), ("recovery", "code"), ("session", "id"), ("id", "token"),
+})
+_FUSED_SENS_RE = re.compile(
+    r"(?:api|secret|private|access|refresh|session|auth|bearer|client|signing|encryption)"
+    r"(?:key|token|secret)|accesstoken|refreshtoken|sessiontoken|privatekey|secretkey|"
+    r"apikey|clientsecret|passwordhash|creditcard|cardnumber|seedphrase")
+_IDENT_TOKEN_RE = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|[0-9]+")
+
+
+def _ident_tokens(name: str) -> List[str]:
+    return [t.lower() for t in _IDENT_TOKEN_RE.findall(name or "")]
+
+
+def _name_is_sensitive(name: str) -> bool:
+    """True if an identifier names a credential/secret, by token analysis."""
+    toks = _ident_tokens(name)
+    if not toks:
+        return False
+    if set(toks) & _SENS_STANDALONE:
+        return True
+    for a, b in zip(toks, toks[1:]):
+        if (a in _SENS_QUALIFIER and b in _SENS_NOUN) or (a, b) in _SENS_PAIR:
+            return True
+    return bool(_FUSED_SENS_RE.search("".join(toks)))
+
+
+# A value's sensitivity class drives the message/severity. "secret.env" and
+# "secret.credential" are treated as secrets; we keep the class for the narrative.
+_SENS_SECRET_ENV = "secret.env"
+_SENS_CREDENTIAL = "secret.credential"
+
+# process.env vars that are NOT secrets (diagnostics / runtime info) — never flagged.
+_ENV_NONSECRET = frozenset({
+    "NODE_ENV", "PORT", "HOST", "HOSTNAME", "TZ", "LANG", "PWD", "HOME", "PATH", "CI",
+    "VERCEL", "VERCEL_ENV", "VERCEL_REGION", "VERCEL_URL", "NEXT_RUNTIME", "TERM",
+    "SHELL", "USER", "LOGNAME", "TMPDIR", "DEBUG",
+})
+# Env prefixes that are PUBLIC by framework contract (inlined into the client bundle),
+# so flagging them as "leaving the trust boundary" would be definitionally wrong.
+_ENV_PUBLIC_PREFIXES = ("NEXT_PUBLIC_", "REACT_APP_", "VITE_", "PUBLIC_", "EXPO_PUBLIC_",
+                        "GATSBY_", "STORYBOOK_", "NPM_", "NPM_CONFIG_")
+# A server env var is treated as a secret only if its name *looks* secret-shaped, so a
+# benign `process.env.API_VERSION` logged is not flagged while STRIPE_SECRET_KEY is.
+_ENV_SECRET_HINT_RE = re.compile(
+    r"(?:KEY|SECRET|TOKEN|PASSWORD|PASSWD|PWD|CREDENTIAL|PRIVATE|MNEMONIC|SEED|"
+    r"WEBHOOK|SIGNING|ENCRYPT|SALT|DSN|DATABASE_URL|DB_URL|REDIS_URL|MONGO|POSTGRES|"
+    r"MYSQL|CONNECTION_STRING|ACCESS_KEY|CLIENT_SECRET|AUTH_TOKEN|SERVICE_ACCOUNT|"
+    r"SESSION_SECRET|COOKIE_SECRET|JWT)",
+    re.IGNORECASE,
+)
+# Member/call shapes that DERIVE a non-revealing value from a secret (its length, a
+# truncated redaction, a boolean comparison) — these must NOT inherit the label.
+_NONREVEALING_PROPS = frozenset({"length", "size", "byteLength"})
+_REDACTING_CALLS = frozenset({"slice", "substring", "substr", "Boolean"})
+_COMPARISON_OPS = frozenset({"===", "!==", "==", "!=", "<", ">", "<=", ">=", "instanceof", "in"})
+
+# Egress sinks: where a sensitive value LEAVING is the finding. prop name -> (allowed
+# receivers or None, rule_id). Only the *argument* being sensitive matters.
+_EGRESS_MEMBER_SINKS: Dict[str, Tuple[Optional[Set[str]], str]] = {
+    # logs (server logs are still a leak — secrets in log aggregators get breached)
+    "log": ({"console"}, "dataflow.sensitive-to-log"),
+    "info": ({"console"}, "dataflow.sensitive-to-log"),
+    "warn": ({"console"}, "dataflow.sensitive-to-log"),
+    "error": ({"console"}, "dataflow.sensitive-to-log"),
+    "debug": ({"console"}, "dataflow.sensitive-to-log"),
+    # response body shipped to the client
+    "json": (None, "dataflow.sensitive-to-response"),
+    "send": (None, "dataflow.sensitive-to-response"),
+    # persisted in the browser where any script can read it
+    "setItem": ({"localStorage", "sessionStorage"}, "dataflow.sensitive-to-browser-storage"),
+    # shipped to a third-party SaaS (captureException/Message are Sentry-distinctive;
+    # the generic verbs are gated to known telemetry receivers below)
+    "captureException": (None, "dataflow.sensitive-to-thirdparty"),
+    "captureMessage": (None, "dataflow.sensitive-to-thirdparty"),
+}
+# Receivers that are clearly third-party telemetry/analytics SDKs.
+_THIRDPARTY_RECEIVERS = frozenset({
+    "Sentry", "analytics", "posthog", "ph", "mixpanel", "amplitude", "datadog",
+    "DD", "segment", "rudder", "logrocket", "bugsnag", "rollbar", "heap",
+})
+# Generic telemetry verbs — only an egress when the receiver is a known SDK above.
+for _verb in ("track", "identify", "capture"):
+    _EGRESS_MEMBER_SINKS[_verb] = (_THIRDPARTY_RECEIVERS, "dataflow.sensitive-to-thirdparty")
+
 # setTimeout/setInterval are sinks only when the first arg is a STRING (or tainted
 # string), never when it's a function. Handled specially.
 _TIMER_SINKS = {"setTimeout", "setInterval"}
@@ -327,7 +431,10 @@ class _FileAnalyzer:
         """Return (rule_id, sink_label) if ``param`` (taint-propagated) hits a sink in body."""
         probe = _FileAnalyzer(self.rel, self.text, self.detector_id)
         probe.sink_funcs = self.sink_funcs  # allow nested cross-function reuse
-        seed = {param: _Taint(label=f"parameter:{param}", line=0, snippet="")}
+        # Seed BOTH capabilities so the param triggers either an injection sink OR a
+        # data-egress sink — the recorded rule_id says which it forwards to.
+        seed = {param: _Taint(label=f"parameter:{param}", line=0, snippet="",
+                              injectable=True, sensitivity=_SENS_CREDENTIAL)}
         probe._walk(body, tainted=seed, record=False)
         if probe._probe_hit is not None:
             return probe._probe_hit
@@ -363,7 +470,8 @@ class _FileAnalyzer:
         if name_node.type != "identifier":
             return  # skip destructuring for assignment LHS (sources still matched in RHS)
         var = _text(name_node)
-        taint = self._taint_of_expr(value_node, tainted)
+        taint = self._lhs_sensitivity(var, self._taint_of_expr(value_node, tainted, "any"),
+                                      node, value_node)
         if taint is not None:
             tainted[var] = taint.renamed(var, node.start_point.row + 1)
 
@@ -386,12 +494,31 @@ class _FileAnalyzer:
         # Plain variable assignment propagates taint.
         if left.type == "identifier":
             var = _text(left)
-            taint = self._taint_of_expr(right, tainted)
+            taint = self._lhs_sensitivity(var, self._taint_of_expr(right, tainted, "any"),
+                                          node, right)
             if taint is not None:
                 tainted[var] = taint.renamed(var, node.start_point.row + 1)
             elif var in tainted:
                 # Reassigned to something clean -> drop the taint.
                 del tainted[var]
+
+    def _lhs_sensitivity(self, var: str, taint: Optional["_Taint"], node,
+                         value_node=None) -> Optional["_Taint"]:
+        """If the assigned variable's NAME tokenises to a credential, ensure the tracked
+        value carries a sensitivity label — UNLESS the bound value is a literal (a UI
+        label, placeholder or empty string is not a secret, so we never invent one)."""
+        if not _name_is_sensitive(var):
+            return taint
+        if value_node is not None and value_node.type in _LITERAL_TYPES:
+            return taint
+        if taint is None:
+            return _Taint(label=var, line=node.start_point.row + 1,
+                          snippet=_line_text(self.text, node.start_point.row + 1),
+                          injectable=False, sensitivity=_SENS_CREDENTIAL)
+        if taint.sensitivity is None:
+            return _Taint(label=taint.label, line=taint.line, snippet=taint.snippet,
+                          injectable=taint.injectable, sensitivity=_SENS_CREDENTIAL)
+        return taint
 
     # -- calls ---------------------------------------------------------------
 
@@ -468,6 +595,22 @@ class _FileAnalyzer:
                 )
                 return
 
+        # DATA EGRESS: a *sensitive* value leaving the trust boundary —
+        # console.log(secret), NextResponse.json(userRow), localStorage.setItem(token),
+        # Sentry.captureException(err-with-secret), analytics.track(..., {ssn}).
+        if prop in _EGRESS_MEMBER_SINKS:
+            allowed_recv, rule_id = _EGRESS_MEMBER_SINKS[prop]
+            if allowed_recv is None or recv in allowed_recv:
+                # Only short-circuit if we actually emitted an egress finding —
+                # otherwise a user-defined method that merely SHARES a name (json/send/…)
+                # must still fall through to the cross-function injection pass.
+                if self._report_sensitive_egress(
+                    args_node, tainted, rule_id=rule_id,
+                    sink_label=f"{recv or ''}.{prop}(...)".lstrip("."),
+                    node=node, record=record,
+                ):
+                    return
+
         # Cross-function: obj.method(taint) where method forwards a param to a sink.
         if prop in self.sink_funcs:
             self._handle_cross_function(prop, args_node, tainted, record)
@@ -509,10 +652,12 @@ class _FileAnalyzer:
         for idx, arg in enumerate(args):
             if idx not in spec:
                 continue
-            taint = self._taint_of_expr(arg, tainted)
+            rule_id, sink_label = spec[idx]
+            # forward the capability the function actually requires
+            is_egress = rule_id.startswith("dataflow.")
+            taint = self._taint_of_expr(arg, tainted, "sensitive" if is_egress else "inject")
             if taint is None:
                 continue
-            rule_id, sink_label = spec[idx]
             src_file = self.cross_file_src.get(fn_name)
             if src_file:   # the sink lives in another module — make the flow say so
                 step_label = f"{fn_name}() in {src_file} (param {idx} -> {sink_label})"
@@ -526,11 +671,21 @@ class _FileAnalyzer:
                 label=step_label, file=step_file, line=arg.start_point.row + 1,
                 kind="propagation", code=_line_text(self.text, arg.start_point.row + 1),
             )]
-            self._report(
-                rule_id=rule_id, node=arg, value_node=arg,
-                sink_label=sink_text, taint=taint,
-                confidence="high", record=record, extra_steps=extra,
-            )
+            if is_egress:
+                asset = "an environment secret" if taint.sensitivity == _SENS_SECRET_ENV else "a credential"
+                self._report(
+                    rule_id=rule_id, node=arg, value_node=arg, sink_label=sink_text,
+                    taint=taint, confidence="high", record=record, extra_steps=extra,
+                    data_asset=taint.sensitivity,
+                    message=f"{asset.capitalize()} (`{taint.label}`) reaches {sink_text} — "
+                            "sensitive data leaving the trust boundary.",
+                )
+            else:
+                self._report(
+                    rule_id=rule_id, node=arg, value_node=arg,
+                    sink_label=sink_text, taint=taint,
+                    confidence="high", record=record, extra_steps=extra,
+                )
             return  # one finding per call is plenty
 
     # -- JSX -----------------------------------------------------------------
@@ -564,38 +719,101 @@ class _FileAnalyzer:
 
     # -- taint evaluation of an expression -----------------------------------
 
-    def _taint_of_expr(self, node, tainted: Dict[str, "_Taint"]) -> Optional["_Taint"]:
-        """Return a _Taint if ``node`` is/contains user-controlled data, else None."""
-        # Direct source member expression (req.body, window.location, ...).
+    _COMPOSITE_TYPES = (
+        "binary_expression", "template_string", "template_substitution",
+        "parenthesized_expression", "member_expression", "subscript_expression",
+        "ternary_expression", "sequence_expression", "augmented_assignment_expression",
+        "call_expression", "spread_element", "object", "array", "pair",
+    )
+
+    def _taint_of_expr(self, node, tainted: Dict[str, "_Taint"],
+                       want: str = "inject") -> Optional["_Taint"]:
+        """Return a _Taint carried by ``node`` matching capability ``want``, else None.
+
+        ``want`` is "inject" (attacker-controlled — the default, so injection sinks
+        behave EXACTLY as before), "sensitive" (carries a data-asset label — used by
+        egress sinks), or "any" (either — used by variable tracking, injectable first)."""
+        if want == "inject":
+            return self._injectable_taint(node, tainted)
+        if want == "sensitive":
+            return self._sensitive_taint(node, tainted)
+        return self._injectable_taint(node, tainted) or self._sensitive_taint(node, tainted)
+
+    def _injectable_taint(self, node, tainted: Dict[str, "_Taint"]) -> Optional["_Taint"]:
+        """Attacker-controlled taint (the original, unchanged injection analysis)."""
         src = self._source_label(node)
         if src is not None:
             return _Taint(label=src, line=node.start_point.row + 1,
                           snippet=_line_text(self.text, node.start_point.row + 1))
-
-        # A tainted call return: useSearchParams(), searchParams.get(...), prompt().
-        if node.type in ("call_expression",):
+        if node.type == "call_expression":
             csrc = self._call_source_label(node)
             if csrc is not None:
                 return _Taint(label=csrc, line=node.start_point.row + 1,
                               snippet=_line_text(self.text, node.start_point.row + 1))
-
-        # A reference to an already-tainted variable.
-        if node.type == "identifier":
+        if node.type in ("identifier", "shorthand_property_identifier"):
             t = tainted.get(_text(node))
-            return t
-
-        # Composite expressions: any tainted sub-part taints the whole.
-        if node.type in (
-            "binary_expression", "template_string", "template_substitution",
-            "parenthesized_expression", "member_expression", "subscript_expression",
-            "ternary_expression", "sequence_expression", "augmented_assignment_expression",
-            "call_expression", "spread_element", "object", "array", "pair",
-        ):
+            return t if (t is not None and t.injectable) else None
+        if node.type in self._COMPOSITE_TYPES:
             for child in node.children:
-                t = self._taint_of_expr(child, tainted)
+                t = self._injectable_taint(child, tainted)
                 if t is not None:
                     return t
         return None
+
+    def _sensitive_taint(self, node, tainted: Dict[str, "_Taint"]) -> Optional["_Taint"]:
+        """A named sensitive value (env secret / credential), for egress sinks."""
+        sens = self._sensitivity_label(node)
+        if sens is not None:
+            return _Taint(label=sens[0], line=node.start_point.row + 1,
+                          snippet=_line_text(self.text, node.start_point.row + 1),
+                          injectable=False, sensitivity=sens[1])
+        if node.type in ("identifier", "shorthand_property_identifier"):  # {apiKey} shorthand
+            t = tainted.get(_text(node))
+            return t if (t is not None and t.sensitivity is not None) else None
+        # A value DERIVED from a secret without revealing it (secret.length, the
+        # recommended secret.slice(-4) redaction, a `=== "x"` check) is NOT a leak.
+        if _is_nonrevealing(node):
+            return None
+        if node.type in self._COMPOSITE_TYPES:
+            for child in node.children:
+                t = self._sensitive_taint(child, tainted)
+                if t is not None:
+                    return t
+        return None
+
+    def _sensitivity_label(self, node) -> Optional[Tuple[str, str]]:
+        """If ``node`` is a known sensitive value, return (label, sensitivity_class).
+
+        Only mechanically-checkable shapes: a secret-shaped ``process.env.X`` access,
+        or a member / identifier whose name tokenises to a credential. Public env
+        prefixes, diagnostic env vars, and generic names never match."""
+        if node.type in ("member_expression", "subscript_expression"):
+            # process.env.X — only when the member object is EXACTLY process.env (so
+            # process.env.X.length / .slice(...) is handled as a derivation, not a leak).
+            obj = node.child_by_field_name("object")
+            obj_parts = _flatten_member(obj) if obj is not None else []
+            if obj_parts == ["process", "env"]:
+                name = _prop_name(node) or ""
+                # Return a sentinel either way so the caller does NOT recurse into the
+                # `process.env` receiver and mislabel a non-secret var (NODE_ENV/PORT).
+                if self._env_is_secret(name):
+                    return (f"process.env.{name}", _SENS_SECRET_ENV)
+                return None
+            parts = _flatten_member(node)
+            if parts and _name_is_sensitive(parts[-1]):
+                return (".".join(parts[-2:]), _SENS_CREDENTIAL)
+        # NB: a bare identifier is labelled only via TRACKING (stamped at its
+        # assignment when the RHS is non-literal), never by its name at the use site —
+        # so `const password = "<label>"; log(password)` does not become a leak.
+        return None
+
+    @staticmethod
+    def _env_is_secret(name: str) -> bool:
+        if not name or name.upper() in _ENV_NONSECRET:
+            return False
+        if any(name.upper().startswith(p) for p in _ENV_PUBLIC_PREFIXES):
+            return False
+        return bool(_ENV_SECRET_HINT_RE.search(name))
 
     def _source_label(self, node) -> Optional[str]:
         """If ``node`` is a member chain rooted at a known source, return its label."""
@@ -728,6 +946,7 @@ class _FileAnalyzer:
     def _report(
         self, *, rule_id, node, value_node, sink_label, taint, confidence,
         record: bool, extra_steps: Optional[List[TaintStep]] = None,
+        data_asset: Optional[str] = None, message: Optional[str] = None,
     ) -> None:
         # In probe mode (pass 1) we only need to know that a parameter reaches a
         # sink — record the hit and return without producing a real finding.
@@ -755,10 +974,11 @@ class _FileAnalyzer:
             label=sink_label, file=self.rel, line=line, kind="sink", code=snippet,
         ))
 
-        if taint is not None and taint.label:
-            message = f"User input from `{taint.label}` flows into {sink_label}."
-        else:
-            message = f"Non-literal (possibly user-controlled) value reaches {sink_label}."
+        if message is None:
+            if taint is not None and taint.label:
+                message = f"User input from `{taint.label}` flows into {sink_label}."
+            else:
+                message = f"Non-literal (possibly user-controlled) value reaches {sink_label}."
 
         self.findings.append(Finding(
             rule_id=rule_id,
@@ -770,7 +990,28 @@ class _FileAnalyzer:
             confidence=confidence,
             message=message,
             taint_flow=flow,
+            metadata={"data_asset": data_asset} if data_asset else {},
         ))
+
+    def _report_sensitive_egress(self, args_node, tainted, *, rule_id, sink_label, node, record) -> bool:
+        """A sensitive value reaching a trust-boundary exit. Fires only when an
+        argument carries a sensitivity label (so a literal key / event name / a
+        no-arg `response.json()` read never triggers). Returns True iff it emitted."""
+        if args_node is None:
+            return False
+        for arg in _arg_list(args_node):
+            taint = self._taint_of_expr(arg, tainted, want="sensitive")
+            if taint is not None:
+                asset = "an environment secret" if taint.sensitivity == _SENS_SECRET_ENV else "a credential"
+                self._report(
+                    rule_id=rule_id, node=node, value_node=arg, sink_label=sink_label,
+                    taint=taint, confidence="high", record=record,
+                    data_asset=taint.sensitivity,
+                    message=f"{asset.capitalize()} (`{taint.label}`) reaches {sink_label} — "
+                            "sensitive data leaving the trust boundary.",
+                )
+                return True
+        return False
 
 
 # --------------------------------------------------------------------------- #
@@ -779,16 +1020,25 @@ class _FileAnalyzer:
 
 
 class _Taint:
-    __slots__ = ("label", "line", "snippet")
+    """A value with provenance. It can be *injectable* (attacker-controlled — the
+    classic taint that injection sinks care about) and/or carry a *sensitivity* label
+    (a named data asset: an env secret, a credential, PII — what data-egress sinks
+    care about). A value can be one, the other, or both."""
 
-    def __init__(self, label: str, line: int, snippet: str) -> None:
+    __slots__ = ("label", "line", "snippet", "injectable", "sensitivity")
+
+    def __init__(self, label: str, line: int, snippet: str, *,
+                 injectable: bool = True, sensitivity: Optional[str] = None) -> None:
         self.label = label
         self.line = line
         self.snippet = snippet
+        self.injectable = injectable      # attacker-controlled (feeds injection sinks)
+        self.sensitivity = sensitivity    # data class, e.g. "secret.env" (feeds egress sinks)
 
     def renamed(self, var: str, line: int) -> "_Taint":
         # Keep the original source label so the flow points back to the real source.
-        return _Taint(label=self.label, line=self.line or line, snippet=self.snippet)
+        return _Taint(label=self.label, line=self.line or line, snippet=self.snippet,
+                      injectable=self.injectable, sensitivity=self.sensitivity)
 
 
 # --------------------------------------------------------------------------- #
@@ -829,6 +1079,27 @@ def _prop_name(node) -> Optional[str]:
     if prop is not None:
         return _text(prop)
     return None
+
+
+def _is_nonrevealing(node) -> bool:
+    """True if ``node`` derives a value from a secret WITHOUT exposing it — its
+    length/size, a truncating slice/substring redaction, a Boolean coercion, or a
+    comparison. Such a derivation must not inherit the secret's sensitivity label."""
+    t = node.type
+    if t == "member_expression":
+        return _prop_name(node) in _NONREVEALING_PROPS
+    if t == "binary_expression":
+        op = node.child_by_field_name("operator")
+        return op is not None and _text(op) in _COMPARISON_OPS
+    if t == "call_expression":
+        fn = node.child_by_field_name("function")
+        if fn is None:
+            return False
+        if fn.type == "identifier":
+            return _text(fn) in _REDACTING_CALLS
+        if fn.type == "member_expression":
+            return _prop_name(fn) in _REDACTING_CALLS
+    return False
 
 
 def _receiver_text(node) -> str:

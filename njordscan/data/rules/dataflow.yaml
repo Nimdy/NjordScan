@@ -1,0 +1,94 @@
+# Data-egress rules: a NAMED sensitive value (an env secret, a credential) is
+# traced by data flow to a place where it LEAVES the trust boundary — a log, a
+# response body, the browser, or a third-party SDK. These are the inverse of the
+# injection rules: the sensitive value is the source, the boundary exit is the sink.
+# Emitted by the taint detector; every finding ships the source→exit flow.
+
+- id: dataflow.sensitive-to-log
+  title: A secret or credential is written to a log
+  severity: high
+  cwe: CWE-532
+  owasp: "A09:2021-Security Logging and Monitoring Failures"
+  why: |
+    NjordScan traced an environment secret or a credential into a `console`
+    log call. Logs are not a safe place for secrets: they get shipped to log
+    aggregators (Datadog, CloudWatch, Vercel logs), shared in screenshots, and
+    are a top target once an attacker gets any foothold. A secret printed to a
+    log is a secret you have to assume is compromised.
+  fix: |
+    Never log secrets or credentials. Log an identifier or a redacted value
+    instead (e.g. the last 4 characters), and scrub secrets from error objects
+    before logging them. If you logged a real secret, rotate it.
+  secure_example: |
+    // instead of: console.log("key", process.env.STRIPE_SECRET_KEY)
+    console.log("stripe key loaded:", Boolean(process.env.STRIPE_SECRET_KEY));
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+    - https://cwe.mitre.org/data/definitions/532.html
+
+- id: dataflow.sensitive-to-response
+  title: A secret or credential is sent in an HTTP response
+  severity: high
+  cwe: CWE-200
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    A secret or credential flows into a response body sent to the client
+    (`res.json`/`NextResponse.json`/`Response.json`/`res.send`). Anything in a
+    response is readable by the user — and often by anyone, via the browser
+    devtools Network tab. Returning a whole database row, a password hash, or an
+    API key exposes data the client should never see.
+  fix: |
+    Return only the fields the client needs — build an explicit DTO instead of
+    sending a whole record. Never include secrets, password hashes, or internal
+    tokens in a response. For Prisma, use `select`/`omit` to drop sensitive
+    columns at the query.
+  secure_example: |
+    // instead of: return NextResponse.json(user)   // includes passwordHash!
+    return NextResponse.json({ id: user.id, name: user.name, email: user.email });
+  references:
+    - https://owasp.org/Top10/A01_2021-Broken_Access_Control/
+    - https://cwe.mitre.org/data/definitions/200.html
+
+- id: dataflow.sensitive-to-browser-storage
+  title: A secret or credential is stored in the browser
+  severity: high
+  cwe: CWE-922
+  owasp: "A04:2021-Insecure Design"
+  why: |
+    A secret or credential is written to `localStorage`/`sessionStorage`. Web
+    storage is plain-text and readable by ANY JavaScript on the page — including
+    a single XSS payload or a malicious dependency. A token kept there can be
+    stolen and replayed to impersonate the user; an API secret there is simply
+    public.
+  fix: |
+    Keep session tokens in an `httpOnly` cookie the browser sends automatically
+    and JavaScript cannot read. Never put API secrets or credentials in the
+    browser at all — keep them server-side and proxy the call.
+  secure_example: |
+    // server sets an httpOnly cookie instead of the client storing a token:
+    res.cookies.set("session", token, { httpOnly: true, secure: true, sameSite: "lax" });
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#local-storage
+    - https://cwe.mitre.org/data/definitions/922.html
+
+- id: dataflow.sensitive-to-thirdparty
+  title: A secret or credential is sent to a third-party service
+  severity: high
+  cwe: CWE-201
+  owasp: "A09:2021-Security Logging and Monitoring Failures"
+  why: |
+    A secret or credential flows into a third-party SDK call (error tracking like
+    Sentry, or analytics like PostHog/Segment/Mixpanel). Error and analytics
+    payloads are stored on someone else's servers and seen by everyone with
+    access to that dashboard. Shipping a secret, token, or PII field there leaks
+    it outside your control and can breach data-handling agreements.
+  fix: |
+    Scrub sensitive fields before sending to any third party — most SDKs have a
+    `beforeSend`/redaction hook. Never attach raw secrets, tokens, or PII to an
+    event or error you report externally.
+  secure_example: |
+    // Sentry: strip secrets before the event leaves your server
+    Sentry.init({ beforeSend(event) { delete event.extra?.token; return event; } });
+  references:
+    - https://docs.sentry.io/platforms/javascript/data-management/sensitive-data/
+    - https://cwe.mitre.org/data/definitions/201.html
