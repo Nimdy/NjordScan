@@ -105,6 +105,35 @@ njordscan scan . --diff origin/main --fail-on high   # only fail on issues this 
 Reports only findings on the lines your change touched — perfect for adopting NjordScan on an
 existing codebase without fixing the whole backlog at once.
 
+## Reachability — fix what's actually exploitable first
+
+NjordScan builds an **import graph** from your framework's entrypoints (Route Handlers, API
+routes, Server Actions, middleware, the client bundle) and marks each finding as **reachable or
+not** — with the path and whether it runs **server-side** (higher risk) or **client-side**. This
+is the "reachability"/ASPM technique commercial tools charge enterprise money for.
+
+```
+🟠 [HIGH] SQL query built by string concatenation   lib/db.ts:4
+🎯 Reachable (server-side) from app/api/search/route.ts
+```
+
+The identical bug in unimported dead code is flagged **○ Not reachable (lower priority)**. Use
+`njordscan scan . --reachable-only` to hide dead-code noise entirely. (Static analysis is a strong
+signal, not a proof — "not reachable" means *lower priority*, never *ignored*.)
+
+## Agentic AI fix-and-verify
+
+Beyond the safe mechanical `--fix`, `--ai-fix` lets an AI patch deeper findings — but **NjordScan
+verifies the patch actually worked before keeping it**: it applies the AI's change to a throwaway
+copy, **re-scans**, and only accepts the fix if the issue is gone *and* no new issue appeared.
+
+```bash
+njordscan scan . --ai-fix --ai-provider ollama --dry-run   # preview AI-verified patches
+njordscan scan . --ai-fix --ai-provider ollama             # apply the verified ones
+```
+
+The AI never gets the last word — the scanner does.
+
 ## Threat intelligence & enterprise output
 
 NjordScan speaks the language security teams use:
@@ -232,7 +261,7 @@ Exit codes: `0` = clean (or below `--fail-on`), `1` = findings met the gate, `2`
 | `njordscan mcp` | Run as an MCP server for AI coding assistants |
 | `njordscan version` | Show the version |
 
-Key `scan` flags: `--fix` / `--dry-run`, `--fail-on`, `--min-severity`,
+Key `scan` flags: `--fix` / `--ai-fix` / `--dry-run`, `--reachable-only`, `--fail-on`, `--min-severity`,
 `--format` (terminal/json/sarif/html/attack-navigator), `-o`, `--sbom` / `--sbom-format`,
 `--diff [ref]`, `--baseline` / `--update-baseline`, `--only` / `--skip` (comma-separated ok),
 `--url` / `--allow-private`, `--explain-with-ai` / `--ai-provider`, `--mode quick`, `--config`,

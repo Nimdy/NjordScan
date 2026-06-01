@@ -69,6 +69,7 @@ class Finding:
     # --- optional extras ---
     taint_flow: List[TaintStep] = field(default_factory=list)
     ai_explanation: Optional[str] = None   # populated by an opt-in LLM provider
+    reachable: Optional[bool] = None       # set by reachability analysis (None = not analyzed)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     @property

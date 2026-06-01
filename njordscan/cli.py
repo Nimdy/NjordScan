@@ -64,7 +64,9 @@ def cli() -> None:
 @click.option("--ignore", "ignore", multiple=True, help="Extra ignore glob(s) (repeatable).")
 @click.option("--brief", is_flag=True, help="Hide the 'why/how to fix' detail (terse output).")
 @click.option("--fix", "do_fix", is_flag=True, help="Apply safe, additive autofixes for supported rules.")
-@click.option("--dry-run", is_flag=True, help="With --fix: preview the diff without writing changes.")
+@click.option("--ai-fix", "do_ai_fix", is_flag=True,
+              help="Let an AI patch code findings, verified by a re-scan (needs --ai-provider).")
+@click.option("--dry-run", is_flag=True, help="With --fix/--ai-fix: preview the diff without writing changes.")
 @click.option("--explain-with-ai", is_flag=True,
               help="Add AI-written explanations (opt-in; see --ai-provider).")
 @click.option("--ai-provider", type=click.Choice(["ollama", "claude", "openai"]), default=None,
@@ -87,18 +89,22 @@ def cli() -> None:
               help="Path to a .njordscan.yml config file (auto-detected by default).")
 @click.option("--no-config", is_flag=True, help="Ignore any .njordscan.yml config file.")
 @click.option("--no-history", is_flag=True, help="Don't save this scan to .njordscan/history (see 'results').")
+@click.option("--reachable-only", is_flag=True,
+              help="Only report findings reachable from an entrypoint (route/API/Server Action/bundle).")
+@click.option("--no-reachability", is_flag=True, help="Skip import-graph reachability analysis.")
 @click.option("-v", "--verbose", is_flag=True, help="Show detector errors and extra detail.")
 @click.option("--quiet", is_flag=True, help="Only print the summary line.")
 def scan(
     target: Path, mode: str, fmt: str, output: Optional[Path],
     sbom_path: Optional[Path], sbom_format: str, min_severity: str,
     fail_on: Optional[str], only: tuple, skip: tuple, ignore: tuple, brief: bool,
-    do_fix: bool, dry_run: bool,
+    do_fix: bool, do_ai_fix: bool, dry_run: bool,
     explain_with_ai: bool, ai_provider: Optional[str], no_redact: bool, no_external: bool,
     url: Optional[str], allow_private: bool,
     diff_ref: Optional[str],
     baseline: Optional[Path], update_baseline: bool,
     config_path: Optional[Path], no_config: bool, no_history: bool,
+    reachable_only: bool, no_reachability: bool,
     verbose: bool, quiet: bool,
 ) -> None:
     """🔍 Scan a project directory for security issues.
@@ -132,6 +138,8 @@ def scan(
         no_external=no_external,
         url=url,
         allow_private=allow_private,
+        reachability=not no_reachability,
+        reachable_only=reachable_only,
     )
 
     if url:
@@ -204,6 +212,8 @@ def scan(
 
     if do_fix:
         _run_autofix(result, config, dry_run=dry_run)
+    if do_ai_fix:
+        _run_ai_fix(result, config, dry_run=dry_run)
 
     if config.fail_on and result.exceeds(config.fail_on):
         sys.exit(EXIT_FINDINGS)
@@ -224,6 +234,30 @@ def _write_sbom(result: ScanResult, path: Path, fmt: str) -> None:
     vuln = f", [red]{info['vulnerable']} vulnerable[/red]" if info["vulnerable"] else ""
     console.print(f"[green]✓[/green] SBOM ({fmt}) written to {path} "
                   f"[dim]({info['components']} components{vuln})[/dim]")
+
+
+def _run_ai_fix(result: ScanResult, config: Config, *, dry_run: bool) -> None:
+    from .fix.ai_fix import ai_fix
+
+    console.print("\n[bold magenta]🤖 AI fix-and-verify[/bold magenta] [dim](generating patches, verifying by re-scan…)[/dim]")
+    report = ai_fix(result, config, dry_run=dry_run)
+    if report.error:
+        err_console.print(f"[yellow]AI fix unavailable: {report.error}[/yellow]")
+        return
+    if not report.applied:
+        console.print(f"[dim]No AI fixes were verified ({len(report.unverified)} attempt(s) "
+                      "did not pass the re-scan check).[/dim]")
+        return
+    verb = "Would apply" if dry_run else "Applied"
+    console.print(f"[green]✓ {verb} {report.count} AI-verified fix(es)[/green] "
+                  f"(provider: {report.provider}; each confirmed by a re-scan):")
+    for fx in report.applied:
+        console.print(f"  [green]✓[/green] {fx.file} — fixed {', '.join(fx.rules_fixed)}")
+        if dry_run and fx.diff:
+            from rich.syntax import Syntax
+            console.print(Syntax(fx.diff, "diff", theme="ansi_dark", background_color="default"))
+    if dry_run:
+        console.print("[dim]Dry run — re-run --ai-fix without --dry-run to apply the verified patches.[/dim]")
 
 
 def _run_autofix(result: ScanResult, config: Config, *, dry_run: bool) -> None:

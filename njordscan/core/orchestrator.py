@@ -73,7 +73,10 @@ class Orchestrator:
         findings = [
             f for f in findings if f.effective_severity.meets(self.config.min_severity)
         ]
-        findings.sort(key=lambda f: (-f.effective_severity.rank, f.file, f.line))
+        if self.config.reachability:
+            self._annotate_reachability(findings, project)
+        # reachable findings sort first within a severity tier
+        findings.sort(key=lambda f: (-f.effective_severity.rank, f.reachable is False, f.file, f.line))
 
         return ScanResult(
             project=project,
@@ -105,6 +108,34 @@ class Orchestrator:
         if not detector.applies(project):
             return []
         return await detector.scan(project)
+
+    def _annotate_reachability(self, findings: List[Finding], project: Project) -> None:
+        """Mark each finding reachable/unreachable from a framework entrypoint."""
+        from .reachability import ReachabilityGraph
+
+        try:
+            graph = ReachabilityGraph(project)
+        except Exception:  # noqa: BLE001 — reachability is best-effort
+            return
+        if graph.entrypoint_count == 0:
+            return  # no entrypoints detected → inconclusive, leave reachable = None
+
+        source_rels = {project.rel(p) for p in project.source_files}
+        for f in findings:
+            if f.file in source_rels:
+                r = graph.lookup(f.file)
+                f.reachable = r.reachable
+                if r.reachable:
+                    f.metadata["reachability"] = {
+                        "kind": r.kind, "entrypoint": r.entrypoint, "path": r.path,
+                    }
+            else:
+                # package.json / .env / lockfile / live-URL findings are inherently "live"
+                f.reachable = True
+                f.metadata.setdefault("reachability", {"kind": "project"})
+
+        if self.config.reachable_only:
+            findings[:] = [f for f in findings if f.reachable is not False]
 
     def _apply_rule_controls(self, findings: List[Finding]) -> List[Finding]:
         """Drop disabled rules and apply per-rule severity overrides from config."""

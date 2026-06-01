@@ -86,6 +86,17 @@ def _render_finding(idx: int, finding: Finding, console: Console, *, show_fix: b
     tag_text = Text("  ·  ".join(tags), style="dim italic")
 
     blocks: List = [sub, tag_text]
+    if finding.reachable is True:
+        reach = finding.metadata.get("reachability", {})
+        where = reach.get("entrypoint")
+        scope = reach.get("kind", "")
+        scope_txt = f" ({scope}-side)" if scope in ("server", "client") else ""
+        line = Text(f"\n🎯 Reachable{scope_txt}", style="bold red")
+        if where:
+            line.append(f" from {where}", style="dim")
+        blocks.append(line)
+    elif finding.reachable is False:
+        blocks.append(Text("\n○ Not reachable from a known entrypoint (lower priority)", style="dim"))
     if finding.message:
         blocks.append(Text(f"\n{finding.message}"))
 

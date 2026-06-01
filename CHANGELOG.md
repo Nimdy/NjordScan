@@ -29,6 +29,11 @@ positives on a clean app, and explains every finding in plain English.
 - **`--diff [ref]`** PR mode: report only findings on changed lines.
 - **Baseline** (`--baseline`, `--update-baseline`) to adopt into an existing repo.
 - **`.njordscan.yml`** config file + `njordscan init`.
+- **Reachability analysis** — an import graph rooted at framework entrypoints (Route Handlers, API
+  routes, Server Actions, middleware, client bundle) marks each finding reachable / not-reachable,
+  server- vs client-side, with the path. `--reachable-only` hides unreachable dead code.
+- **Agentic AI fix-and-verify** (`--ai-fix`) — an AI patches code findings, and NjordScan **verifies
+  each patch by re-scanning a copy** (issue gone + no regressions) before accepting it.
 - **MITRE ATT&CK** mapping on every rule (shown inline + in SARIF), with an **ATT&CK Navigator
   layer** export (`--format attack-navigator`) of your app's attack surface.
 - **Exploit prioritization** — `njordscan update` pulls the **CISA KEV** catalog (actively-exploited

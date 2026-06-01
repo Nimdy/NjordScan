@@ -42,6 +42,8 @@ class Config:
     skip_detectors: List[str] = field(default_factory=list)
     disabled_rules: set = field(default_factory=set)        # rule_ids to suppress
     severity_overrides: dict = field(default_factory=dict)  # rule_id -> Severity
+    reachability: bool = True                    # annotate findings with import-graph reachability
+    reachable_only: bool = False                 # report only reachable findings
     max_file_bytes: int = 2_000_000              # skip files larger than this
     explain_with_ai: bool = False
     ai_provider: Optional[str] = None            # "ollama" | "claude" | "openai"
