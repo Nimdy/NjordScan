@@ -5,6 +5,7 @@ developer actually cares about: **"so how do I get hacked?"** — by correlating
 individual findings into the multi-step attack paths an adversary would walk.
 """
 
+from .ai_redteam import redteam
 from .attack_paths import AttackPath, AttackStep, synthesize
 
-__all__ = ["AttackPath", "AttackStep", "synthesize"]
+__all__ = ["AttackPath", "AttackStep", "synthesize", "redteam"]

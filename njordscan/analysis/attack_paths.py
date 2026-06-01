@@ -107,6 +107,8 @@ class AttackPath:
     score_factors: List[str] = field(default_factory=list)  # why the score is what it is
     technique_ids: List[str] = field(default_factory=list)
     kev: bool = False         # involves an actively-exploited (CISA KEV) component
+    ai_verified: bool = False  # proposed by an LLM, every step/edge verified by the engine
+    verification: List[str] = field(default_factory=list)  # per-edge grounding evidence
 
     @property
     def fingerprint_set(self) -> frozenset:
@@ -121,6 +123,8 @@ class AttackPath:
             "score": self.score,
             "band": self.band.value,
             "kev": self.kev,
+            "ai_verified": self.ai_verified,
+            "verification": list(self.verification),
             "advice": self.advice,
             "score_factors": list(self.score_factors),
             "techniques": list(self.technique_ids),

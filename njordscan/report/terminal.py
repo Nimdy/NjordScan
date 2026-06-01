@@ -51,57 +51,76 @@ def render_terminal(result: ScanResult, console: Console, *, verbose: bool = Fal
 
 
 def _render_attack_paths(paths: List, console: Console, *, limit: int = 5) -> None:
-    intro = Text.assemble(
-        ("🎯 Attack paths", "bold red"),
-        ("  ·  how these issues chain into a real breach", "dim"),
-    )
-    console.print(intro)
-    console.print(Text("These are the routes an attacker can actually walk. Fix the ★ step in "
-                       "each — it collapses the whole chain.\n", style="dim"))
+    template = [p for p in paths if not getattr(p, "ai_verified", False)]
+    ai = [p for p in paths if getattr(p, "ai_verified", False)]
 
-    for path in paths[:limit]:
-        band = path.band
-        score = Text.assemble(
-            (f"{band.emoji} ", ""),
-            (f"score {path.score}", f"bold {band.color.split()[-1]}"),
-            (f" · {band.value}", band.color),
-        )
-        if path.kev:
-            score.append("  🚨 actively exploited", style="bold red")
-        title = Text.assemble((f"{path.title}", "bold"))
-
-        body: List = [score, Text(f"Impact: {path.impact}", style="italic")]
-        body.append(Text(""))
-        for step in path.steps:
-            star = "★ " if step.breakpoint else "  "
-            head = Text.assemble(
-                (star, "bold green" if step.breakpoint else "dim"),
-                (f"{step.order}. ", "bold"),
-                (f"[{step.tactic}] ", "cyan"),
-                (step.title, "bold"),
-            )
-            body.append(head)
-            loc = Text(f"     {step.location}", style="dim")
-            body.append(loc)
-            body.append(Text(f"     {step.narrative}\n"))
-        if path.advice:
-            body.append(Text.assemble(("🛠  ", ""), (path.advice, "green")))
-        if path.score_factors:
-            body.append(Text("\nWhy this scores " + str(path.score) + ": "
-                             + "; ".join(path.score_factors) + ".", style="dim italic"))
-
-        console.print(Panel(
-            Group(*body),
-            title=Text.assemble((f" {path.id}  ", "dim"), title),
-            title_align="left",
-            border_style=band.color.split()[-1],
-            padding=(1, 2),
+    if template:
+        console.print(Text.assemble(
+            ("🎯 Attack paths", "bold red"),
+            ("  ·  how these issues chain into a real breach", "dim"),
         ))
-        console.print()
+        console.print(Text("These are the routes an attacker can actually walk. Fix the ★ step in "
+                           "each — it collapses the whole chain.\n", style="dim"))
+        for path in template[:limit]:
+            _render_one_path(path, console)
+        if len(template) > limit:
+            console.print(Text(f"   …and {len(template) - limit} more attack path(s). "
+                               "See JSON output for the full set.\n", style="dim"))
 
-    if len(paths) > limit:
-        console.print(Text(f"   …and {len(paths) - limit} more attack path(s). "
-                           "See JSON output for the full set.\n", style="dim"))
+    if ai:
+        console.print(Text.assemble(
+            ("🤖 AI-discovered attack paths", "bold magenta"),
+            ("  ·  the model proposed these; NjordScan verified every step against your code",
+             "dim"),
+        ))
+        console.print(Text("The AI may only chain findings that actually exist — each link below "
+                           "was confirmed by the engine, not taken on faith.\n", style="dim"))
+        for path in ai[:limit]:
+            _render_one_path(path, console)
+
+
+def _render_one_path(path, console: Console) -> None:
+    band = path.band
+    score = Text.assemble(
+        (f"{band.emoji} ", ""),
+        (f"score {path.score}", f"bold {band.color.split()[-1]}"),
+        (f" · {band.value}", band.color),
+    )
+    if path.kev:
+        score.append("  🚨 actively exploited", style="bold red")
+    if getattr(path, "ai_verified", False):
+        score.append("  🤖 AI-discovered · every step verified", style="bold magenta")
+    title = Text.assemble((f"{path.title}", "bold"))
+
+    body: List = [score, Text(f"Impact: {path.impact}", style="italic"), Text("")]
+    for step in path.steps:
+        star = "★ " if step.breakpoint else "  "
+        body.append(Text.assemble(
+            (star, "bold green" if step.breakpoint else "dim"),
+            (f"{step.order}. ", "bold"),
+            (f"[{step.tactic}] ", "cyan"),
+            (step.title, "bold"),
+        ))
+        body.append(Text(f"     {step.location}", style="dim"))
+        body.append(Text(f"     {step.narrative}\n"))
+    if getattr(path, "verification", None):
+        body.append(Text("✓ Verified links (engine-confirmed, not the model's word):", style="bold green"))
+        for v in path.verification:
+            body.append(Text(f"     • {v}", style="green"))
+        body.append(Text(""))
+    if path.advice:
+        body.append(Text.assemble(("🛠  ", ""), (path.advice, "green")))
+    if path.score_factors:
+        body.append(Text("\nWhy this scores " + str(path.score) + ": "
+                         + "; ".join(path.score_factors) + ".", style="dim italic"))
+
+    border = "magenta" if getattr(path, "ai_verified", False) else band.color.split()[-1]
+    console.print(Panel(
+        Group(*body),
+        title=Text.assemble((f" {path.id}  ", "dim"), title),
+        title_align="left", border_style=border, padding=(1, 2),
+    ))
+    console.print()
 
 
 def _header(result: ScanResult, console: Console) -> None:

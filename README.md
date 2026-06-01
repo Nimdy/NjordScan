@@ -141,6 +141,47 @@ design vars (`NEXT_PUBLIC_*`, `NODE_ENV`) are excluded, and it won't flag the ve
 recommends (`secret.slice(-4)`, `secret.length`, `secret === x`). Nothing is flagged unless it
 actually reaches an exit.
 
+## 🤖 AI red-teamer — the LLM proposes, the engine *verifies* (it cannot hallucinate)
+
+```bash
+njordscan scan . --ai-attack-paths --ai-provider ollama   # local & private, or claude/openai
+```
+
+The built-in attack-path templates find the chains we hand-coded. An LLM can recombine the *same
+confirmed findings* into **novel, longer, cross-category attack chains** the templates never
+enumerate — an attacker's imagination over a fixed set of facts. The problem with LLMs is they
+make things up. So NjordScan treats the model as a **suspect**, not an oracle:
+
+- it may only reference findings that **actually exist** (by id) — invented steps are dropped;
+- **every link it claims between two steps is re-checked against the real reachability, roles, and
+  data-flow** — and the chain is thrown out if any link can't be grounded;
+- what survives is shown with its proof: *"✓ Verified links (engine-confirmed, not the model's
+  word)."*
+
+```
+🤖 AI-discovered attack paths · the model proposed these; NjordScan verified every step
+
+╭─ ai-path-1  Unauthenticated takeover → secret harvest → exfiltration ─────────╮
+│  🔴 score 100 · critical   🤖 AI-discovered · every step verified             │
+│  1. [Initial Access]   Auth guard hard-wired to return true   app/api/chat/route.ts:3
+│  2. [Execution]        User input flows into a database query  lib/db.ts:7    │
+│  3. [Credential Access] AWS access key committed to the repo   .env.local:2   │
+│  4. [Exfiltration]     A secret is sent to a third-party SDK   lib/log.ts:4   │
+│  ✓ Verified links (engine-confirmed, not the model's word):                   │
+│     • auth-bypass → SQLi: both reachable from the same entrypoint             │
+│     • SQLi → secret: the server-side primitive can read the exposed secret    │
+│     • secret → exfiltration: the exposed credential is what gets carried out  │
+╰───────────────────────────────────────────────────────────────────────────────╯
+```
+
+This is the part that should make you trust it: it's the **"LLM proposes, deterministic engine
+disposes"** pattern made visible. The model contributes *creativity* (the 4-step chain across auth,
+injection, secrets, and a logging SDK that no single template covers); the engine contributes
+*ground truth* (every hop is a real finding linked by a real, checked relationship). A hypothesized
+step that doesn't map to your code, or a link the engine can't confirm, is **silently discarded** —
+so the AI literally cannot invent a vulnerability. Opt-in, **off by default**, and **offline-capable**
+via a local model.
+
 ## AI / LLM application security
 
 Vibe coders are building AI apps — so NjordScan covers the risks unique to them, which most

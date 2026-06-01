@@ -69,6 +69,9 @@ def cli() -> None:
 @click.option("--dry-run", is_flag=True, help="With --fix/--ai-fix: preview the diff without writing changes.")
 @click.option("--explain-with-ai", is_flag=True,
               help="Add AI-written explanations (opt-in; see --ai-provider).")
+@click.option("--ai-attack-paths", "ai_attack_paths", is_flag=True,
+              help="AI red-teamer: an LLM proposes novel attack chains; every step is "
+                   "verified against your code (opt-in; see --ai-provider).")
 @click.option("--ai-provider", type=click.Choice(["ollama", "claude", "openai"]), default=None,
               help="Which AI backend to use with --explain-with-ai.")
 @click.option("--no-redact", is_flag=True,
@@ -99,7 +102,7 @@ def scan(
     sbom_path: Optional[Path], sbom_format: str, min_severity: str,
     fail_on: Optional[str], only: tuple, skip: tuple, ignore: tuple, brief: bool,
     do_fix: bool, do_ai_fix: bool, dry_run: bool,
-    explain_with_ai: bool, ai_provider: Optional[str], no_redact: bool, no_external: bool,
+    explain_with_ai: bool, ai_attack_paths: bool, ai_provider: Optional[str], no_redact: bool, no_external: bool,
     url: Optional[str], allow_private: bool,
     diff_ref: Optional[str],
     baseline: Optional[Path], update_baseline: bool,
@@ -133,7 +136,7 @@ def scan(
         disabled_rules=set(file_cfg.disable_rules),
         severity_overrides={k: Severity.from_str(str(v)) for k, v in file_cfg.severity.items()},
         explain_with_ai=explain_with_ai,
-        ai_provider=ai_provider or (file_cfg.ai_provider if explain_with_ai else None),
+        ai_provider=ai_provider or (file_cfg.ai_provider if (explain_with_ai or ai_attack_paths) else None),
         ai_redact=not no_redact,
         no_external=no_external,
         url=url,
@@ -206,6 +209,11 @@ def scan(
     if diff_hidden or hidden:
         from .analysis import synthesize
         result.attack_paths = synthesize(result.findings)
+
+    # AI red-teamer (opt-in): an LLM proposes novel chains, the engine verifies each
+    # step against the real findings before anything is shown.
+    if ai_attack_paths:
+        _apply_ai_attack_paths(result, config)
 
     _emit(result, fmt, output, verbose=verbose, quiet=quiet, show_fix=not brief)
     if hidden and not quiet and fmt == "terminal":
@@ -352,6 +360,28 @@ def _apply_ai_explanations(result: ScanResult, config: Config) -> None:
         explain_findings(result.findings, config)
     except Exception as exc:  # noqa: BLE001
         err_console.print(f"[yellow]AI explanation step skipped: {exc}[/yellow]")
+
+
+def _apply_ai_attack_paths(result: ScanResult, config: Config) -> None:
+    """Run the AI red-teamer and append only verified chains. Never fails the scan."""
+    from .analysis import redteam
+
+    provider_name = config.ai_provider or "ollama"
+    console.print(f"\n[bold magenta]🤖 AI red-teamer[/bold magenta] "
+                  f"[dim](provider: {provider_name} · proposing chains, verifying each step "
+                  "against your code…)[/dim]")
+    try:
+        verified = redteam(result, config, existing=result.attack_paths)
+    except Exception as exc:  # noqa: BLE001
+        err_console.print(f"[yellow]AI red-teamer skipped: {exc}[/yellow]")
+        return
+    if not verified:
+        console.print("[dim]No additional verified attack chains (the model proposed none "
+                      "that survived verification, or no provider was available).[/dim]")
+        return
+    result.attack_paths = list(result.attack_paths) + verified
+    console.print(f"[green]✓ {len(verified)} AI-proposed chain(s) passed verification[/green] "
+                  "— every step is backed by a real finding in your code.")
 
 
 @cli.command()
