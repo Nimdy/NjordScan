@@ -278,6 +278,8 @@ _CHILD_PROC = re.compile(
 
 # .redirect( — Express/Next response redirect.
 _REDIRECT = re.compile(r"\.redirect\s*\(")
+# new URL("/path", base) / new URL(`/path`, base) — a constant same-origin path, not an open redirect.
+_SAME_ORIGIN_URL = re.compile(r"""new\s+URL\s*\(\s*['"`](?:\.\.?)?/""")
 
 # Server-side fetch( / axios( / axios.get( etc.
 _FETCH = re.compile(r"(?<![.\w])fetch\s*\(")
@@ -483,6 +485,8 @@ class StaticAnalysisDetector(Detector):
             parts = self._split_args(self._call_args(line, open_idx) or arg)
             target = parts[-1].strip() if parts else arg
             if not target or _is_plain_string_literal(target):
+                continue
+            if _SAME_ORIGIN_URL.search(target):   # new URL("/path", base) — same origin, safe
                 continue
             # A relative path literal is safe; a bare variable / expression is not.
             conf = "high" if _REQUEST_HINT.search(target) else "low"

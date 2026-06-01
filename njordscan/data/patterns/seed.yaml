@@ -5,9 +5,13 @@
 - rule_id: react.unsafe-target-blank
   pattern: 'target\s*=\s*["'']_blank["'']'
   languages: [jsx, tsx]
-  exclude_line: 'rel\s*=\s*["''][^"'']*noopener'
+  # rel="noopener" OR rel="noreferrer" is sufficient; it often sits on an adjacent line
+  # of a multi-line JSX element, so check a small window around the match too.
+  exclude_line: 'rel\s*=\s*["''][^"'']*(noopener|noreferrer)'
+  exclude_window: 'rel\s*=\s*["''][^"'']*(noopener|noreferrer)'
+  exclude_window_lines: 3
   confidence: medium
-  message: 'Link opens in a new tab without rel="noopener" — the new page can hijack this one via window.opener.'
+  message: 'Link opens in a new tab without rel="noopener"/"noreferrer" — the new page can hijack this one via window.opener.'
 
 - rule_id: crypto.weak-hash
   pattern: 'createHash\(\s*["''](md5|sha1)["'']'

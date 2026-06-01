@@ -284,6 +284,13 @@ Key `scan` flags: `--fix` / `--ai-fix` / `--dry-run`, `--reachable-only`, `--fai
 
 **Exit codes:** `0` = clean (or below `--fail-on`) · `1` = a finding met `--fail-on` · `2` = scan error.
 
+## See it in action
+
+**[examples/vulnerable-shop](examples/)** is a realistic deliberately-insecure Next.js app —
+`njordscan scan examples/vulnerable-shop` finds 30 issues spanning secrets, cross-file taint,
+AI-app security, supply-chain, and dependency **VEX**, each explained with a fix. The full captured
+report and sample SBOM/Navigator artifacts are committed there.
+
 ## Documentation
 
 Full guides live in **[docs/](docs/)**:
@@ -303,8 +310,7 @@ Full guides live in **[docs/](docs/)**:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup and how to add a rule, and
-[HANDOFF.md](HANDOFF.md) for the full architecture.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, the project map, and how to add a rule.
 
 ```bash
 pip install -e '.[dev]'

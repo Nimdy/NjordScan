@@ -50,12 +50,14 @@ njordscan_report_*
 njordscan-baseline.json
 .njordscan/
 
-# ─── Local secrets / env (but KEEP the intentional test fixtures) ──────
+# ─── Local secrets / env (but KEEP the intentional test/example fixtures) ──────
 .env
 .env.local
 .env.*.local
 !tests/fixtures/**/.env
 !tests/fixtures/**/.env.*
+!examples/**/.env
+!examples/**/.env.*
 
 # ─── Node (in case a fixture or example installs deps) ─────────────────
 node_modules/

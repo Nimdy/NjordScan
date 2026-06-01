@@ -1,0 +1,421 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:e128080b-88a8-44dd-bbfd-8dee40f75a6c",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-06-01T21:08:53.693944+00:00",
+    "tools": [
+      {
+        "vendor": "NjordScan",
+        "name": "njordscan",
+        "version": "2.0.0b1"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "vulnerable-shop",
+      "version": "1.0.0",
+      "bom-ref": "root-application"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "lodash",
+      "version": "4.17.15",
+      "purl": "pkg:npm/lodash@4.17.15",
+      "bom-ref": "pkg:npm/lodash@4.17.15",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "next",
+      "version": "12.1.0",
+      "purl": "pkg:npm/next@12.1.0",
+      "bom-ref": "pkg:npm/next@12.1.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "openai",
+      "version": "4.20.0",
+      "purl": "pkg:npm/openai@4.20.0",
+      "bom-ref": "pkg:npm/openai@4.20.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "version": "18.2.0",
+      "purl": "pkg:npm/react@18.2.0",
+      "bom-ref": "pkg:npm/react@18.2.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "react-dom",
+      "version": "18.2.0",
+      "purl": "pkg:npm/react-dom@18.2.0",
+      "bom-ref": "pkg:npm/react-dom@18.2.0",
+      "scope": "required"
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "3980fd16-37c5-46ae-abbf-25f1da9d0f6c",
+      "id": "CVE-2020-8203",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "high"
+        }
+      ],
+      "cwes": [
+        1321
+      ],
+      "description": "Prototype pollution in lodash via zipObjectDeep / set-like paths allowing modification of Object.prototype.",
+      "recommendation": "Upgrade to 4.17.20 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.15"
+        }
+      ],
+      "analysis": {
+        "state": "not_affected",
+        "justification": "code_not_reachable",
+        "detail": "✅ Lower priority: you import `lodash` but never call the vulnerable `set, setWith, zipObjectDeep`."
+      }
+    },
+    {
+      "bom-ref": "54bbc7a7-c4ea-40f0-ae81-e0083196012f",
+      "id": "CVE-2021-23337",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "high"
+        }
+      ],
+      "cwes": [
+        94
+      ],
+      "description": "Command injection in lodash via the template function: untrusted templates/options can execute arbitrary code.",
+      "recommendation": "Upgrade to 4.17.21 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.15"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 Reachable: your code calls the vulnerable `template` from `lodash`."
+      }
+    },
+    {
+      "bom-ref": "531ce438-f268-4fce-9d5d-36014051780f",
+      "id": "CVE-2020-28500",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "cwes": [],
+      "description": "Regular Expression Denial of Service (ReDoS) in lodash",
+      "recommendation": "Upgrade to 4.17.21 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.15"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `lodash` is imported and used in your code."
+      }
+    },
+    {
+      "bom-ref": "7159cd67-8517-4aed-9263-fdf99104bbc0",
+      "id": "CVE-2026-2950",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "cwes": [],
+      "description": "lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit`",
+      "recommendation": "Upgrade to 4.18.0 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.15"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `lodash` is imported and used in your code."
+      }
+    },
+    {
+      "bom-ref": "992217b7-7562-41c3-bd79-e1dd343d2700",
+      "id": "CVE-2026-4800",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "high"
+        }
+      ],
+      "cwes": [],
+      "description": "lodash vulnerable to Code Injection via `_.template` imports key names",
+      "recommendation": "Upgrade to 4.18.0 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.15"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `lodash` is imported and used in your code."
+      }
+    },
+    {
+      "bom-ref": "87c3b45a-768c-4b13-bebb-b2686c8705a5",
+      "id": "CVE-2025-13465",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "cwes": [],
+      "description": "Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions",
+      "recommendation": "Upgrade to 4.17.23 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.15"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `lodash` is imported and used in your code."
+      }
+    },
+    {
+      "bom-ref": "027e88ac-b14f-4e93-bf37-7e25573cc704",
+      "id": "CVE-2025-57822",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "cwes": [],
+      "description": "Next.js Improper Middleware Redirect Handling Leads to SSRF",
+      "recommendation": "Upgrade to 14.2.32 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/next@12.1.0"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `next` is imported and used in your code."
+      }
+    },
+    {
+      "bom-ref": "3b9b43a4-e483-4d71-bf51-241d07c7c77a",
+      "id": "CVE-2024-51479",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "high"
+        }
+      ],
+      "cwes": [],
+      "description": "Next.js authorization bypass vulnerability",
+      "recommendation": "Upgrade to 14.2.15 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/next@12.1.0"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `next` is imported and used in your code."
+      }
+    },
+    {
+      "bom-ref": "77d7c9cf-ff92-4b12-bc95-e0692d0f6ed2",
+      "id": "CVE-2025-59471",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "cwes": [],
+      "description": "Next.js self-hosted applications vulnerable to DoS via Image Optimizer remotePatterns configuration",
+      "recommendation": "Upgrade to 15.5.10 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/next@12.1.0"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `next` is imported and used in your code."
+      }
+    },
+    {
+      "bom-ref": "994af689-14a0-45a8-ac4a-a0d36e9f1447",
+      "id": "CVE-2025-57752",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "cwes": [],
+      "description": "Next.js Affected by Cache Key Confusion for Image Optimization API Routes",
+      "recommendation": "Upgrade to 14.2.31 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/next@12.1.0"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `next` is imported and used in your code."
+      }
+    },
+    {
+      "bom-ref": "8a54d226-ed7a-40b6-b0d9-b412a2413c07",
+      "id": "CVE-2024-47831",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "cwes": [],
+      "description": "Denial of Service condition in Next.js image optimization",
+      "recommendation": "Upgrade to 14.2.7 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/next@12.1.0"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `next` is imported and used in your code."
+      }
+    },
+    {
+      "bom-ref": "ce41a6c7-100a-4aa4-8944-3e3de37f1a18",
+      "id": "CVE-2026-44577",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "cwes": [],
+      "description": "Next.js has a Denial of Service in the Image Optimization API",
+      "recommendation": "Upgrade to 15.5.16 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/next@12.1.0"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `next` is imported and used in your code."
+      }
+    },
+    {
+      "bom-ref": "aabdd1ba-01ec-4699-b472-b561f67b7264",
+      "id": "CVE-2025-32421",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "low"
+        }
+      ],
+      "cwes": [],
+      "description": "Next.js Race Condition to Cache Poisoning",
+      "recommendation": "Upgrade to 14.2.24 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/next@12.1.0"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `next` is imported and used in your code."
+      }
+    },
+    {
+      "bom-ref": "7b0571b3-3f20-405c-8b2b-7ef62b042089",
+      "id": "CVE-2025-55173",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "cwes": [],
+      "description": "Next.js Content Injection Vulnerability for Image Optimization",
+      "recommendation": "Upgrade to 14.2.31 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/next@12.1.0"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "🎯 `next` is imported and used in your code."
+      }
+    }
+  ]
+}

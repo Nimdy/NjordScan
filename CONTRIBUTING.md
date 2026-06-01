@@ -43,10 +43,9 @@ Most rules are pure data — no Python needed:
 For data-flow rules (a source reaching a sink), edit the tree-sitter taint detector
 `njordscan/detectors/taint.py` instead of using a regex pattern.
 
-## Project map & deeper context
+## Project map
 
-See [HANDOFF.md](HANDOFF.md) for the full architecture, the module layout, and the prioritized
-roadmap. The short version:
+The module layout, in short:
 
 - `core/` — severity, the `Finding` model, config, project model, orchestrator
 - `detectors/` — secrets, supply-chain, dependencies, static, taint, configs, patterns,

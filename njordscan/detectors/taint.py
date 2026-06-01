@@ -411,6 +411,10 @@ class _FileAnalyzer:
         if prop in _MEMBER_CALL_SINKS:
             want_recv, rule_id = _MEMBER_CALL_SINKS[prop]
             if want_recv is None or recv == want_recv:
+                # A redirect to a constant same-origin path — redirect(new URL("/x", base))
+                # or redirect("/x") — can't be an open redirect; don't flag it.
+                if rule_id == "open-redirect" and _is_same_origin_redirect(args_node):
+                    return
                 # insertAdjacentHTML's HTML payload is the 2nd arg; others use 1st.
                 arg_index = 1 if prop == "insertAdjacentHTML" else 0
                 self._report_tainted_arg_at(
@@ -910,3 +914,30 @@ def _resolve_import(importer_rel: str, spec: str, file_rels: Set[str]) -> Option
         if cand in file_rels:
             return cand
     return None
+
+
+def _is_same_origin_redirect(args_node) -> bool:
+    """True if a redirect target is a constant same-origin path (so not an open redirect):
+    redirect("/path"), redirect(`/path?x=...`), or redirect(new URL("/path", base))."""
+    if args_node is None:
+        return False
+    first = _first_arg(args_node)
+    if first is None:
+        return False
+    if first.type in ("string", "template_string"):
+        return _starts_with_path(first)
+    if first.type == "new_expression":
+        ctor = first.child_by_field_name("constructor")
+        if ctor is not None and _text(ctor) == "URL":
+            inner = first.child_by_field_name("arguments")
+            url_first = _first_arg(inner) if inner is not None else None
+            if url_first is not None and url_first.type in ("string", "template_string"):
+                return _starts_with_path(url_first)
+    return False
+
+
+def _starts_with_path(node) -> bool:
+    """A string/template literal whose value is a relative/same-origin path ('/', './', '../')."""
+    raw = _text(node).strip()
+    inner = raw[1:-1] if len(raw) >= 2 and raw[0] in "\"'`" else raw
+    return inner.startswith(("/", "./", "../"))

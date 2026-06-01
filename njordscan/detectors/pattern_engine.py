@@ -72,6 +72,8 @@ class CompiledPattern:
     requires_file: Optional[Pattern[str]] = None
     requires_line: Optional[Pattern[str]] = None
     exclude_line: Optional[Pattern[str]] = None
+    exclude_window: Optional[Pattern[str]] = None   # void match if this appears within ±window lines
+    exclude_window_lines: int = 4
     multiline: bool = False
     source_file: str = ""
 
@@ -142,8 +144,18 @@ class PatternEngine(Detector):
                 continue
             if pat.exclude_line and pat.exclude_line.search(line):
                 continue
+            if pat.exclude_window and self._window_excludes(pat, lines, i):
+                continue
             out.append(self._finding(pat, rel, i, m.start() + 1, line.strip()))
         return out
+
+    @staticmethod
+    def _window_excludes(pat: CompiledPattern, lines: List[str], line_no: int) -> bool:
+        """True if the exclude_window pattern appears within ±N lines (e.g. rel= on an
+        adjacent line of a multi-line JSX element)."""
+        lo = max(0, line_no - 1 - pat.exclude_window_lines)
+        hi = min(len(lines), line_no + pat.exclude_window_lines)
+        return any(pat.exclude_window.search(lines[j]) for j in range(lo, hi))
 
     def _match_multiline(self, pat: CompiledPattern, text: str, lines: List[str], rel: str) -> List[Finding]:
         out: List[Finding] = []
@@ -188,6 +200,7 @@ def _compile(entry: dict, source_file: str) -> Optional[CompiledPattern]:
         req_file = re.compile(entry["requires_file"], flags) if entry.get("requires_file") else None
         req_line = re.compile(entry["requires_line"], flags) if entry.get("requires_line") else None
         exc_line = re.compile(entry["exclude_line"], flags) if entry.get("exclude_line") else None
+        exc_window = re.compile(entry["exclude_window"], flags) if entry.get("exclude_window") else None
     except re.error as exc:
         logger.warning("bad regex for %s in %s: %s", rule_id, source_file, exc)
         return None
@@ -204,6 +217,8 @@ def _compile(entry: dict, source_file: str) -> Optional[CompiledPattern]:
         requires_file=req_file,
         requires_line=req_line,
         exclude_line=exc_line,
+        exclude_window=exc_window,
+        exclude_window_lines=int(entry.get("exclude_window_lines", 4)),
         multiline=bool(entry.get("multiline", False)),
         source_file=source_file,
     )
