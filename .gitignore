@@ -1,27 +1,78 @@
-# Virtual environments
+# ─── Virtual environments ──────────────────────────────────────────────
 .venv/
 venv/
 env/
+ENV/
+.virtualenv/
 
-# Python
+# ─── Python ────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
-*.egg-info/
+*$py.class
+*.so
+
+# ─── Packaging / build ─────────────────────────────────────────────────
 build/
 dist/
+sdist/
+wheels/
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+MANIFEST
 
-# NjordScan output & cached data
+# ─── Test / coverage ───────────────────────────────────────────────────
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.hypothesis/
+junit*.xml
+test-report.*
+
+# ─── Type checkers / linters ───────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pyre/
+.pytype/
+
+# ─── NjordScan output & user cache ─────────────────────────────────────
 reports/
 *.sarif
 njordscan-report.*
 njordscan_report_*
+njordscan-baseline.json
 .njordscan/
 
-# Editor / OS
+# ─── Local secrets / env (but KEEP the intentional test fixtures) ──────
+.env
+.env.local
+.env.*.local
+!tests/fixtures/**/.env
+!tests/fixtures/**/.env.*
+
+# ─── Node (in case a fixture or example installs deps) ─────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─── Docs build ────────────────────────────────────────────────────────
+site/
+docs/_build/
+
+# ─── Editors / OS ──────────────────────────────────────────────────────
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 .DS_Store
-dist/
-build/
-*.egg-info/
-.pytest_cache/
+Thumbs.db
+desktop.ini
