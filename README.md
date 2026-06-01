@@ -121,11 +121,25 @@ The identical bug in unimported dead code is flagged **○ Not reachable (lower 
 `njordscan scan . --reachable-only` to hide dead-code noise entirely. (Static analysis is a strong
 signal, not a proof — "not reachable" means *lower priority*, never *ignored*.)
 
+**It works for dependencies too (true VEX).** NjordScan doesn't just say "you have a vulnerable
+package" — it analyzes which functions you actually import and call:
+
+```
+🎯 Reachable: your code calls the vulnerable `template` from `lodash`.        → stays High
+✅ Lower priority: you import `lodash` but never call the vulnerable `template`. → not_affected
+✅ Not reachable: `lodash` isn't imported in your code (transitive dependency). → not_affected
+```
+
+That reachability becomes a proper **VEX** (`affected` / `not_affected` + justification) right in
+the CycloneDX SBOM — so the noise of "47 CVEs" collapses to the handful you can actually be hit by.
+
 ## Agentic AI fix-and-verify
 
 Beyond the safe mechanical `--fix`, `--ai-fix` lets an AI patch deeper findings — but **NjordScan
 verifies the patch actually worked before keeping it**: it applies the AI's change to a throwaway
-copy, **re-scans**, and only accepts the fix if the issue is gone *and* no new issue appeared.
+copy, **re-scans**, and only accepts the fix if the issue is gone *and* no new issue appeared. If a
+patch fails the re-scan, NjordScan **feeds the failure back to the model and retries** (a real
+agentic loop) until it verifies or gives up — and tells you how many attempts it took.
 
 ```bash
 njordscan scan . --ai-fix --ai-provider ollama --dry-run   # preview AI-verified patches

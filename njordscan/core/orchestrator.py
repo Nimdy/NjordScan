@@ -122,6 +122,8 @@ class Orchestrator:
 
         source_rels = {project.rel(p) for p in project.source_files}
         for f in findings:
+            if f.reachable is not None:
+                continue  # a detector already determined reachability (e.g. dependency VEX)
             if f.file in source_rels:
                 r = graph.lookup(f.file)
                 f.reachable = r.reachable

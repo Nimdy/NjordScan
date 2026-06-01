@@ -31,6 +31,7 @@ from ..core.orchestrator import Orchestrator, ScanResult
 # Detectors whose findings are a single-file code edit an LLM can attempt.
 _FIXABLE_DETECTORS = {"static", "taint", "patterns", "configs"}
 _MAX_FILES = 8
+_MAX_ATTEMPTS = 3   # agentic retries per file: propose -> verify -> feedback -> retry
 
 _SYSTEM = (
     "You are a senior application-security engineer. You are given the full contents of one "
@@ -45,6 +46,7 @@ class AiFix:
     file: str
     rules_fixed: List[str]
     diff: str
+    attempts: int = 1
 
 
 @dataclass
@@ -100,33 +102,39 @@ def ai_fix(result: ScanResult, config: Config, *, dry_run: bool, provider=None) 
             except OSError:
                 continue
             before_rules = Counter(f.rule_id for f in by_file[rel])
-
-            corrected = _strip_fences(provider.complete(_SYSTEM, _prompt(rel, original, by_file[rel])))
-            if not corrected or corrected.strip() == original.strip():
-                report.unverified.append(rel)
-                continue
-
             tfile = tmproot / rel
-            tfile.write_text(corrected, encoding="utf-8")
-            try:
-                rescan = _scan_now(scan_cfg)
-            except Exception:  # noqa: BLE001
-                tfile.write_text(original, encoding="utf-8")
-                report.unverified.append(rel)
-                continue
 
-            # Only ``rel`` changed, so only its findings can move. Verify every targeted
-            # rule's count dropped and no rule's count went up (no new issue introduced).
-            after_rules = Counter(f.rule_id for f in rescan.findings if f.file == rel)
-            target_resolved = all(after_rules[r] < before_rules[r] for r in before_rules)
-            no_regression = all(after_rules[r] <= before_rules.get(r, 0) for r in after_rules)
+            # Agentic loop: propose -> verify by re-scan -> feed failures back -> retry.
+            candidate: Optional[str] = None
+            still: List[str] = []
+            introduced: List[str] = []
+            verified = False
+            for attempt in range(1, _MAX_ATTEMPTS + 1):
+                prompt = (_prompt(rel, original, by_file[rel]) if candidate is None
+                          else _retry_prompt(rel, candidate, still, introduced))
+                corrected = _strip_fences(provider.complete(_SYSTEM, prompt))
+                if not corrected or corrected.strip() == original.strip():
+                    break
+                tfile.write_text(corrected, encoding="utf-8")
+                try:
+                    rescan = _scan_now(scan_cfg)
+                except Exception:  # noqa: BLE001
+                    break
 
-            if target_resolved and no_regression:
-                report.applied.append(AiFix(rel, sorted(before_rules), _diff(original, corrected, rel)))
-                if not dry_run:
-                    src.write_text(corrected, encoding="utf-8")
-                # keep the verified fix in the temp tree for subsequent files
-            else:
+                after = Counter(f.rule_id for f in rescan.findings if f.file == rel)
+                # only ``rel`` changed, so only its findings can have moved
+                still = [r for r in before_rules if after[r] >= before_rules[r]]
+                introduced = [r for r in after if after[r] > before_rules.get(r, 0)]
+                if not still and not introduced:
+                    report.applied.append(AiFix(rel, sorted(before_rules),
+                                                _diff(original, corrected, rel), attempts=attempt))
+                    if not dry_run:
+                        src.write_text(corrected, encoding="utf-8")
+                    verified = True
+                    break  # keep the verified fix in the temp tree for later files
+                candidate = corrected
+
+            if not verified:
                 tfile.write_text(original, encoding="utf-8")
                 report.unverified.append(rel)
 
@@ -158,6 +166,22 @@ def _prompt(rel: str, content: str, findings: List[Finding]) -> str:
     return (
         f"File: {rel}\n\nSecurity findings to fix:\n" + "\n".join(issues) +
         f"\n\nCurrent file:\n```{lang}\n{content}\n```\n\nReturn the complete corrected file."
+    )
+
+
+def _retry_prompt(rel: str, previous: str, still: List[str], introduced: List[str]) -> str:
+    """Feedback prompt: tell the model exactly how its last patch fell short."""
+    problems = []
+    if still:
+        problems.append(f"these issues are STILL present: {', '.join(sorted(set(still)))}")
+    if introduced:
+        problems.append(f"your change INTRODUCED new issues: {', '.join(sorted(set(introduced)))}")
+    lang = "tsx" if rel.endswith((".tsx", ".jsx")) else "typescript" if rel.endswith(".ts") else "javascript"
+    return (
+        f"Your previous patch of {rel} was re-scanned and did not pass: " + "; ".join(problems) + ".\n"
+        "Produce a new COMPLETE corrected file that resolves ALL the issues and introduces none. "
+        "Keep behavior and style intact.\n\nYour previous attempt:\n"
+        f"```{lang}\n{previous}\n```\n\nReturn the corrected file."
     )
 
 

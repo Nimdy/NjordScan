@@ -252,7 +252,8 @@ def _run_ai_fix(result: ScanResult, config: Config, *, dry_run: bool) -> None:
     console.print(f"[green]✓ {verb} {report.count} AI-verified fix(es)[/green] "
                   f"(provider: {report.provider}; each confirmed by a re-scan):")
     for fx in report.applied:
-        console.print(f"  [green]✓[/green] {fx.file} — fixed {', '.join(fx.rules_fixed)}")
+        tries = f" [dim](verified after {fx.attempts} attempt{'s' if fx.attempts > 1 else ''})[/dim]"
+        console.print(f"  [green]✓[/green] {fx.file} — fixed {', '.join(fx.rules_fixed)}{tries}")
         if dry_run and fx.diff:
             from rich.syntax import Syntax
             console.print(Syntax(fx.diff, "diff", theme="ansi_dark", background_color="default"))

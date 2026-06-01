@@ -122,12 +122,17 @@ class DependenciesDetector(Detector):
 
         advisories = _load_advisories()
         pkg_line_index = self._build_pkg_line_index(project)
+        try:
+            from ..core.usage import UsageIndex
+            usage = UsageIndex(project)
+        except Exception:  # noqa: BLE001 — usage analysis is best-effort
+            usage = None
 
         for name, declared in deps.items():
             try:
                 line = pkg_line_index.get(name, 1)
                 findings.extend(
-                    self._check_known_vuln(name, str(declared), line, advisories)
+                    self._check_known_vuln(name, str(declared), line, advisories, usage)
                 )
                 typo = self._check_typosquat(name, line)
                 if typo is not None:
@@ -144,6 +149,7 @@ class DependenciesDetector(Detector):
         declared: str,
         line: int,
         advisories: Dict[str, List[Dict[str, Any]]],
+        usage=None,
     ) -> List[Finding]:
         entries = advisories.get(name)
         if not entries:
@@ -177,17 +183,26 @@ class DependenciesDetector(Detector):
             if kev:
                 severity = Severity.CRITICAL
 
+            # VEX / reachability: do you actually call the vulnerable code?
+            vex_state, vex_just, reachable, reach_note = _vex(name, adv, usage)
+            if reachable is False and not kev:
+                # vulnerable code isn't reachable from your app -> downgrade noise
+                severity = Severity.LOW if severity and severity.rank > Severity.LOW.rank else severity
+
             message = (
                 f"{prefix}{name}@{declared} is affected by {adv_id} "
                 f"(vulnerable {vuln_range}). Upgrade to {patched} or later."
             )
             if epss is not None:
                 message += f" (EPSS {epss:.0%} 30-day exploit probability)"
+            if reach_note:
+                message += f" {reach_note}"
             if summary:
                 message += f" {summary}"
 
             out.append(Finding(
                 rule_id="deps.known-vulnerability",
+                reachable=reachable,
                 # Include the advisory id in the snippet so two distinct
                 # advisories for the same package on the same line don't collapse
                 # to one fingerprint during dedup (fingerprint = rule|file|line|snippet).
@@ -212,6 +227,9 @@ class DependenciesDetector(Detector):
                     "summary": summary,
                     "cisa_kev": kev,
                     "epss": epss,
+                    "vex_state": vex_state,
+                    "vex_justification": vex_just,
+                    "vulnerable_symbols": adv.get("vulnerable_symbols", []),
                 },
             ))
         return out
@@ -299,6 +317,31 @@ class DependenciesDetector(Detector):
 
 
 # -- module-level pure helpers ----------------------------------------------
+
+
+def _vex(name: str, adv: Dict[str, Any], usage) -> tuple:
+    """Return (vex_state, justification, reachable, human_note) for an advisory.
+
+    Uses dependency usage analysis to decide whether the vulnerable code is actually
+    reachable from the app — the real VEX signal.
+    """
+    if usage is None:
+        return "in_triage", "", None, ""
+    symbols = set(adv.get("vulnerable_symbols", []) or [])
+    used = usage.uses_symbol(name, symbols)
+    if used is None:
+        return ("not_affected", "code_not_present", False,
+                f"✅ Not reachable: `{name}` isn't imported in your code (likely a transitive dependency).")
+    if used is False and symbols:
+        sym = ", ".join(sorted(symbols))
+        return ("not_affected", "vulnerable_code_not_in_execute_path", False,
+                f"✅ Lower priority: you import `{name}` but never call the vulnerable `{sym}`.")
+    if symbols and used is True:
+        sym = ", ".join(sorted(symbols))
+        return ("exploitable", "", True,
+                f"🎯 Reachable: your code calls the vulnerable `{sym}` from `{name}`.")
+    # imported, no symbol-level info available
+    return ("affected", "", True, f"🎯 `{name}` is imported and used in your code.")
 
 
 def _read_advisory_file(path: Path) -> Dict[str, List[Dict[str, Any]]]:

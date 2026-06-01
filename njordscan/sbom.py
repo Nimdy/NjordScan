@@ -94,9 +94,34 @@ def _vulns_for(comp: _Component, advisories: Dict[str, List[Dict[str, Any]]]) ->
 
 # --- CycloneDX 1.5 -----------------------------------------------------------
 
+_CDX_JUSTIFICATION = {
+    "code_not_present": "code_not_present",
+    "vulnerable_code_not_in_execute_path": "code_not_reachable",
+}
+
+
+def _analysis(name: str, adv: Dict[str, Any], usage) -> Optional[Dict[str, Any]]:
+    """CycloneDX VEX analysis object from usage reachability, or None."""
+    from .detectors.dependencies import _vex
+
+    state, just, _reachable, note = _vex(name, adv, usage)
+    cdx_state = "not_affected" if state == "not_affected" else "exploitable"
+    out: Dict[str, Any] = {"state": cdx_state}
+    if just in _CDX_JUSTIFICATION:
+        out["justification"] = _CDX_JUSTIFICATION[just]
+    if note:
+        out["detail"] = note
+    return out
+
+
 def to_cyclonedx(project: Project) -> Dict[str, Any]:
     comps = _components(project)
     advisories = _load_advisories()
+    try:
+        from .core.usage import UsageIndex
+        usage = UsageIndex(project)
+    except Exception:  # noqa: BLE001
+        usage = None
     pkg = project.package_json or {}
     now = datetime.now(timezone.utc).isoformat()
 
@@ -113,7 +138,7 @@ def to_cyclonedx(project: Project) -> Dict[str, Any]:
     for c in comps:
         for adv in _vulns_for(c, advisories):
             vid = adv.get("id") or adv.get("ghsa") or "advisory"
-            vulnerabilities.append({
+            entry = {
                 "bom-ref": str(uuid.uuid4()),
                 "id": vid,
                 "source": {"name": "OSV/GHSA", "url": "https://osv.dev"},
@@ -122,7 +147,11 @@ def to_cyclonedx(project: Project) -> Dict[str, Any]:
                 "description": adv.get("summary", ""),
                 "recommendation": f"Upgrade to {adv.get('patched', 'a patched version')} or later.",
                 "affects": [{"ref": c.purl}],
-            })
+            }
+            analysis = _analysis(c.name, adv, usage)
+            if analysis:
+                entry["analysis"] = analysis   # VEX: is this actually exploitable in your code?
+            vulnerabilities.append(entry)
 
     return {
         "bomFormat": "CycloneDX",

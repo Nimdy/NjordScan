@@ -32,8 +32,14 @@ positives on a clean app, and explains every finding in plain English.
 - **Reachability analysis** — an import graph rooted at framework entrypoints (Route Handlers, API
   routes, Server Actions, middleware, client bundle) marks each finding reachable / not-reachable,
   server- vs client-side, with the path. `--reachable-only` hides unreachable dead code.
+- **Dependency reachability (true VEX)** — usage analysis (`core/usage.py`) determines whether you
+  actually *call the vulnerable function* of a CVE'd package: `exploitable` if you call it,
+  `not_affected` (code_not_reachable) if you import the package but not the vulnerable symbol, or
+  `not_affected` (code_not_present) if it's never imported. Drives a CycloneDX **VEX** in the SBOM
+  and de-prioritizes unreachable dependency CVEs.
 - **Agentic AI fix-and-verify** (`--ai-fix`) — an AI patches code findings, and NjordScan **verifies
-  each patch by re-scanning a copy** (issue gone + no regressions) before accepting it.
+  each patch by re-scanning a copy** (issue gone + no regressions) before accepting it; failed
+  patches are **fed back to the model and retried** (an iterative agentic loop).
 - **MITRE ATT&CK** mapping on every rule (shown inline + in SARIF), with an **ATT&CK Navigator
   layer** export (`--format attack-navigator`) of your app's attack surface.
 - **Exploit prioritization** — `njordscan update` pulls the **CISA KEV** catalog (actively-exploited

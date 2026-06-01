@@ -33,6 +33,28 @@ class MockProvider:
         return ""
 
 
+class SequenceProvider:
+    """Returns a sequence of responses for one file, simulating retries."""
+
+    name = "mock-seq"
+    is_local = True
+
+    def __init__(self, rel: str, responses: list):
+        self.rel = rel
+        self.responses = responses
+        self.calls = 0
+
+    def check(self):
+        return True, "mock"
+
+    def complete(self, system: str, user: str, **_):
+        if self.rel not in user:
+            return ""
+        i = min(self.calls, len(self.responses) - 1)
+        self.calls += 1
+        return f"```tsx\n{self.responses[i]}\n```"
+
+
 _FIXED_SHARE = (
     'export default function Share({ url }) {\n'
     '  return <a href={url} target="_blank" rel="noopener noreferrer">Open profile</a>;\n'
@@ -75,6 +97,20 @@ async def test_ai_fix_rejects_an_unverified_patch(tmp_path):
     assert not any(fx.file == "components/Share.jsx" for fx in report.applied)
     assert "components/Share.jsx" in report.unverified
     assert (work / "components" / "Share.jsx").read_text() == original
+
+
+async def test_ai_fix_retries_with_feedback_then_verifies(tmp_path):
+    """First patch fails verification; the loop feeds it back and the 2nd attempt works."""
+    work = tmp_path / "app"
+    shutil.copytree(VULN_APP, work, ignore=shutil.ignore_patterns(".njordscan"))
+    result = await scan(work)
+
+    provider = SequenceProvider("components/Share.jsx", [_STILL_VULN, _FIXED_SHARE])
+    report = ai_fix(result, Config(target=work), dry_run=False, provider=provider)
+
+    fixed = [fx for fx in report.applied if fx.file == "components/Share.jsx"]
+    assert fixed and fixed[0].attempts == 2          # verified on the second try
+    assert 'rel="noopener noreferrer"' in (work / "components" / "Share.jsx").read_text()
 
 
 async def test_ai_fix_dry_run_writes_nothing(tmp_path):
