@@ -1,0 +1,148 @@
+# AI / LLM endpoint & cost-abuse rules (for apps that CALL OpenAI/Anthropic/etc).
+# Every id here is referenced 1:1 by njordscan/data/patterns/ai-endpoint.yaml.
+# Voice: name the consequence in plain English before any jargon. Audience is a
+# non-security "vibe coder" shipping an AI feature.
+
+- id: ai.endpoint-no-auth
+  title: "AI route calls the model with no sign-in / auth check in the file"
+  severity: high
+  cwe: CWE-770
+  owasp: "A04:2021-Insecure Design"
+  why: |
+    This route handler calls a paid AI model (OpenAI / Anthropic / etc.) but
+    nothing in the file checks who is calling it — no session, no login, no API
+    token. That means ANYONE on the internet who finds the URL can hit it as
+    many times as they like. Every call costs you money, so a bot can run up a
+    huge bill on your account overnight ("denial of wallet"), and your model
+    quota gets drained for real users. It also lets strangers use your app as a
+    free LLM proxy. (This is a heuristic: if your auth check lives in middleware
+    or a shared helper this file doesn't reference, you can add a
+    `// njordscan-ignore` comment on the call line.)
+  fix: |
+    Before calling the model, confirm the request is from a logged-in user and
+    reject it otherwise. Use whatever auth you already have: `getServerSession`
+    (NextAuth), `auth()` (Clerk), `supabase.auth.getUser()`, or a check on the
+    `Authorization` header / API key for server-to-server calls. Return 401 if
+    the check fails — do this first, before any model call.
+  secure_example: |
+    import { getServerSession } from 'next-auth';
+    export async function POST(req) {
+      const session = await getServerSession();
+      if (!session) return new Response('Unauthorized', { status: 401 });
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini', max_tokens: 500, messages,
+      });
+      return Response.json(completion);
+    }
+  references:
+    - https://owasp.org/www-project-top-10-for-large-language-model-applications/
+    - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+
+- id: ai.key-clientside
+  title: "LLM provider API key exposed to the browser"
+  severity: critical
+  cwe: CWE-200
+  owasp: "A07:2021-Identification and Authentication Failures"
+  why: |
+    Your OpenAI / Anthropic API key is being put somewhere the browser can see
+    it — either in client-side code, or behind a `NEXT_PUBLIC_` / `VITE_` prefix
+    that bundles it into the JavaScript every visitor downloads. Anyone can open
+    devtools, copy your key, and spend YOUR money on the AI provider until the
+    key is shut off (this regularly costs people thousands of dollars). The key
+    also usually grants access to your whole AI account, not just one feature.
+  fix: |
+    Never ship a provider key to the browser. Keep the key in a plain
+    server-only environment variable (NOT prefixed with NEXT_PUBLIC_ / VITE_)
+    and call the model from a server route or Server Action; have the browser
+    call YOUR endpoint instead of the provider directly. If this key has already
+    shipped to the client, rotate it now — assume it is compromised.
+  secure_example: |
+    // server only — app/api/chat/route.ts
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // no NEXT_PUBLIC_
+    // the browser fetches /api/chat, never the provider directly
+  references:
+    - https://platform.openai.com/docs/guides/production-best-practices/api-keys
+    - https://nextjs.org/docs/app/building-your-application/configuring/environment-variables
+
+- id: ai.dangerously-allow-browser
+  title: "OpenAI SDK started with dangerouslyAllowBrowser: true"
+  severity: high
+  cwe: CWE-200
+  owasp: "A07:2021-Identification and Authentication Failures"
+  why: |
+    The OpenAI SDK refuses to run in the browser by default, on purpose:
+    anything that runs in the browser ships your API key to every visitor.
+    Setting `dangerouslyAllowBrowser: true` turns that safety check off, which
+    almost always means your secret key is now downloadable by anyone using your
+    site — they can copy it and spend your money on the AI provider. The word
+    "dangerously" is a deliberate warning.
+  fix: |
+    Remove `dangerouslyAllowBrowser: true` and move the OpenAI client to the
+    server (a route handler / Server Action), reading the key from a server-only
+    env var. Have the browser call your own endpoint. The only safe browser use
+    is with a short-lived, per-user ephemeral token — never your main API key.
+  secure_example: |
+    // server route — key never reaches the browser
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    export async function POST(req) { /* ...call model here... */ }
+  references:
+    - https://github.com/openai/openai-node#requestresponse-types
+    - https://platform.openai.com/docs/guides/production-best-practices
+
+- id: ai.no-rate-limit
+  title: "AI route calls the model with no rate limit in the file"
+  severity: medium
+  cwe: CWE-770
+  owasp: "A04:2021-Insecure Design"
+  why: |
+    This route calls a paid AI model but nothing in the file limits how often a
+    single user (or a bot) can call it. AI calls cost real money per request, so
+    without a cap one abusive client can hammer the endpoint thousands of times
+    and run up your bill or exhaust your model quota for everyone else ("denial
+    of wallet"). Even a friendly bug — a retry loop in the UI — can do this by
+    accident. (Heuristic: if you rate-limit in middleware or a shared helper
+    this file doesn't reference, add `// njordscan-ignore` on the call line.)
+  fix: |
+    Add a per-user / per-IP rate limit before the model call. A common setup is
+    Upstash Ratelimit on Vercel, but any limiter works. Reject requests that go
+    over the limit with HTTP 429 before spending money on a model call.
+  secure_example: |
+    import { Ratelimit } from '@upstash/ratelimit';
+    import { Redis } from '@upstash/redis';
+    const ratelimit = new Ratelimit({ redis: Redis.fromEnv(), limiter: Ratelimit.slidingWindow(10, '60 s') });
+    export async function POST(req) {
+      const { success } = await ratelimit.limit(req.ip ?? 'anon');
+      if (!success) return new Response('Too Many Requests', { status: 429 });
+      // ...call the model...
+    }
+  references:
+    - https://owasp.org/www-project-top-10-for-large-language-model-applications/
+    - https://upstash.com/docs/redis/sdks/ratelimit-ts/overview
+
+- id: ai.unbounded-output
+  title: "Model call sets no max output token limit"
+  severity: low
+  cwe: CWE-770
+  owasp: "A04:2021-Insecure Design"
+  why: |
+    This model call doesn't set a maximum on how much text the model can
+    generate (no `max_tokens` / `max_output_tokens` / `maxOutputTokens`). Output
+    tokens are usually the most expensive part of an AI call, so an unbounded
+    response can cost far more than you expect — and an attacker can deliberately
+    craft a prompt that makes the model ramble to the limit, multiplying your
+    bill across many requests. It can also make responses slow and unpredictable.
+  fix: |
+    Set an explicit cap on output length on every model call. Pick the smallest
+    number that still fits your feature (e.g. a chat reply rarely needs more than
+    a few hundred tokens). The exact field name depends on the SDK: `max_tokens`
+    (OpenAI chat / Anthropic), `max_output_tokens` (OpenAI Responses), or
+    `maxOutputTokens` (Vercel AI SDK).
+  secure_example: |
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 500,        // cap the response
+      messages,
+    });
+  references:
+    - https://platform.openai.com/docs/api-reference/chat/create#chat-create-max_tokens
+    - https://owasp.org/www-project-top-10-for-large-language-model-applications/

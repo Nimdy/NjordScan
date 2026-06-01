@@ -94,16 +94,28 @@ njordscan doctor                                 # health: detectors, rules, adv
 
 ## 5. Current state (done)
 
-- 8 detectors; **100 knowledge rules / 107 patterns** across react/dom, nextjs, vite, crypto-jwt,
-  injection, cookies-auth, cors-headers-csrf, hardening, git-hygiene. 0 orphans, 0 clean-app FPs.
+- **9 detectors; 120+ knowledge rules / 127 patterns** across react/dom, nextjs, vite, crypto-jwt,
+  injection, cookies-auth, cors-headers-csrf, hardening, git-hygiene, **ai (LLM-app security)**,
+  and **dynamic**. 0 orphans, 0 clean-app FPs.
 - Headline taint: cross-function + JSX `dangerouslySetInnerHTML` (the V1 misses) — verified.
 - Secrets in code + `.env*`; dependencies vs CVE DB (OSV-refreshable); supply-chain; git-hygiene.
+- **AI/LLM app security** (`ai.*`): prompt-injection, llm-output→sink, llm-output rendered as HTML,
+  key-clientside, `dangerouslyAllowBrowser`, endpoint-no-auth (denial-of-wallet), pii-to-llm, etc.
+- **Dynamic/DAST** (`detectors/runtime.py`, opt-in via `--url`, needs `[dynamic]` extra/httpx):
+  live security headers, cookie flags, reflected-XSS/open-redirect/verbose-error probes, exposed
+  AI endpoints. TLS verification ON; SSRF-safe (refuses private hosts unless `--allow-private`);
+  only benign idempotent probes (no state change, no cost-incurring AI POSTs).
+- **MCP server** (`njordscan mcp`, `mcp_server.py`): stdio JSON-RPC; tools `njordscan_scan` /
+  `njordscan_explain` / `njordscan_list_rules` so AI coding assistants scan inline. Stdlib only.
+- **`--diff [ref]`** (`core/gitdiff.py`): report only findings on changed lines (PR mode); pairs
+  with `--fail-on`/`--baseline`.
 - Reports: terminal (rich, educational), JSON, SARIF 2.1.0 (with taint code flows), HTML.
 - `--fix` (+`--dry-run`), `--baseline`/`--update-baseline`, `.njordscan.yml`+`init`, `update`
   (OSV), `doctor`, 3-tier hybrid explain, `// njordscan-ignore`, comma or repeated `--only/--skip`.
 - CI: `action.yml` (composite), `.pre-commit-hooks.yaml`, `.github/workflows/ci.yml`.
-- 42 passing tests; clean PyPI-style wheel install verified (12 deps, no numpy).
+- **55 passing tests**; clean PyPI-style wheel install verified (core: no numpy/heavy deps).
 - Exit codes: 0 clean / 1 met `--fail-on` / 2 scan error.
+- Extras: `[ai]` (LLM explain, httpx), `[dynamic]` (DAST, httpx), `[dev]`.
 
 ## 6. Known limitations / good next steps (roughly prioritized)
 

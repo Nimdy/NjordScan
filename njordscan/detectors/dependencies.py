@@ -29,7 +29,6 @@ thread via ``asyncio.to_thread`` so the event loop is not blocked.
 from __future__ import annotations
 
 import asyncio
-import difflib
 import json
 import re
 from functools import lru_cache

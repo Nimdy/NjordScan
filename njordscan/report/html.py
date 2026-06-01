@@ -8,7 +8,6 @@ becoming an injection vector.
 from __future__ import annotations
 
 from html import escape
-from typing import List
 
 from .. import __version__
 from ..core.finding import Finding

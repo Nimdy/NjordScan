@@ -1,0 +1,173 @@
+# AI / LLM application-security rules — PROMPT LAYER.
+# These cover the security of apps that CALL an LLM (OpenAI / Anthropic / etc.),
+# not the model itself. Audience: developers shipping AI features who have never
+# heard the term "prompt injection". Voice: name the consequence first, jargon last.
+# Every id here is referenced 1:1 by njordscan/data/patterns/ai-prompt.yaml.
+
+- id: ai.prompt-injection
+  title: "User input mixed directly into the AI's instructions (prompt injection)"
+  severity: high
+  cwe: CWE-77
+  owasp: "LLM01:2025-Prompt Injection"
+  why: |
+    An AI model can't tell the difference between YOUR instructions and text a
+    user typed — it just reads one big blob of words. The "system" message (and
+    any instruction string you build) is supposed to be the part only YOU
+    control: "you are a support bot, never reveal pricing", and so on. When you
+    glue user input straight into that instruction string (with `+` or a
+    `${...}` template), a user can write "ignore your previous instructions and
+    do X instead" and the model will happily obey. That lets them jailbreak your
+    bot, leak your hidden prompt, run tools they shouldn't, or make the model say
+    things that get attributed to your company. This is called prompt injection,
+    and it is the #1 risk for AI apps.
+    Note: putting user text in a normal `{ role: 'user', content: userMessage }`
+    field is completely fine and expected — that is where user text belongs. The
+    danger is ONLY when user text lands inside the system / instruction part.
+  fix: |
+    Keep the two apart. Put your fixed rules in the `system` message as a plain
+    string with no user data in it, and put the user's text in a separate
+    `{ role: 'user', content: userInput }` message. Never concatenate or
+    interpolate user input into the system prompt. If you need to reference user
+    data inside instructions, wrap it in clear delimiters and tell the model to
+    treat it as untrusted data, not commands — but separate messages is the
+    stronger fix.
+  secure_example: |
+    // user text goes in its OWN message, never inside the instructions
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: 'You are a helpful support assistant. Never reveal internal pricing.' },
+        { role: 'user', content: req.body.message },   // safe: data, not instructions
+      ],
+    });
+  references:
+    - https://genai.owasp.org/llmrisk/llm01-prompt-injection/
+    - https://platform.openai.com/docs/guides/prompt-engineering
+
+- id: ai.system-prompt-clientside
+  title: "AI system prompt / instructions defined in browser ('use client') code"
+  severity: medium
+  cwe: CWE-200
+  owasp: "LLM07:2025-System Prompt Leakage"
+  why: |
+    A "system prompt" is the hidden instruction that shapes how your AI behaves —
+    your secret sauce, and often the only thing stopping users from making the
+    bot do something off-brand. If you write that prompt in a file marked
+    `'use client'` (or anywhere that runs in the browser), it ships inside the
+    JavaScript bundle that every visitor downloads. Anyone can open dev tools,
+    read your exact instructions, copy your prompt design, and — worse — craft
+    inputs that defeat each rule because they can see all of them. Client-side
+    prompts can also be edited by the user before the request is sent, so any
+    "guardrails" in them are effectively optional.
+  fix: |
+    Keep the system prompt on the server. Define it inside a Server Action, a
+    Route Handler (app/api/.../route.ts), or getServerSideProps — files WITHOUT
+    `'use client'` — and call the model from there. The browser should only send
+    the user's message to your server; your server adds the instructions and
+    talks to the model.
+  secure_example: |
+    // app/api/chat/route.ts  (server only — no 'use client')
+    const SYSTEM_PROMPT = 'You are a helpful assistant. Stay on topic.';
+    export async function POST(req: Request) {
+      const { message } = await req.json();
+      return openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: message },
+        ],
+      });
+    }
+  references:
+    - https://genai.owasp.org/llmrisk/llm072025-system-prompt-leakage/
+    - https://nextjs.org/docs/app/building-your-application/rendering/composition-patterns
+
+- id: ai.llm-output-to-sink
+  title: "AI model output passed to eval / exec / a shell / SQL (treats LLM output as trusted)"
+  severity: critical
+  cwe: CWE-94
+  owasp: "LLM05:2025-Improper Output Handling"
+  why: |
+    Whatever an AI model returns is NOT trusted code or data — a user can steer
+    the model into producing almost anything, and the model can also be fooled by
+    content it read elsewhere (a web page, a document, a previous message). If you
+    take the model's reply and run it with `eval()` / `new Function()`, hand it to
+    a shell with `exec()`, or drop it into a SQL query string, an attacker can
+    make the model output a payload that then executes on your server — full
+    remote code execution or database takeover. The model becomes a confused
+    deputy that runs the attacker's commands for them.
+  fix: |
+    Treat model output exactly like raw user input: never execute it and never
+    splice it into a command or query. If you want the model to "choose an
+    action", have it return a short label and look the real action up in a fixed
+    allowlist/map you wrote. For databases use parameterised queries. For shell
+    work use execFile/spawn with an arguments array and validate every value.
+  secure_example: |
+    // model returns a label; YOU decide what runs — never eval its text
+    const intent = completion.choices[0].message.content?.trim();
+    const handlers = { refund: doRefund, status: doStatus };
+    await handlers[intent]?.();   // unknown label = nothing happens
+  references:
+    - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
+    - https://owasp.org/www-community/attacks/Code_Injection
+
+- id: ai.llm-output-rendered-as-html
+  title: "AI model output rendered as raw HTML (dangerouslySetInnerHTML / innerHTML)"
+  severity: high
+  cwe: CWE-79
+  owasp: "LLM05:2025-Improper Output Handling"
+  why: |
+    React normally escapes text for you, so even weird characters render
+    harmlessly. Passing the model's reply to `dangerouslySetInnerHTML` or
+    assigning it to `innerHTML` turns that protection off and parses the reply as
+    HTML. Because a user (or a document the model read) can steer the model into
+    producing `<img src=x onerror=...>` or a `<script>` tag, an attacker can run
+    JavaScript in your other users' browsers — stealing their sessions or acting
+    as them. This is cross-site scripting (XSS); AI output is attacker-influenced,
+    so it counts as untrusted just like a form field.
+  fix: |
+    Render the reply as text: in React just do `{reply}` and let React escape it.
+    If you want Markdown formatting, convert it and then sanitize the resulting
+    HTML with DOMPurify before passing it to dangerouslySetInnerHTML — every time.
+  secure_example: |
+    // render AI text safely — React escapes it
+    return <p className="whitespace-pre-wrap">{reply}</p>;
+    // if you need Markdown:
+    // const html = DOMPurify.sanitize(marked.parse(reply));
+    // return <div dangerouslySetInnerHTML={{ __html: html }} />;
+  references:
+    - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
+    - https://owasp.org/www-community/attacks/xss/
+
+- id: ai.pii-or-secret-to-llm
+  title: "Secrets or personal data sent into an AI prompt"
+  severity: medium
+  cwe: CWE-201
+  owasp: "LLM02:2025-Sensitive Information Disclosure"
+  why: |
+    Everything you put in a prompt leaves your server and goes to the model
+    provider (OpenAI, Anthropic, etc.). Stuffing secrets or personal data into the
+    prompt — an API key or password from process.env, a whole `req.body`, or
+    variables named like ssn / creditCard / passport — means that data is now
+    logged on their side, may be used for training depending on your plan, and can
+    leak back out: the model can repeat it to another user, or an attacker can use
+    prompt injection to make it read those values back. Sending more than the task
+    needs is an unnecessary privacy and compliance risk.
+  fix: |
+    Send the model only the minimum it needs to do the job. Never put credentials
+    or secrets in a prompt — the model never needs them. Strip or redact personal
+    data (names, emails, SSNs, card numbers) before the call, or replace it with a
+    placeholder token you swap back afterwards. Pass specific fields, not the
+    entire request body.
+  secure_example: |
+    // send only the fields the task needs — no secrets, no raw req.body
+    const summary = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: 'Summarise the support ticket.' },
+        { role: 'user', content: ticket.text },   // not the whole request, no keys
+      ],
+    });
+  references:
+    - https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/
+    - https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html

@@ -1,0 +1,169 @@
+# Dynamic-scan rules — findings produced by probing a LIVE app via `--url`.
+
+- id: headers.missing-csp
+  title: "No Content-Security-Policy header"
+  severity: medium
+  cwe: CWE-693
+  owasp: "A05:2021-Security Misconfiguration"
+  why: >
+    A Content-Security-Policy tells the browser which scripts, styles, and other
+    resources are allowed to load. Without it, if an attacker manages to inject any
+    HTML/JS (an XSS bug), there is nothing stopping it from running or from
+    exfiltrating data to their server. CSP is your most important safety net against XSS.
+  fix: >
+    Add a Content-Security-Policy. In Next.js, set it in next.config.js `headers()`
+    (or middleware). Start strict and loosen as needed; avoid 'unsafe-inline'/'unsafe-eval'.
+  secure_example: |
+    // next.config.js headers():
+    { key: 'Content-Security-Policy', value: "default-src 'self'; object-src 'none'; frame-ancestors 'none'" }
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+
+- id: headers.missing-hsts
+  title: "No Strict-Transport-Security (HSTS) header"
+  severity: medium
+  cwe: CWE-319
+  owasp: "A05:2021-Security Misconfiguration"
+  why: >
+    HSTS forces browsers to always use HTTPS for your site. Without it, an attacker
+    on the network can downgrade a user's first request to HTTP and intercept it
+    (cookies, credentials). HSTS closes that window.
+  fix: "Send Strict-Transport-Security with a long max-age once you're fully on HTTPS."
+  secure_example: "Strict-Transport-Security: max-age=63072000; includeSubDomains; preload"
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+
+- id: headers.missing-x-frame-options
+  title: "No X-Frame-Options / frame-ancestors (clickjacking)"
+  severity: medium
+  cwe: CWE-1021
+  owasp: "A05:2021-Security Misconfiguration"
+  why: >
+    Without X-Frame-Options (or a CSP frame-ancestors directive), an attacker can
+    embed your site invisibly in an iframe on their page and trick users into
+    clicking buttons they can't see (clickjacking) — e.g. confirming a money transfer.
+  fix: "Send X-Frame-Options: DENY (or SAMEORIGIN), or set CSP frame-ancestors 'none'."
+  secure_example: "X-Frame-Options: DENY"
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
+
+- id: headers.missing-x-content-type-options
+  title: "No X-Content-Type-Options: nosniff"
+  severity: low
+  cwe: CWE-430
+  owasp: "A05:2021-Security Misconfiguration"
+  why: >
+    Without 'nosniff', browsers may guess (sniff) a response's content type and, for
+    example, run a file you intended as plain text as JavaScript — turning a harmless
+    upload into an XSS vector.
+  fix: "Send X-Content-Type-Options: nosniff on all responses."
+  secure_example: "X-Content-Type-Options: nosniff"
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
+
+- id: headers.missing-referrer-policy
+  title: "No Referrer-Policy header"
+  severity: low
+  cwe: CWE-200
+  owasp: "A05:2021-Security Misconfiguration"
+  why: >
+    The Referer header your users' browsers send can leak internal URLs and tokens to
+    third-party sites. A Referrer-Policy limits what is shared.
+  fix: "Send Referrer-Policy: strict-origin-when-cross-origin (or stricter)."
+  secure_example: "Referrer-Policy: strict-origin-when-cross-origin"
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
+
+- id: headers.server-version-disclosure
+  title: "Server / X-Powered-By reveals software version"
+  severity: low
+  cwe: CWE-200
+  owasp: "A05:2021-Security Misconfiguration"
+  why: >
+    Advertising your exact server/framework version (e.g. 'X-Powered-By: Next.js')
+    hands attackers a shortlist of version-specific exploits to try. It's free
+    reconnaissance for them and gains you nothing.
+  fix: "Remove or generalize Server/X-Powered-By. In Next.js set poweredByHeader: false."
+  secure_example: "// next.config.js\nmodule.exports = { poweredByHeader: false };"
+  references:
+    - https://nextjs.org/docs/app/api-reference/next-config-js/poweredByHeader
+
+- id: cookie.insecure-flags-live
+  title: "Cookie set without Secure / HttpOnly / SameSite"
+  severity: medium
+  cwe: CWE-1004
+  owasp: "A05:2021-Security Misconfiguration"
+  why: >
+    A live response set a cookie missing protective flags. Without HttpOnly, JavaScript
+    (and thus any XSS) can read it; without Secure it can be sent over plain HTTP and
+    intercepted; without SameSite it can be sent on cross-site requests (CSRF). Session
+    cookies need all three.
+  fix: "Set HttpOnly, Secure, and SameSite=Lax (or Strict) on session/auth cookies."
+  secure_example: "Set-Cookie: session=...; HttpOnly; Secure; SameSite=Lax; Path=/"
+  references:
+    - https://owasp.org/www-community/controls/SecureCookieAttribute
+
+- id: dast.reflected-xss
+  title: "Reflected input appears unescaped in the response"
+  severity: high
+  cwe: CWE-79
+  owasp: "A03:2021-Injection"
+  why: >
+    NjordScan sent a harmless marker in the URL and the live app echoed it back into
+    the HTML without escaping it. That means an attacker can put real <script> in that
+    same parameter and it will run in your users' browsers (reflected XSS) — letting
+    them steal sessions or act as the victim.
+  fix: >
+    Escape all user input before placing it in HTML (frameworks like React do this for
+    you when you render {value}); never build HTML by string concatenation with request data.
+  secure_example: "return <p>{userInput}</p>; // React escapes it automatically"
+  references:
+    - https://owasp.org/www-community/attacks/xss/
+
+- id: dast.open-redirect
+  title: "Open redirect to an attacker-controlled URL"
+  severity: medium
+  cwe: CWE-601
+  owasp: "A01:2021-Broken Access Control"
+  why: >
+    NjordScan asked the live app to redirect to an external URL and it complied. An
+    attacker can craft a link that starts on your trusted domain but sends users to a
+    phishing site — perfect for stealing credentials because the link looks legitimate.
+  fix: "Only redirect to relative paths you control, or check the destination against an allowlist."
+  secure_example: "if (!target.startsWith('/')) target = '/';"
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+
+- id: dast.verbose-error
+  title: "Server returns a stack trace / verbose error to the client"
+  severity: medium
+  cwe: CWE-209
+  owasp: "A05:2021-Security Misconfiguration"
+  why: >
+    The live app returned a stack trace or detailed error to an unauthenticated
+    request. Stack traces reveal file paths, library versions, and internal logic that
+    help an attacker plan an exploit — and sometimes leak secrets directly.
+  fix: "Return generic error messages to clients; log details server-side only. Ensure NODE_ENV=production."
+  secure_example: "res.status(500).json({ error: 'Internal Server Error' }); // log the real one server-side"
+  references:
+    - https://cwe.mitre.org/data/definitions/209.html
+
+- id: ai-endpoint.unauthenticated-live
+  title: "AI/LLM endpoint responds without authentication"
+  severity: high
+  cwe: CWE-284
+  owasp: "A01:2021-Broken Access Control"
+  why: >
+    A likely AI/LLM endpoint (e.g. /api/chat) answered an unauthenticated request. If
+    it proxies to a paid model (OpenAI/Anthropic) with no auth or rate limit, anyone on
+    the internet can run up your bill, exfiltrate your prompts, or abuse your model
+    quota — a "denial of wallet" attack that has cost startups thousands overnight.
+  fix: >
+    Require authentication on AI routes, add per-user rate limiting and spend caps, and
+    never expose your provider key to the client.
+  secure_example: |
+    const session = await auth();
+    if (!session) return new Response('Unauthorized', { status: 401 });
+    // + rate-limit per user before calling the model
+  references:
+    - https://owasp.org/www-project-top-10-for-large-language-model-applications/

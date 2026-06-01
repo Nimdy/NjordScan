@@ -1,0 +1,73 @@
+# AI / LLM endpoint & cost-abuse detection patterns (apps that CALL an LLM).
+# Each rule_id has a 1:1 knowledge entry in njordscan/data/rules/ai-endpoint.yaml.
+# Regex is Python 're'. Single-quoted YAML keeps backslashes literal.
+#
+# The no-auth / no-rate-limit rules are file-level heuristics: a multiline regex
+# whose leading '\A(?![\s\S]*?(<guard keywords>))' asserts the guard appears
+# NOWHERE in the file, then matches the model call. requires_file restricts these
+# to server route/handler files (a GET/POST/handler export), so client components
+# and library helpers never match. A dev can always exempt a line with
+# '// njordscan-ignore'.
+
+# === ai.key-clientside : provider key exposed to the browser ================
+# (a) NEXT_PUBLIC_ / VITE_ / REACT_APP_ prefixed OpenAI/Anthropic/etc. key.
+- rule_id: ai.key-clientside
+  pattern: '\b(?:NEXT_PUBLIC_|VITE_|REACT_APP_)[A-Z0-9_]*(?:OPENAI|ANTHROPIC|CLAUDE|GROQ|MISTRAL|GEMINI|GOOGLE_GENAI|GOOGLE_GENERATIVE|COHERE|PERPLEXITY|OPENROUTER|TOGETHER|HUGGINGFACE|REPLICATE)[A-Z0-9_]*\b'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: critical
+  message: 'LLM provider key is behind a NEXT_PUBLIC_/VITE_ prefix — it ships to every visitor''s browser, who can copy it and spend your money. Keep AI keys server-only.'
+
+# (b) new OpenAI/Anthropic({ apiKey: ... }) inside a 'use client' file.
+# Multiline so the apiKey field may sit on a later line than `new OpenAI({`.
+- rule_id: ai.key-clientside
+  pattern: 'new\s+(?:OpenAI|Anthropic)\s*\(\s*\{(?:(?!\})[\s\S]){0,300}?apiKey'
+  languages: [js, jsx, ts, tsx]
+  frameworks: [react, nextjs]
+  multiline: true
+  confidence: high
+  severity: critical
+  requires_file: '["'']use client["'']'
+  message: 'An OpenAI/Anthropic client is created with an apiKey in a client component (''use client'') — the key is bundled into the browser for anyone to steal. Call the model from the server instead.'
+
+# === ai.dangerously-allow-browser : OpenAI SDK browser override =============
+- rule_id: ai.dangerously-allow-browser
+  pattern: 'dangerouslyAllowBrowser\s*:\s*true'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'dangerouslyAllowBrowser: true lets the OpenAI SDK run in the browser, shipping your API key to every visitor. Remove it and call the model from the server.'
+
+# === ai.endpoint-no-auth : model call in a route file with no auth check =====
+# Server-route-only (requires_file handler export). Absence of any auth keyword
+# anywhere in the file is asserted by the leading negative lookahead.
+- rule_id: ai.endpoint-no-auth
+  pattern: '\A(?![\s\S]*?(?:getServerSession|getToken|currentUser|clerkClient|@clerk|auth\(\)|\bauth\s*\(\s*req|supabase\.auth|headers\.get\(\s*["'']authorization|req\.headers\.authorization|verifyToken|requireAuth|requireUser|requireSession|isAuthenticated|withApiAuth|getSession|ensureAuthenticated|checkAuth|verifySession|jwt\.verify|next-auth|withAuth|protectedProcedure))[\s\S]*?(?:\.(?:chat\.completions|completions|responses|messages|embeddings)\.create\s*\(|\.beta\.chat\.completions\.|\bgenerateText\s*\(|\bstreamText\s*\(|\bgenerateObject\s*\(|\bstreamObject\s*\(|anthropic\.messages\.create\s*\()'
+  languages: [js, ts]
+  frameworks: [nextjs, react]
+  multiline: true
+  confidence: medium
+  severity: high
+  requires_file: 'export\s+(?:async\s+)?function\s+(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b|export\s+const\s+(?:GET|POST|PUT|PATCH|DELETE)\s*=|export\s+default\s+(?:async\s+)?function\s+handler|module\.exports\s*=\s*(?:async\s*)?(?:function|\()'
+  message: 'This AI route calls the model but the file has no sign-in/auth check — anyone can hit it and run up your AI bill (denial of wallet). Require a logged-in user before the model call.'
+
+# === ai.no-rate-limit : model call in a route file with no rate limit ========
+- rule_id: ai.no-rate-limit
+  pattern: '\A(?![\s\S]*?(?:\bratelimit\b|\bRatelimit\b|@upstash/ratelimit|rateLimiter|express-rate-limit|\brateLimit\b|\bthrottle\b|\bslidingWindow\b|\bfixedWindow\b|\btokenBucket\b|\blimiter\b|rate-limiter-flexible|p-limit|bottleneck))[\s\S]*?(?:\.(?:chat\.completions|completions|responses|messages|embeddings)\.create\s*\(|\.beta\.chat\.completions\.|\bgenerateText\s*\(|\bstreamText\s*\(|\bgenerateObject\s*\(|\bstreamObject\s*\(|anthropic\.messages\.create\s*\()'
+  languages: [js, ts]
+  frameworks: [nextjs, react]
+  multiline: true
+  confidence: low
+  severity: medium
+  requires_file: 'export\s+(?:async\s+)?function\s+(?:GET|POST|PUT|PATCH|DELETE)\b|export\s+const\s+(?:GET|POST|PUT|PATCH|DELETE)\s*=|export\s+default\s+(?:async\s+)?function\s+handler|module\.exports\s*=\s*(?:async\s*)?(?:function|\()'
+  message: 'This AI route calls the model with no rate limit in the file — one bot can call it thousands of times and drain your AI budget. Add a per-user/IP limit (e.g. Upstash Ratelimit) before the model call.'
+
+# === ai.unbounded-output : model call object with no max-token cap ==========
+# Matches a .create({ ... }) whose object body never sets a max-token field.
+- rule_id: ai.unbounded-output
+  pattern: '(?:chat\.completions|completions|responses|messages)\.create\s*\(\s*\{(?:(?!\bmax_tokens\b|\bmax_output_tokens\b|\bmaxOutputTokens\b|\bmax_completion_tokens\b)[\s\S]){0,700}?\}\s*\)'
+  languages: [js, jsx, ts, tsx]
+  multiline: true
+  confidence: medium
+  severity: low
+  message: 'This model call sets no max output-token limit — output tokens are the costliest part of an AI call, so a crafted prompt can balloon your bill. Set max_tokens / max_output_tokens.'

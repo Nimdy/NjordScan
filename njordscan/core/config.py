@@ -47,6 +47,10 @@ class Config:
     ai_provider: Optional[str] = None            # "ollama" | "claude" | "openai"
     ai_redact: bool = True                       # redact code before sending to an API
     no_external: bool = False                    # hard-block any network egress
+    # Dynamic scanning (opt-in): a live URL to probe (DAST + live headers).
+    url: Optional[str] = None
+    allow_private: bool = False                  # allow scanning private/loopback hosts (off = SSRF-safe)
+    dynamic_timeout: float = 10.0
 
     @property
     def all_ignores(self) -> List[str]:

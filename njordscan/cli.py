@@ -66,6 +66,12 @@ def cli() -> None:
               help="Which AI backend to use with --explain-with-ai.")
 @click.option("--no-redact", is_flag=True,
               help="Send unredacted code to the AI provider (off by default).")
+@click.option("--url", "url", default=None,
+              help="Also run a live dynamic scan (DAST + headers) against this URL. Needs 'njordscan[dynamic]'.")
+@click.option("--allow-private", is_flag=True,
+              help="Allow --url to target private/loopback hosts (off by default for SSRF safety).")
+@click.option("--diff", "diff_ref", is_flag=False, flag_value="HEAD", default=None,
+              help="Only report issues on lines changed vs a git ref (bare --diff = vs HEAD). Great for PRs.")
 @click.option("--baseline", type=click.Path(path_type=Path), default=None,
               help="Baseline file: hide known findings and only fail on NEW ones.")
 @click.option("--update-baseline", is_flag=True,
@@ -80,6 +86,8 @@ def scan(
     fail_on: Optional[str], only: tuple, skip: tuple, ignore: tuple, brief: bool,
     do_fix: bool, dry_run: bool,
     explain_with_ai: bool, ai_provider: Optional[str], no_redact: bool,
+    url: Optional[str], allow_private: bool,
+    diff_ref: Optional[str],
     baseline: Optional[Path], update_baseline: bool,
     config_path: Optional[Path], no_config: bool,
     verbose: bool, quiet: bool,
@@ -112,7 +120,16 @@ def scan(
         explain_with_ai=explain_with_ai,
         ai_provider=ai_provider or (file_cfg.ai_provider if explain_with_ai else None),
         ai_redact=not no_redact,
+        url=url,
+        allow_private=allow_private,
     )
+
+    if url:
+        try:
+            import httpx  # noqa: F401, PLC0415
+        except ImportError:
+            err_console.print(r"[yellow]--url needs the dynamic extra: pip install 'njordscan\[dynamic]' "
+                              "— running static scan only.[/yellow]")
 
     try:
         result: ScanResult = asyncio.run(Orchestrator(config).run())
@@ -124,6 +141,20 @@ def scan(
         if verbose:
             console.print_exception()
         sys.exit(EXIT_ERROR)
+
+    # --- diff / PR mode: keep only findings on changed lines ---
+    diff_hidden = 0
+    if diff_ref:
+        from .core.gitdiff import changed_lines, in_diff
+
+        changed = changed_lines(target, diff_ref)
+        if changed is None:
+            err_console.print(f"[yellow]--diff: could not compute git diff vs {diff_ref}; "
+                              "showing all findings.[/yellow]")
+        else:
+            before = len(result.findings)
+            result.findings = [f for f in result.findings if in_diff(changed, f.file, f.line)]
+            diff_hidden = before - len(result.findings)
 
     # --- baseline handling ---
     baseline_path = baseline or (Path(file_cfg.baseline) if file_cfg.baseline else None)
@@ -150,6 +181,8 @@ def scan(
     _emit(result, fmt, output, verbose=verbose, quiet=quiet, show_fix=not brief)
     if hidden and not quiet and fmt == "terminal":
         console.print(f"[dim]({hidden} known finding(s) hidden by baseline.)[/dim]")
+    if diff_hidden and not quiet and fmt == "terminal":
+        console.print(f"[dim]({diff_hidden} finding(s) outside the diff hidden by --diff {diff_ref}.)[/dim]")
 
     if do_fix:
         _run_autofix(result, config, dry_run=dry_run)
@@ -396,6 +429,17 @@ def doctor() -> None:
     t.add_row("AI explain", "; ".join(ai_rows))
 
     console.print(t)
+
+
+@cli.command()
+def mcp() -> None:
+    """🔌 Run as an MCP server (stdio) so AI coding assistants can scan inline.
+
+    Register with Claude Code:  claude mcp add njordscan -- njordscan mcp
+    """
+    from .mcp_server import run
+
+    run()
 
 
 @cli.command()

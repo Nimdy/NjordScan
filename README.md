@@ -5,8 +5,9 @@
 NjordScan is built for developers who ship fast and aren't security experts. It finds the
 issues that actually bite web apps — exposed secrets, XSS, dangerous dependencies, risky
 config — and for **every** finding it tells you *why it matters* and *exactly how to fix it*,
-with a corrected code example you can copy. Over **100 rules** across the Next.js / React /
-Vite / web attack surface, each with a plain-English explanation.
+with a corrected code example you can copy. **120+ rules** across the Next.js / React / Vite /
+web / **AI-app** attack surface, each with a plain-English explanation — plus optional **live
+(DAST) scanning** and an **MCP server** so your AI coding assistant can scan as you build.
 
 > Status: **Beta.** The core scanner is stable and well-tested. No scanner catches everything —
 > treat NjordScan as a strong safety net, not a guarantee.
@@ -29,11 +30,14 @@ machine** unless you explicitly ask for it.
 njordscan scan .                       # human-friendly, educational report (default)
 njordscan scan . --fix                 # apply safe, additive fixes (preview with --dry-run)
 njordscan scan . --fail-on high        # exit 1 on any High/Critical — drop into CI as-is
+njordscan scan . --diff origin/main    # only issues on lines this PR changed
+njordscan scan . --url https://staging.myapp.com   # also dynamically scan a live app (DAST)
 njordscan scan . --format html -o report.html   # pretty shareable report
 njordscan scan . --format sarif -o out.sarif     # GitHub code scanning
 njordscan explain xss.dangerously-set-inner-html # deep-dive on any rule
 njordscan doctor                       # what's installed & working
 njordscan update                       # refresh CVE data from OSV.dev
+njordscan mcp                          # run as an MCP server for AI coding assistants
 ```
 
 ## What it finds
@@ -53,9 +57,53 @@ njordscan update                       # refresh CVE data from OSV.dev
 | **CORS / CSP / CSRF** | `*` + credentials, reflected origins, `unsafe-inline` CSP, missing CSRF on mutations |
 | **Config & headers** | `next.config` foot-guns, disabled TLS verification, missing security headers |
 | **Git hygiene** | A `.env` that's committed or not in `.gitignore` (the #1 way beginners leak secrets) |
+| **🤖 AI / LLM apps** | Prompt injection, **LLM output → `eval`/SQL/`dangerouslySetInnerHTML`**, provider keys in client code, `dangerouslyAllowBrowser`, and **unauthenticated AI endpoints** (denial-of-wallet) |
+| **🌐 Dynamic (DAST)** | With `--url`: live security headers, insecure cookies, reflected XSS, open redirects, stack-trace leaks, exposed AI endpoints |
 
 Each finding maps to a CWE and OWASP category. Silence any line with a trailing
 `// njordscan-ignore` comment.
+
+## AI / LLM application security
+
+Vibe coders are building AI apps — so NjordScan covers the risks unique to them, which most
+scanners ignore: **prompt injection** (user input reaching a system prompt), **treating LLM
+output as trusted** (model output flowing into `eval`, SQL, or `dangerouslySetInnerHTML`),
+**provider keys shipped to the browser**, and **unauthenticated AI endpoints** that let anyone
+run up your model bill (a "denial-of-wallet" attack). Each is explained in plain English.
+
+## Dynamic scanning (DAST)
+
+Point NjordScan at a running app to catch what only shows up at runtime:
+
+```bash
+pip install 'njordscan[dynamic]'
+njordscan scan . --url https://staging.myapp.com
+```
+
+It checks real response headers (CSP/HSTS/X-Frame/…), cookie flags, reflected XSS, open
+redirects, stack-trace leaks, and exposed AI endpoints. **Safe by design:** TLS verification
+stays on, only benign/idempotent probes are sent (no state-changing payloads, no cost-incurring
+AI calls), and it **refuses private/loopback hosts** unless you pass `--allow-private`.
+
+## Use it with your AI coding assistant (MCP)
+
+NjordScan is an [MCP](https://modelcontextprotocol.io) server, so assistants like Claude Code
+and Cursor can scan the code they just wrote — and get the same plain-English findings + fixes:
+
+```bash
+claude mcp add njordscan -- njordscan mcp
+```
+
+Now your assistant can call `njordscan_scan` / `njordscan_explain` inline while you build.
+
+## Fast PR feedback (`--diff`)
+
+```bash
+njordscan scan . --diff origin/main --fail-on high   # only fail on issues this PR introduced
+```
+
+Reports only findings on the lines your change touched — perfect for adopting NjordScan on an
+existing codebase without fixing the whole backlog at once.
 
 ## Plain-English explanations (the whole point)
 

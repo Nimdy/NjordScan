@@ -19,7 +19,7 @@ import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Pattern
+from typing import List, Pattern
 
 from ..core.finding import Finding
 from ..core.project import Project

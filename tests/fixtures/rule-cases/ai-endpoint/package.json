@@ -1,0 +1,16 @@
+{
+  "name": "ai-endpoint-fixtures",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "openai": "4.56.0",
+    "@anthropic-ai/sdk": "0.27.0",
+    "ai": "3.3.0",
+    "next-auth": "4.24.7",
+    "@upstash/ratelimit": "2.0.1",
+    "@upstash/redis": "1.34.0"
+  }
+}

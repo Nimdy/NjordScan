@@ -26,6 +26,7 @@ _REGISTRY = [
     ("njordscan.detectors.configs", "ConfigsDetector"),
     ("njordscan.detectors.pattern_engine", "PatternEngine"),
     ("njordscan.detectors.git_hygiene", "GitHygieneDetector"),
+    ("njordscan.detectors.runtime", "DynamicScanDetector"),
 ]
 
 

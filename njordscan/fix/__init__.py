@@ -17,7 +17,6 @@ from __future__ import annotations
 import difflib
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 from ..core.finding import Finding

@@ -1,0 +1,159 @@
+# AI / LLM application-security detection patterns — PROMPT LAYER.
+# Each rule_id has a 1:1 knowledge entry in njordscan/data/rules/ai-prompt.yaml.
+# Regex is Python 're'. Single-quoted YAML keeps backslashes literal.
+# Precision notes:
+#   - User-data signals: req.body/query/params, searchParams, message/input/prompt
+#     pulled from the client. A bare { role: 'user', content: x } is NOT flagged.
+#   - LLM-output signals: choices[0].message.content, completion.content,
+#     response.text(), message.content from an openai/anthropic call.
+
+# =====================================================================
+# ai.prompt-injection — user input lands inside a SYSTEM / instruction string
+# =====================================================================
+
+# (1) A { role: 'system', content: ... } whose content concatenates/interpolates
+#     a user-looking value. Matches role:'system' then, before the closing brace,
+#     a `+ <userish>` or `${ <userish> }`.
+- rule_id: ai.prompt-injection
+  pattern: 'role\s*:\s*["'']system["''][^}]{0,200}?(?:\+\s*|\$\{\s*)[\w.$\[\]'']*(?:req\.(?:body|query|params)|searchparams|userinput|usermessage|usermsg|userprompt|userquery|userquestion|\binput\b|\bmessage\b|\bprompt\b|\bquery\b)'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'User input is concatenated/interpolated into the AI "system" instruction — a user can override your rules (prompt injection). Put user text in a separate { role: "user" } message.'
+
+# (2) content placed BEFORE role:'system' on the same expression (object literal
+#     written content-first). Same user-data signals.
+- rule_id: ai.prompt-injection
+  pattern: 'content\s*:\s*[`"''][^`"'']{0,200}?(?:\$\{\s*|["''`]\s*\+\s*)[\w.$\[\]'']*(?:req\.(?:body|query|params)|searchparams|userinput|usermessage|usermsg|userprompt|userquery|userquestion)[\w.$\[\]'']*[^}]{0,120}?role\s*:\s*["'']system["'']'
+  languages: [js, jsx, ts, tsx]
+  confidence: medium
+  severity: high
+  message: 'User input is interpolated into a "system" message content — a user can override your AI''s rules (prompt injection). Separate user text into a { role: "user" } message.'
+
+# (3) A named instruction/system-prompt STRING variable built from user input.
+#     Targets variables whose name says "system prompt / instructions".
+- rule_id: ai.prompt-injection
+  pattern: '(?:const|let|var)\s+\w*(?:systemprompt|systemmessage|instructions?|systeminstruction|sysprompt)\w*\s*=\s*[`"''][^`]{0,300}?(?:\$\{\s*|["''`]\s*\+\s*)[\w.$\[\]'']*(?:req\.(?:body|query|params)|searchparams|userinput|usermessage|usermsg|userprompt|userquery|userquestion)'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'A system-prompt / instructions string is built from user input — the user can rewrite your AI''s rules (prompt injection). Keep the instruction string free of user data.'
+
+# (4) Anthropic-style: top-level `system:` parameter whose value concatenates /
+#     interpolates user input (Messages API puts the system prompt as a param).
+- rule_id: ai.prompt-injection
+  pattern: '\bsystem\s*:\s*[`"''][^`"'']{0,200}?(?:\$\{\s*|["''`]\s*\+\s*)[\w.$\[\]'']*(?:req\.(?:body|query|params)|searchparams|userinput|usermessage|usermsg|userprompt|userquery|userquestion)'
+  languages: [js, jsx, ts, tsx]
+  confidence: medium
+  severity: high
+  requires_file: '(anthropic|messages\.create|openai|chat\.completions)'
+  message: 'User input is interpolated into the Anthropic `system` prompt — the user can override your AI''s rules (prompt injection). Pass user text as a separate user message.'
+
+# =====================================================================
+# ai.system-prompt-clientside — a system prompt defined in browser code
+# =====================================================================
+
+# A system-prompt / instructions string literal defined in a file that declares
+# 'use client'. requires_file ties it to the client directive; the line itself
+# is the prompt assignment. exclude_line skips obvious env/import references.
+- rule_id: ai.system-prompt-clientside
+  pattern: '(?:const|let|var)\s+\w*(?:systemprompt|systemmessage|sysprompt|systeminstruction|instructionprompt)\w*\s*=\s*[`"''](?:you are|act as|your role|never reveal|do not reveal|always respond|as an ai|assistant that|system:)'
+  languages: [js, jsx, ts, tsx]
+  frameworks: [react, nextjs]
+  confidence: high
+  severity: medium
+  requires_file: '["'']use client["'']'
+  exclude_line: '(process\.env|import |require\()'
+  message: 'An AI system prompt is defined in client ("use client") code — it ships to every visitor''s browser, leaking your prompt and letting users edit it. Move it to a Server Action or Route Handler.'
+
+# Inline { role: 'system', content: '<instruction literal>' } written in a
+# 'use client' file (prompt shipped to the browser as part of a client call).
+- rule_id: ai.system-prompt-clientside
+  pattern: 'role\s*:\s*["'']system["'']\s*,\s*content\s*:\s*[`"''](?:you are|act as|your role|never reveal|do not reveal|always respond|as an ai|assistant that)'
+  languages: [js, jsx, ts, tsx]
+  frameworks: [react, nextjs]
+  confidence: high
+  severity: medium
+  requires_file: '["'']use client["'']'
+  message: 'An AI system message with instructions is defined in client ("use client") code — it ships to the browser, leaking your prompt and letting users override it. Build the system message on the server.'
+
+# =====================================================================
+# ai.llm-output-to-sink — model output flows into eval / exec / shell / SQL
+# =====================================================================
+
+# (1) eval() / new Function() directly on a model-output expression.
+- rule_id: ai.llm-output-to-sink
+  pattern: '(?:\beval\s*\(|new\s+Function\s*\()\s*[\w.$\[\]'']*(?:choices\s*\[\s*0\s*\]\s*\.message\.content|\.completion\b|completion\.content|message\.content|response\.text\s*\(|\bllmoutput|\baioutput|\baireply|\baiResponse|\bcompletiontext)'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: critical
+  message: 'AI model output is passed straight to eval()/Function() — a user can steer the model into producing code that then runs on your server (remote code execution). Never execute model output.'
+
+# (2) A variable assigned from a model-output expression (captured by name on a
+#     prior line via requires_file) flowing into eval/exec/Function/query.
+- rule_id: ai.llm-output-to-sink
+  pattern: '(?:\beval\s*\(|new\s+Function\s*\(|exec\s*\(|execSync\s*\(|\.query\s*\(|\.\$queryRawUnsafe\s*\()\s*`?[^`)]*\b(?:aireply|aioutput|airesponse|llmoutput|llmreply|llmresponse|modeloutput|modelreply|completiontext|gptreply|gptoutput|generatedtext|generatedsql|generatedcode|aicommand)\b'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: critical
+  message: 'AI model output flows into eval/exec/shell/SQL — model output is attacker-influenced and must never be executed or spliced into a command/query (RCE / injection). Use an allowlist or parameterised query.'
+
+# (3) Model output passed to a child_process shell exec.
+- rule_id: ai.llm-output-to-sink
+  pattern: '(?:exec|execSync|spawnSync)\s*\(\s*[\w.$\[\]'']*(?:choices\s*\[\s*0\s*\]\s*\.message\.content|completion\.content|message\.content|response\.text\s*\()'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: critical
+  message: 'AI model output is passed to a shell exec — a user can make the model emit shell commands that run on your server (command injection / RCE). Never run model output as a command.'
+
+# =====================================================================
+# ai.llm-output-rendered-as-html — model output -> dangerouslySetInnerHTML/innerHTML
+# =====================================================================
+
+# (1) dangerouslySetInnerHTML __html: <model-output expression>.
+- rule_id: ai.llm-output-rendered-as-html
+  pattern: '__html\s*:\s*[\w.$\[\]'']*(?:choices\s*\[\s*0\s*\]\s*\.message\.content|completion\.content|response\.text\s*\(|\baireply|\baioutput|\bairesponse|\bllmoutput|\bllmreply|\bmodeloutput|\bgptreply|\bgeneratedhtml|\bassistantmessage|\baimessage)\b'
+  languages: [jsx, tsx, js, ts]
+  frameworks: [react, nextjs]
+  confidence: high
+  severity: high
+  exclude_line: '(DOMPurify|sanitize)'
+  message: 'AI model output is rendered as raw HTML via dangerouslySetInnerHTML — the model can be steered into <script>/onerror payloads (XSS). Render it as text {value} or sanitize with DOMPurify first.'
+
+# (2) innerHTML / outerHTML assigned a model-output expression.
+- rule_id: ai.llm-output-rendered-as-html
+  pattern: '\.(?:inner|outer)HTML\s*=\s*[\w.$\[\]'']*(?:choices\s*\[\s*0\s*\]\s*\.message\.content|completion\.content|response\.text\s*\(|\baireply|\baioutput|\bairesponse|\bllmoutput|\bllmreply|\bmodeloutput|\bgptreply|\bgeneratedhtml|\baimessage)\b'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  exclude_line: '(DOMPurify|sanitize|textContent)'
+  message: 'AI model output is assigned to innerHTML — the model can be steered into HTML that runs JavaScript (XSS). Use textContent or sanitize with DOMPurify.'
+
+# =====================================================================
+# ai.pii-or-secret-to-llm — secrets / PII placed into a prompt
+# =====================================================================
+
+# (1) A process.env secret used as message/prompt content.
+- rule_id: ai.pii-or-secret-to-llm
+  pattern: 'content\s*:\s*(?:`[^`]*\$\{\s*)?process\.env\.\w*(?:secret|password|passwd|apikey|api_key|token|privatekey|private_key|dbpassword|credential)\w*'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: medium
+  message: 'A secret from process.env is being placed in an AI prompt — it leaves your server to the model provider and can leak back out. The model never needs your credentials; remove them from the prompt.'
+
+# (2) The entire request body sent as the prompt content (over-sharing / PII).
+- rule_id: ai.pii-or-secret-to-llm
+  pattern: 'content\s*:\s*(?:JSON\.stringify\s*\(\s*)?req\.body\s*[\),}]'
+  languages: [js, jsx, ts, tsx]
+  confidence: medium
+  severity: medium
+  requires_file: '(openai|anthropic|chat\.completions|messages\.create)'
+  message: 'The whole request body is sent as an AI prompt — it likely contains personal data you do not need to share with the model provider. Send only the specific fields the task needs.'
+
+# (3) A variable named like obvious PII / a secret placed into prompt content.
+- rule_id: ai.pii-or-secret-to-llm
+  pattern: 'content\s*:\s*[`"''][^`"'']*\$\{\s*[\w.$]*(?:ssn|socialsecurity|creditcard|credit_card|cardnumber|card_number|passportnumber|password|apikey|api_key|privatekey)\w*'
+  languages: [js, jsx, ts, tsx]
+  confidence: medium
+  severity: medium
+  message: 'Sensitive data (a secret or personal identifier) is interpolated into an AI prompt — it is sent to the model provider and may be logged or leaked. Redact or omit it before the call.'

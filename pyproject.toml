@@ -34,7 +34,9 @@ dependencies = [
 [project.optional-dependencies]
 # Opt-in LLM explanation providers (Tier 2/3). Offline explanations always work without this.
 ai = ["httpx>=0.24,<1"]
-dev = ["pytest>=7.4", "pytest-asyncio>=0.23", "mypy>=1.8", "ruff>=0.3"]
+# Opt-in dynamic scanning (--url DAST + live headers). Static scanning needs nothing extra.
+dynamic = ["httpx>=0.24,<1"]
+dev = ["pytest>=7.4", "pytest-asyncio>=0.23", "mypy>=1.8", "ruff>=0.3", "httpx>=0.24,<1"]
 
 [project.scripts]
 njordscan = "njordscan.cli:main"
