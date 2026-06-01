@@ -475,8 +475,8 @@ def _t_unauth_exec(ctx: "_Ctx") -> List[AttackPath]:
                    f"An unauthenticated attacker reaches {entry} — "
                    f"{door.title.lower()} ({door.location}) leaves it open to anyone.")
         s2 = _step(sink, "Execution", "Attacker-controlled data hits a query/command",
-                   f"On that same surface, {sink.title.lower()} ({sink.location}) lets the "
-                   "attacker's input change what the server executes.")
+                   f"On that same surface, attacker-controlled input reaches a dangerous sink "
+                   f"at {sink.location} ({sink.title.lower()}), so they control what the server runs.")
         s3 = _step(sink, "Impact", "Data is read, modified, or destroyed",
                    "With control of the query/command, the attacker can read or alter your "
                    "data — or pivot deeper into the system.")
