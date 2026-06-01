@@ -63,6 +63,7 @@ class Finding:
     secure_example: str = ""
     cwe: Optional[str] = None
     owasp: Optional[str] = None
+    attack: List[str] = field(default_factory=list)   # MITRE ATT&CK technique ids, e.g. ["T1059.007"]
     references: List[str] = field(default_factory=list)
 
     # --- optional extras ---

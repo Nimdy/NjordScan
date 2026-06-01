@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Callable, Dict
 
 from ..core.orchestrator import ScanResult
+from .attack_navigator import render_attack_navigator
 from .html import render_html
 from .json_report import render_json
 from .sarif import render_sarif
@@ -15,6 +16,7 @@ _FILE_RENDERERS: Dict[str, Callable[[ScanResult], str]] = {
     "json": render_json,
     "sarif": render_sarif,
     "html": render_html,
+    "attack-navigator": render_attack_navigator,
 }
 
 

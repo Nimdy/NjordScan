@@ -80,6 +80,8 @@ def _render_finding(idx: int, finding: Finding, console: Console, *, show_fix: b
         tags.append(finding.cwe)
     if finding.owasp:
         tags.append(finding.owasp)
+    if finding.attack:
+        tags.append("ATT&CK " + ", ".join(finding.attack))
     tags.append(f"confidence: {finding.confidence}")
     tag_text = Text("  ·  ".join(tags), style="dim italic")
 

@@ -24,6 +24,17 @@ VULN_APP = FIXTURES / "vulnerable-app"
 CLEAN_APP = FIXTURES / "clean-app"
 
 
+@pytest.fixture(autouse=True)
+def _keep_fixtures_clean():
+    """CLI scans auto-record history into the project dir; never leave it in committed fixtures."""
+    import shutil as _sh
+    for d in (VULN_APP, CLEAN_APP):
+        _sh.rmtree(d / ".njordscan", ignore_errors=True)
+    yield
+    for d in (VULN_APP, CLEAN_APP):
+        _sh.rmtree(d / ".njordscan", ignore_errors=True)
+
+
 @pytest.fixture
 def vuln_app() -> Path:
     return VULN_APP

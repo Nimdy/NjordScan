@@ -42,7 +42,7 @@ Run `njordscan explain <rule-id>` for any of these in your terminal.
 
 ### `secret.aws-access-key` — AWS access key committed to the repository
 
-Severity: 🔴 **critical**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures
+Severity: 🔴 **critical**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** An AWS access key pair grants programmatic access to your cloud account. Committed AWS keys are scraped automatically and can be used to spin up servers (huge bills) or read your data within minutes of being pushed.
 
@@ -54,7 +54,7 @@ Severity: 🔴 **critical**  ·  [CWE-798](https://cwe.mitre.org/data/definition
 
 ### `secret.private-key` — Private key committed to the repository
 
-Severity: 🔴 **critical**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures
+Severity: 🔴 **critical**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** A private key (RSA/EC/SSH/PGP) is the master credential for whatever it protects — TLS, signing, server access. If it is in your repo, anyone with the code can impersonate your service or decrypt traffic.
 
@@ -62,7 +62,7 @@ Severity: 🔴 **critical**  ·  [CWE-798](https://cwe.mitre.org/data/definition
 
 ### `secret.generic` — Hard-coded secret or credential
 
-Severity: 🟠 **high**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures
+Severity: 🟠 **high**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** A secret committed to your code (API key, password, token) is visible to anyone who can see the repository — and stays in git history forever, even if you delete the line later. Leaked keys are routinely scraped from public repos within minutes and used to run up bills or steal data.
 
@@ -74,7 +74,7 @@ const apiKey = process.env.API_KEY; // set in your host's env / .env.local (giti
 
 ### `secret.public-env-exposure` — Secret exposed to the browser via NEXT_PUBLIC_ / VITE_
 
-Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1552](https://attack.mitre.org/techniques/T1552)
 
 **Why this matters.** Variables prefixed with NEXT_PUBLIC_ (Next.js) or VITE_ (Vite) are inlined into the JavaScript bundle that ships to every visitor. Putting a real secret (private API key, DB password) behind that prefix publishes it to the whole world.
 
@@ -89,7 +89,7 @@ const key = process.env.STRIPE_SECRET_KEY; // NOT NEXT_PUBLIC_
 
 ### `xss.dangerously-set-inner-html` — Untrusted data rendered with dangerouslySetInnerHTML
 
-Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** React normally escapes everything you render, which protects your users automatically. `dangerouslySetInnerHTML` turns that protection OFF and injects raw HTML. If any part of that HTML comes from a user (a form field, a URL, an API response, the database), an attacker can smuggle in a <script> tag and run their own JavaScript in your users' browsers — stealing logins, cookies, or making requests as the victim. This is called cross-site scripting (XSS).
 
@@ -103,7 +103,7 @@ return <div dangerouslySetInnerHTML={{ __html: clean }} />;
 
 ### `xss.inner-html` — User input assigned to innerHTML / outerHTML
 
-Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** Assigning a string to `element.innerHTML` parses it as HTML. When the string contains data an attacker controls, they can inject markup that runs JavaScript in your users' browsers (cross-site scripting), letting them hijack accounts or steal data.
 
@@ -117,7 +117,7 @@ element.textContent = userInput; // rendered as text, never executed
 
 ### `dom.document-write` — document.write() called with non-literal content
 
-Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** `document.write()` / `document.writeln()` drops a string straight into the
 page and parses it as HTML. If the string contains anything a user controls,
@@ -140,7 +140,7 @@ container.appendChild(el);
 
 ### `dom.insert-adjacent-html` — insertAdjacentHTML() / outerHTML assigned non-literal content
 
-Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** `element.insertAdjacentHTML(...)` and assigning to `element.outerHTML` parse
 their argument as HTML and splice it into the page. When that argument holds
@@ -162,7 +162,7 @@ el.append(node);
 
 ### `dom.jquery-html` — jQuery .html() / .append() called with a non-literal value
 
-Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** jQuery's `$(...).html(value)` (and `.append(value)`) treats the value as HTML
 and inserts it into the page. If the value contains user-controlled data, an
@@ -183,7 +183,7 @@ $('#out').html(DOMPurify.sanitize(userHtml));
 
 ### `dom.location-from-fragment` — Page navigation built from location.hash / location.search (DOM-XSS)
 
-Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** The part of the URL after `#` (`location.hash`) and after `?`
 (`location.search`) is fully attacker-controlled — anyone can craft a link
@@ -206,7 +206,7 @@ if (/^\/(?!\/)/.test(next)) location.assign(next);
 
 ### `dom.postmessage-no-origin-check` — window message handler does not verify event.origin
 
-Severity: 🟠 **high**  ·  [CWE-345](https://cwe.mitre.org/data/definitions/345.html)  ·  A08:2021-Software and Data Integrity Failures
+Severity: 🟠 **high**  ·  [CWE-345](https://cwe.mitre.org/data/definitions/345.html)  ·  A08:2021-Software and Data Integrity Failures  ·  [ATT&CK T1185](https://attack.mitre.org/techniques/T1185)
 
 **Why this matters.** A `message` event listener (`window.addEventListener('message', ...)`) can be
 triggered by ANY other page or iframe — including a malicious site that
@@ -230,7 +230,7 @@ window.addEventListener('message', (event) => {
 
 ### `react.javascript-url` — Link/script URL set to a "javascript:" string
 
-Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** A URL that starts with `javascript:` is not a real address — the browser
 runs whatever comes after it as code the moment the link is clicked (or the
@@ -255,7 +255,7 @@ const safe = /^(https?:|\/)/.test(url) ? url : '#';
 
 ### `react.ref-inner-html` — innerHTML assigned via a React ref (ref.current.innerHTML)
 
-Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** React escapes everything you render through JSX, which keeps your users safe
 automatically. Reaching around React with a ref and writing
@@ -278,7 +278,7 @@ ref.current.textContent = value;
 
 ### `react.unsanitized-markdown` — Rendered Markdown passed to dangerouslySetInnerHTML without sanitizing
 
-Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** Markdown-to-HTML libraries like `marked` and `markdown-it` deliberately let
 raw HTML pass through by default — `<script>alert(1)</script>` in the Markdown
@@ -300,7 +300,7 @@ return <div dangerouslySetInnerHTML={{ __html: html }} />;
 
 ### `react.href-user-value` — Link href set directly from a user-controlled value
 
-Severity: 🟡 **medium**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟡 **medium**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)  ·  [ATT&CK T1204.001](https://attack.mitre.org/techniques/T1204/001)
 
 **Why this matters.** Putting a raw user value straight into an `href` (or image `src`) is risky:
 if the value is something like `javascript:stealCookies()`, clicking the link
@@ -326,7 +326,7 @@ function safeHref(value) {
 
 ### `react.token-in-web-storage` — Auth token or secret stored in localStorage / sessionStorage
 
-Severity: 🟡 **medium**  ·  [CWE-922](https://cwe.mitre.org/data/definitions/922.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟡 **medium**  ·  [CWE-922](https://cwe.mitre.org/data/definitions/922.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1539](https://attack.mitre.org/techniques/T1539)
 
 **Why this matters.** `localStorage` and `sessionStorage` are readable by any JavaScript running on
 your page. If your site ever has a cross-site scripting (XSS) bug — even in a
@@ -348,7 +348,7 @@ persist long-lived credentials in web storage.
 
 ### `react.unsafe-target-blank` — Link opens with target="_blank" but no rel="noopener"
 
-Severity: 🔵 **low**  ·  [CWE-1022](https://cwe.mitre.org/data/definitions/1022.html)  ·  A01:2021-Broken Access Control
+Severity: 🔵 **low**  ·  [CWE-1022](https://cwe.mitre.org/data/definitions/1022.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1204.001](https://attack.mitre.org/techniques/T1204/001)
 
 **Why this matters.** When a link opens a new tab with target="_blank", the page it opens gets a reference back to your page via window.opener. A malicious destination can use that to silently redirect your tab to a phishing page ("tabnabbing"). Modern browsers mitigate this, but older ones and webviews do not.
 
@@ -362,7 +362,7 @@ Severity: 🔵 **low**  ·  [CWE-1022](https://cwe.mitre.org/data/definitions/10
 
 ### `nextjs.api-env-exposure` — API route sends process.env (or its config object) back to the browser
 
-Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1552](https://attack.mitre.org/techniques/T1552)
 
 **Why this matters.** Code inside an API route (`pages/api/*`) or a Route Handler (`app/**/route.ts`)
 runs on the SERVER, so it can see every secret in process.env — database
@@ -389,7 +389,7 @@ export async function GET() {
 
 ### `nextjs.api-wildcard-cors` — API route allows any website to read its responses (Access-Control-Allow-Origin *)
 
-Severity: 🟠 **high**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟠 **high**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1185](https://attack.mitre.org/techniques/T1185)
 
 **Why this matters.** Setting `Access-Control-Allow-Origin: *` tells the browser that ANY website
 is allowed to make requests to this endpoint and read the response. For a
@@ -412,7 +412,7 @@ if (ALLOWED.has(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
 
 ### `nextjs.props-secret-leak` — getServerSideProps / getStaticProps leaks a server secret into page props
 
-Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1552](https://attack.mitre.org/techniques/T1552)
 
 **Why this matters.** getServerSideProps and getStaticProps run on the server, but whatever you put
 in the `props` object is serialised and SHIPPED TO THE BROWSER — it ends up in
@@ -436,7 +436,7 @@ export async function getServerSideProps() {
 
 ### `nextjs.unsafe-allowed-dev-origins` — Server Actions accept requests from any origin (allowedOrigins includes "*")
 
-Severity: 🟠 **high**  ·  [CWE-352](https://cwe.mitre.org/data/definitions/352.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-352](https://cwe.mitre.org/data/definitions/352.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** Next.js protects Server Actions by checking that the request came from your
 own site, which stops other websites from triggering them in a logged-in
@@ -458,7 +458,7 @@ module.exports = {
 
 ### `nextjs.dangerous-config` — Insecure Next.js configuration
 
-Severity: 🟡 **medium**  ·  [CWE-16](https://cwe.mitre.org/data/definitions/16.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-16](https://cwe.mitre.org/data/definitions/16.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** Some next.config options loosen safety in ways that are easy to ship by accident — e.g. ignoring build/type errors hides real bugs, and overly broad image `domains`/`remotePatterns` let attackers proxy arbitrary content through your domain.
 
@@ -470,7 +470,7 @@ images: { remotePatterns: [{ protocol: 'https', hostname: 'assets.example.com' }
 
 ### `nextjs.error-stack-leak` — API route / Route Handler sends an error stack trace to the client
 
-Severity: 🟡 **medium**  ·  [CWE-209](https://cwe.mitre.org/data/definitions/209.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-209](https://cwe.mitre.org/data/definitions/209.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** A stack trace (err.stack, or the whole Error object) is a map of your app's
 insides: file paths, function names, line numbers, library versions, and
@@ -492,7 +492,7 @@ try { /* ... */ } catch (err) {
 
 ### `nextjs.image-dangerously-allow-svg` — Next.js Image is configured to serve untrusted SVGs (dangerouslyAllowSVG)
 
-Severity: 🟡 **medium**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟡 **medium**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** SVG files are not just pictures — they can contain <script> and event
 handlers, so a browser may run JavaScript when it displays one. The Next.js
@@ -519,7 +519,7 @@ module.exports = {
 
 ### `nextjs.middleware-open-redirect` — Middleware redirects/rewrites to a destination taken from the request
 
-Severity: 🟡 **medium**  ·  [CWE-601](https://cwe.mitre.org/data/definitions/601.html)  ·  A01:2021-Broken Access Control
+Severity: 🟡 **medium**  ·  [CWE-601](https://cwe.mitre.org/data/definitions/601.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1204.001](https://attack.mitre.org/techniques/T1204/001)
 
 **Why this matters.** Next.js middleware runs on every matching request and can send the user
 somewhere else with NextResponse.redirect() or rewrite(). If the destination
@@ -540,7 +540,7 @@ return NextResponse.redirect(new URL(safe, req.url));
 
 ### `nextjs.powered-by-header` — X-Powered-By header not disabled (poweredByHeader left on)
 
-Severity: 🔵 **low**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🔵 **low**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** By default Next.js adds an `X-Powered-By: Next.js` header to every response.
 On its own this is harmless, but it advertises exactly what you are running.
@@ -558,7 +558,7 @@ module.exports = { poweredByHeader: false };
 
 ### `nextjs.source-maps-exposed` — Production browser source maps are published (productionBrowserSourceMaps)
 
-Severity: 🔵 **low**  ·  [CWE-540](https://cwe.mitre.org/data/definitions/540.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🔵 **low**  ·  [CWE-540](https://cwe.mitre.org/data/definitions/540.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** Source maps re-create your original, un-minified source code from the shipped
 bundle. Setting `productionBrowserSourceMaps: true` uploads those maps
@@ -580,7 +580,7 @@ module.exports = { productionBrowserSourceMaps: false };
 
 ### `vite.define-inlines-secret` — Vite `define` inlines a secret or process.env into the bundle
 
-Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** The `define` option in vite.config performs a raw find-and-replace at build
 time: whatever value you give it is hard-coded into the public JavaScript
@@ -603,7 +603,7 @@ export default defineConfig({
 
 ### `vite.fs-allow-too-broad` — Vite `server.fs.allow` opened to the whole filesystem
 
-Severity: 🟠 **high**  ·  [CWE-22](https://cwe.mitre.org/data/definitions/22.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-22](https://cwe.mitre.org/data/definitions/22.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1083](https://attack.mitre.org/techniques/T1083)
 
 **Why this matters.** Vite's dev server only serves files inside an allowed list of directories so
 that a crafted URL can't reach the rest of your disk. Adding `'/'` or `'..'`
@@ -625,7 +625,7 @@ export default defineConfig({
 
 ### `vite.import-meta-env-secret` — Secret read from import.meta.env in client code
 
-Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1552](https://attack.mitre.org/techniques/T1552)
 
 **Why this matters.** Vite replaces every `import.meta.env.SOMETHING` you write with the literal
 value at build time and ships it inside the JavaScript bundle that every
@@ -648,7 +648,7 @@ const res = await fetch('/api/charge', { method: 'POST', body });
 
 ### `vite.vite-prefixed-secret` — Secret-looking variable exposed with the VITE_ prefix
 
-Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1552](https://attack.mitre.org/techniques/T1552)
 
 **Why this matters.** Any environment variable whose name starts with `VITE_` is inlined into the
 public JavaScript bundle and downloaded by every visitor. Defining something
@@ -669,7 +669,7 @@ VITE_PUBLIC_API_URL=https://api.example.com   # safe to ship to the browser
 
 ### `vite.dev-server-cors-wildcard` — Vite dev server CORS opened to any origin
 
-Severity: 🟡 **medium**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1185](https://attack.mitre.org/techniques/T1185)
 
 **Why this matters.** `server.cors: true` tells the Vite dev server to send an
 `Access-Control-Allow-Origin: *` header, which lets any website your browser
@@ -690,7 +690,7 @@ export default defineConfig({
 
 ### `vite.dev-server-host-exposed` — Vite dev server bound to all network interfaces
 
-Severity: 🟡 **medium**  ·  [CWE-668](https://cwe.mitre.org/data/definitions/668.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-668](https://cwe.mitre.org/data/definitions/668.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** Setting `server.host` to `true` or `'0.0.0.0'` makes the Vite dev server
 listen on every network interface, not just your own machine. On a shared
@@ -711,7 +711,7 @@ export default defineConfig({ server: { /* host left unset */ } });
 
 ### `vite.fs-strict-disabled` — Vite `server.fs.strict` disabled
 
-Severity: 🟡 **medium**  ·  [CWE-22](https://cwe.mitre.org/data/definitions/22.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-22](https://cwe.mitre.org/data/definitions/22.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1083](https://attack.mitre.org/techniques/T1083)
 
 **Why this matters.** `server.fs.strict` is the guard that stops the dev server from serving files
 outside your project root. Setting `server.fs.strict: false` turns that guard
@@ -730,7 +730,7 @@ export default defineConfig({ server: { fs: { strict: true } } });
 
 ### `vite.proxy-target-insecure` — Vite dev proxy with TLS verification disabled
 
-Severity: 🟡 **medium**  ·  [CWE-295](https://cwe.mitre.org/data/definitions/295.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟡 **medium**  ·  [CWE-295](https://cwe.mitre.org/data/definitions/295.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1557](https://attack.mitre.org/techniques/T1557)
 
 **Why this matters.** A Vite `server.proxy` entry with `secure: false` tells the dev proxy to
 accept the upstream server's TLS certificate without checking it. That means
@@ -752,7 +752,7 @@ export default defineConfig({
 
 ### `vite.prod-sourcemap` — Source maps enabled for the production build
 
-Severity: 🔵 **low**  ·  [CWE-540](https://cwe.mitre.org/data/definitions/540.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🔵 **low**  ·  [CWE-540](https://cwe.mitre.org/data/definitions/540.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** `build.sourcemap: true` ships `.map` files alongside your bundle, which let
 anyone reconstruct your original, un-minified source code in the browser dev
@@ -774,7 +774,7 @@ export default defineConfig({ build: { sourcemap: false } });
 
 ### `injection.command` — Shell command built from untrusted input
 
-Severity: 🔴 **critical**  ·  [CWE-78](https://cwe.mitre.org/data/definitions/78.html)  ·  A03:2021-Injection
+Severity: 🔴 **critical**  ·  [CWE-78](https://cwe.mitre.org/data/definitions/78.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059](https://attack.mitre.org/techniques/T1059)
 
 **Why this matters.** Building a shell command by concatenating user input lets an attacker add their own commands (e.g. `; rm -rf /`). Functions like `exec` and `execSync` run through a shell, so injected text is executed on your server.
 
@@ -786,7 +786,7 @@ execFile('convert', [inputPath, outputPath]); // args are not parsed by a shell
 
 ### `injection.eval` — eval() / Function() called on dynamic input
 
-Severity: 🔴 **critical**  ·  [CWE-95](https://cwe.mitre.org/data/definitions/95.html)  ·  A03:2021-Injection
+Severity: 🔴 **critical**  ·  [CWE-95](https://cwe.mitre.org/data/definitions/95.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** `eval()` (and `new Function(...)`) runs whatever string you give it as live code. If any part of that string can be influenced by a user, an attacker can execute arbitrary JavaScript — on the server this can mean full takeover of your app and its data.
 
@@ -800,7 +800,7 @@ actions[userChoice]?.();
 
 ### `injection.template-ssti` — User input compiled into a server-side template
 
-Severity: 🔴 **critical**  ·  [CWE-94](https://cwe.mitre.org/data/definitions/94.html)  ·  A03:2021-Injection
+Severity: 🔴 **critical**  ·  [CWE-94](https://cwe.mitre.org/data/definitions/94.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059](https://attack.mitre.org/techniques/T1059)
 
 **Why this matters.** Template engines like Handlebars, EJS, Pug, and Nunjucks turn a template
 STRING into executable code. If you build that template string out of user
@@ -820,7 +820,7 @@ ejs.render('Hello <%= name %>', { name: req.query.name }); // name is data, esca
 
 ### `injection.prototype-pollution-merge` — Untrusted object merged into a target (prototype pollution)
 
-Severity: 🟠 **high**  ·  [CWE-1321](https://cwe.mitre.org/data/definitions/1321.html)  ·  A08:2021-Software and Data Integrity Failures
+Severity: 🟠 **high**  ·  [CWE-1321](https://cwe.mitre.org/data/definitions/1321.html)  ·  A08:2021-Software and Data Integrity Failures  ·  [ATT&CK T1059](https://attack.mitre.org/techniques/T1059)
 
 **Why this matters.** Deep-merging or assigning an attacker-controlled object (like `req.body`)
 into another object lets the attacker smuggle a special `__proto__` key.
@@ -842,7 +842,7 @@ const config = { ...defaults, theme, locale }; // __proto__ can't sneak in
 
 ### `injection.prototype-pollution-bracket` — Object key taken from user input written with bracket assignment
 
-Severity: 🟡 **medium**  ·  [CWE-1321](https://cwe.mitre.org/data/definitions/1321.html)  ·  A08:2021-Software and Data Integrity Failures
+Severity: 🟡 **medium**  ·  [CWE-1321](https://cwe.mitre.org/data/definitions/1321.html)  ·  A08:2021-Software and Data Integrity Failures  ·  [ATT&CK T1059](https://attack.mitre.org/techniques/T1059)
 
 **Why this matters.** Writing `obj[userKey] = value` where `userKey` comes from the user is risky:
 if the user sends the key `__proto__` (or `constructor`), the assignment can
@@ -865,7 +865,7 @@ obj[userKey] = value;
 
 ### `sqli.string-concatenation` — SQL query built by glueing strings together
 
-Severity: 🔴 **critical**  ·  [CWE-89](https://cwe.mitre.org/data/definitions/89.html)  ·  A03:2021-Injection
+Severity: 🔴 **critical**  ·  [CWE-89](https://cwe.mitre.org/data/definitions/89.html)  ·  A03:2021-Injection  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** When you build a SQL query by adding (`+`) a variable into the query
 string, the database can't tell your query apart from data the user typed.
@@ -888,7 +888,7 @@ db.query('SELECT * FROM users WHERE id = ?', [id]); // value is sent separately
 
 ### `sqli.template-literal` — SQL query built with a template literal containing a variable
 
-Severity: 🔴 **critical**  ·  [CWE-89](https://cwe.mitre.org/data/definitions/89.html)  ·  A03:2021-Injection
+Severity: 🔴 **critical**  ·  [CWE-89](https://cwe.mitre.org/data/definitions/89.html)  ·  A03:2021-Injection  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** A backtick template literal like `` `SELECT * FROM users WHERE name='${name}'` ``
 drops the variable straight into the query text. If `name` comes from a user,
@@ -912,7 +912,7 @@ db.query('SELECT * FROM users WHERE name = ?', [name]);
 
 ### `nosqli.where-operator` — MongoDB $where clause runs server-side JavaScript
 
-Severity: 🔴 **critical**  ·  [CWE-943](https://cwe.mitre.org/data/definitions/943.html)  ·  A03:2021-Injection
+Severity: 🔴 **critical**  ·  [CWE-943](https://cwe.mitre.org/data/definitions/943.html)  ·  A03:2021-Injection  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** A MongoDB query that uses `$where` runs a string of JavaScript inside your
 database to decide which documents match. If any part of that string is
@@ -932,7 +932,7 @@ collection.find({ age: { $gt: Number(age) } });
 
 ### `nosqli.untrusted-query-filter` — Request body or query passed straight into a database filter
 
-Severity: 🟠 **high**  ·  [CWE-943](https://cwe.mitre.org/data/definitions/943.html)  ·  A03:2021-Injection
+Severity: 🟠 **high**  ·  [CWE-943](https://cwe.mitre.org/data/definitions/943.html)  ·  A03:2021-Injection  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** Passing `req.body` or `req.query` directly as a MongoDB filter looks
 harmless, but the user controls the SHAPE of that object, not just the
@@ -958,7 +958,7 @@ const user = await User.findOne({ email }); // then verify the hash
 
 ### `path-traversal.fs-read` — File read with a path built from user input
 
-Severity: 🟠 **high**  ·  [CWE-22](https://cwe.mitre.org/data/definitions/22.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-22](https://cwe.mitre.org/data/definitions/22.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1083](https://attack.mitre.org/techniques/T1083)
 
 **Why this matters.** When you open a file using a name or path that came from the user, they can
 send `../../../../etc/passwd` (or `..\..\` on Windows) to "walk up" out of
@@ -980,7 +980,7 @@ fs.readFileSync(target);
 
 ### `path-traversal.send-file` — File served back to the user with a request-controlled path
 
-Severity: 🟠 **high**  ·  [CWE-22](https://cwe.mitre.org/data/definitions/22.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-22](https://cwe.mitre.org/data/definitions/22.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1083](https://attack.mitre.org/techniques/T1083)
 
 **Why this matters.** `res.sendFile()` and `res.download()` stream a file straight to the
 visitor's browser. If the path is built from the request (a query string, a
@@ -1002,7 +1002,7 @@ res.sendFile(name, { root: path.resolve('./public/files') });
 
 ### `ssrf.fetch` — Server-side fetch to a user-controlled URL (SSRF)
 
-Severity: 🟠 **high**  ·  [CWE-918](https://cwe.mitre.org/data/definitions/918.html)  ·  A10:2021-SSRF
+Severity: 🟠 **high**  ·  [CWE-918](https://cwe.mitre.org/data/definitions/918.html)  ·  A10:2021-SSRF  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** When your server fetches a URL that the user chose, an attacker can point it at internal services or cloud metadata endpoints (e.g. http://169.254.169.254) that are normally unreachable from the outside — leaking credentials or letting them reach your private network. This is server-side request forgery (SSRF).
 
@@ -1017,7 +1017,7 @@ if (!ALLOWED_HOSTS.has(url.hostname)) throw new Error('host not allowed');
 
 ### `open-redirect` — Redirect to a user-controlled URL
 
-Severity: 🟡 **medium**  ·  [CWE-601](https://cwe.mitre.org/data/definitions/601.html)  ·  A01:2021-Broken Access Control
+Severity: 🟡 **medium**  ·  [CWE-601](https://cwe.mitre.org/data/definitions/601.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1204.001](https://attack.mitre.org/techniques/T1204/001)
 
 **Why this matters.** Redirecting to a URL taken straight from user input lets attackers send your users to a look-alike phishing site through a link that starts on your trusted domain.
 
@@ -1031,7 +1031,7 @@ if (!target.startsWith('/')) target = '/'; res.redirect(target);
 
 ### `crypto.deprecated-cipher` — Deprecated createCipher / createDecipher used (no IV)
 
-Severity: 🟠 **high**  ·  [CWE-327](https://cwe.mitre.org/data/definitions/327.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟠 **high**  ·  [CWE-327](https://cwe.mitre.org/data/definitions/327.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1600](https://attack.mitre.org/techniques/T1600)
 
 **Why this matters.** Node's crypto.createCipher() and crypto.createDecipher() are deprecated and
 unsafe. They derive the encryption key from your password with a weak,
@@ -1055,7 +1055,7 @@ const tag = cipher.getAuthTag(); // store iv + tag + enc together
 
 ### `crypto.hardcoded-cookie-secret` — Cookie / session signing secret hard-coded
 
-Severity: 🟠 **high**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟠 **high**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)  ·  [ATT&CK T1606.001](https://attack.mitre.org/techniques/T1606/001)
 
 **Why this matters.** Session middleware (express-session, cookie-session, cookie-signature,
 iron-session, fastify cookie/secret) signs or encrypts the cookie it gives a
@@ -1075,7 +1075,7 @@ app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUniniti
 
 ### `crypto.hardcoded-key` — Hard-coded encryption key in source code
 
-Severity: 🟠 **high**  ·  [CWE-321](https://cwe.mitre.org/data/definitions/321.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟠 **high**  ·  [CWE-321](https://cwe.mitre.org/data/definitions/321.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** The whole point of encryption is that only someone with the secret key can
 read the data. When that key is written as a literal in your code — a string
@@ -1096,7 +1096,7 @@ const cipher = crypto.createCipheriv('aes-256-gcm', key, crypto.randomBytes(12))
 
 ### `crypto.insecure-transport-auth` — Auth / token / OAuth endpoint requested over plain http://
 
-Severity: 🟠 **high**  ·  [CWE-319](https://cwe.mitre.org/data/definitions/319.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟠 **high**  ·  [CWE-319](https://cwe.mitre.org/data/definitions/319.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1557](https://attack.mitre.org/techniques/T1557)
 
 **Why this matters.** A request to a login, token, or OAuth URL that starts with http:// (not
 https://) travels across the network unencrypted. Anyone in between — someone
@@ -1116,7 +1116,7 @@ const res = await fetch('https://auth.example.com/oauth/token', { method: 'POST'
 
 ### `crypto.weak-cipher` — Weak or legacy cipher (DES, RC4, 3DES, or AES-ECB)
 
-Severity: 🟠 **high**  ·  [CWE-327](https://cwe.mitre.org/data/definitions/327.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟠 **high**  ·  [CWE-327](https://cwe.mitre.org/data/definitions/327.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1600](https://attack.mitre.org/techniques/T1600)
 
 **Why this matters.** Some encryption algorithms are simply broken or too weak to use anymore. DES
 and RC4 can be cracked with ordinary hardware; 3DES is slow and considered
@@ -1136,7 +1136,7 @@ const cipher = crypto.createCipheriv('aes-256-gcm', key, crypto.randomBytes(12))
 
 ### `crypto.bcrypt-low-rounds` — bcrypt cost factor too low (< 10 rounds)
 
-Severity: 🟡 **medium**  ·  [CWE-916](https://cwe.mitre.org/data/definitions/916.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟡 **medium**  ·  [CWE-916](https://cwe.mitre.org/data/definitions/916.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1600](https://attack.mitre.org/techniques/T1600)
 
 **Why this matters.** bcrypt deliberately makes password hashing SLOW so that if your database
 leaks, an attacker can only try a limited number of guesses per second. How
@@ -1155,7 +1155,7 @@ const hash = await bcrypt.hash(password, 12); // cost factor 12
 
 ### `crypto.hardcoded-iv` — Hard-coded or static IV / salt
 
-Severity: 🟡 **medium**  ·  [CWE-329](https://cwe.mitre.org/data/definitions/329.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟡 **medium**  ·  [CWE-329](https://cwe.mitre.org/data/definitions/329.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1600](https://attack.mitre.org/techniques/T1600)
 
 **Why this matters.** An initialization vector (IV) for encryption — and a salt for password
 hashing or key derivation — must be RANDOM and different every single time.
@@ -1176,7 +1176,7 @@ const salt = crypto.randomBytes(16); // fresh per password
 
 ### `crypto.insecure-random` — Insecure randomness used for a security value
 
-Severity: 🟡 **medium**  ·  [CWE-338](https://cwe.mitre.org/data/definitions/338.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟡 **medium**  ·  [CWE-338](https://cwe.mitre.org/data/definitions/338.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1600](https://attack.mitre.org/techniques/T1600)
 
 **Why this matters.** Math.random() is fast but predictable — an attacker who sees a few outputs can predict the rest. Using it to generate tokens, session ids, OTPs, or password-reset links lets an attacker guess them.
 
@@ -1189,7 +1189,7 @@ const token = randomUUID();
 
 ### `crypto.weak-hash` — Weak hash algorithm (MD5/SHA-1)
 
-Severity: 🟡 **medium**  ·  [CWE-327](https://cwe.mitre.org/data/definitions/327.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟡 **medium**  ·  [CWE-327](https://cwe.mitre.org/data/definitions/327.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1600](https://attack.mitre.org/techniques/T1600)
 
 **Why this matters.** MD5 and SHA-1 are broken: attackers can find collisions and, for passwords, crack them at billions of guesses per second. Using them to hash passwords or verify integrity gives a false sense of security.
 
@@ -1204,7 +1204,7 @@ const hash = await bcrypt.hash(password, 12);
 
 ### `jwt.alg-none` — JWT verification accepts the "none" algorithm
 
-Severity: 🔴 **critical**  ·  [CWE-347](https://cwe.mitre.org/data/definitions/347.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🔴 **critical**  ·  [CWE-347](https://cwe.mitre.org/data/definitions/347.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1606.001](https://attack.mitre.org/techniques/T1606/001)
 
 **Why this matters.** A JWT says, in its own header, which algorithm was used to sign it. The
 special algorithm "none" means "this token is not signed at all." If your
@@ -1226,7 +1226,7 @@ const payload = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'
 
 ### `jwt.hardcoded-secret` — JWT signed or verified with a hard-coded secret
 
-Severity: 🟠 **high**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟠 **high**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)  ·  [ATT&CK T1606.001](https://attack.mitre.org/techniques/T1606/001)
 
 **Why this matters.** A JSON Web Token (JWT) is a signed string your app hands to a logged-in user
 so it can trust them on the next request — the signature is what proves the
@@ -1250,7 +1250,7 @@ const token = jwt.sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '1
 
 ### `jwt.missing-algorithms` — JWT verified without an algorithms allowlist
 
-Severity: 🟠 **high**  ·  [CWE-347](https://cwe.mitre.org/data/definitions/347.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟠 **high**  ·  [CWE-347](https://cwe.mitre.org/data/definitions/347.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1606.001](https://attack.mitre.org/techniques/T1606/001)
 
 **Why this matters.** When you verify a JWT you should tell the library exactly which signing
 algorithm to expect. If you don't, the library trusts the algorithm named
@@ -1274,7 +1274,7 @@ const payload = jwt.verify(token, PUBLIC_KEY, { algorithms: ['RS256'] });
 
 ### `auth.hardcoded-credentials` — Hard-coded admin / login credentials in code
 
-Severity: 🔴 **critical**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures
+Severity: 🔴 **critical**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** A username/password (or admin check) written directly into your code is a
 permanent backdoor: it's visible to everyone who can read the repository,
@@ -1295,7 +1295,7 @@ const ok = user && await bcrypt.compare(password, user.passwordHash);
 
 ### `auth.middleware-bypass` — Auth check disabled or bypassed in middleware / guard
 
-Severity: 🔴 **critical**  ·  [CWE-287](https://cwe.mitre.org/data/definitions/287.html)  ·  A07:2021-Identification and Authentication Failures
+Severity: 🔴 **critical**  ·  [CWE-287](https://cwe.mitre.org/data/definitions/287.html)  ·  A07:2021-Identification and Authentication Failures  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1078](https://attack.mitre.org/techniques/T1078)
 
 **Why this matters.** Middleware, route guards, and `getServerSideProps`-style checks are the
 gates that decide who is allowed in. A line like `return true` at the top of
@@ -1319,7 +1319,7 @@ export function middleware(req) {
 
 ### `auth.hardcoded-basic-auth` — Hard-coded HTTP Basic / Bearer credentials in an Authorization header
 
-Severity: 🟠 **high**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures
+Severity: 🟠 **high**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** An `Authorization: Basic <base64>` header carries a username and password
 that are merely base64-encoded — that is NOT encryption, anyone can decode
@@ -1338,7 +1338,7 @@ const auth = 'Basic ' + Buffer.from(`${process.env.API_USER}:${process.env.API_P
 
 ### `auth.jwt-in-localstorage` — Auth token stored in localStorage / sessionStorage
 
-Severity: 🟠 **high**  ·  [CWE-922](https://cwe.mitre.org/data/definitions/922.html)  ·  A07:2021-Identification and Authentication Failures
+Severity: 🟠 **high**  ·  [CWE-922](https://cwe.mitre.org/data/definitions/922.html)  ·  A07:2021-Identification and Authentication Failures  ·  [ATT&CK T1539](https://attack.mitre.org/techniques/T1539)
 
 **Why this matters.** `localStorage` and `sessionStorage` are readable by any JavaScript running
 on your page. When you keep a login token (a JWT, an access/refresh token)
@@ -1362,7 +1362,7 @@ res.cookie('token', jwt, { httpOnly: true, secure: true, sameSite: 'lax' });
 
 ### `session.hardcoded-secret` — Session signing secret hard-coded (or a well-known default)
 
-Severity: 🟠 **high**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures
+Severity: 🟠 **high**  ·  [CWE-798](https://cwe.mitre.org/data/definitions/798.html)  ·  A07:2021-Identification and Authentication Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** `express-session`, `cookie-session`, `cookie-parser`, and similar libraries
 sign your session cookies with a secret key so the server can detect if a
@@ -1385,7 +1385,7 @@ app.use(session({ secret: process.env.SESSION_SECRET, /* httpOnly etc. */ }));
 
 ### `cookie.missing-httponly` — Session cookie set without the httpOnly flag
 
-Severity: 🟠 **high**  ·  [CWE-1004](https://cwe.mitre.org/data/definitions/1004.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟠 **high**  ·  [CWE-1004](https://cwe.mitre.org/data/definitions/1004.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1539](https://attack.mitre.org/techniques/T1539)
 
 **Why this matters.** A cookie is a small piece of data the browser stores and sends back on
 every request — it's how your app remembers who is logged in. The
@@ -1409,7 +1409,7 @@ res.cookie('session', token, { httpOnly: true, secure: true, sameSite: 'lax' });
 
 ### `cookie.samesite-none-insecure` — SameSite=None cookie sent without the Secure flag
 
-Severity: 🟠 **high**  ·  [CWE-614](https://cwe.mitre.org/data/definitions/614.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟠 **high**  ·  [CWE-614](https://cwe.mitre.org/data/definitions/614.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1539](https://attack.mitre.org/techniques/T1539)
 
 **Why this matters.** `sameSite: 'none'` tells the browser to send this cookie on cross-site
 requests — exactly the situation where it is most exposed. Modern browsers
@@ -1427,7 +1427,7 @@ cookies().set('session', token, { httpOnly: true, secure: true, sameSite: 'none'
 
 ### `cookie.insecure-flags-live` — Cookie set without Secure / HttpOnly / SameSite
 
-Severity: 🟡 **medium**  ·  [CWE-1004](https://cwe.mitre.org/data/definitions/1004.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-1004](https://cwe.mitre.org/data/definitions/1004.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1539](https://attack.mitre.org/techniques/T1539)
 
 **Why this matters.** A live response set a cookie missing protective flags. Without HttpOnly, JavaScript (and thus any XSS) can read it; without Secure it can be sent over plain HTTP and intercepted; without SameSite it can be sent on cross-site requests (CSRF). Session cookies need all three.
 
@@ -1439,7 +1439,7 @@ Set-Cookie: session=...; HttpOnly; Secure; SameSite=Lax; Path=/
 
 ### `cookie.missing-samesite` — Session cookie set without an explicit SameSite policy
 
-Severity: 🟡 **medium**  ·  [CWE-1275](https://cwe.mitre.org/data/definitions/1275.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-1275](https://cwe.mitre.org/data/definitions/1275.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1539](https://attack.mitre.org/techniques/T1539)
 
 **Why this matters.** `SameSite` controls whether the browser sends your cookie when a request to
 your site is triggered by a *different* site. If another website can make
@@ -1460,7 +1460,7 @@ cookies().set('session', token, { httpOnly: true, secure: true, sameSite: 'lax' 
 
 ### `cookie.missing-secure` — Session cookie set without the Secure flag
 
-Severity: 🟡 **medium**  ·  [CWE-614](https://cwe.mitre.org/data/definitions/614.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-614](https://cwe.mitre.org/data/definitions/614.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1539](https://attack.mitre.org/techniques/T1539)
 
 **Why this matters.** The `secure` flag tells the browser "only send this cookie over an
 encrypted HTTPS connection, never plain HTTP." Without it, the cookie can be
@@ -1481,7 +1481,7 @@ cookies().set('session', token, { httpOnly: true, secure: true, sameSite: 'lax' 
 
 ### `cors.origin-reflection` — CORS reflects the request Origin back without an allowlist
 
-Severity: 🟠 **high**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟠 **high**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** To allow cookies on cross-site requests you can't use the `*` wildcard, so a
 common shortcut is to copy whatever `Origin` the caller sent straight back
@@ -1508,7 +1508,7 @@ if (origin && ALLOWED.has(origin)) {
 
 ### `cors.wildcard-credentials` — CORS allows any origin together with credentials
 
-Severity: 🟠 **high**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟠 **high**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1185](https://attack.mitre.org/techniques/T1185)
 
 **Why this matters.** CORS headers tell the browser which OTHER websites are allowed to read
 responses from your API. Setting `Access-Control-Allow-Origin: *` (any site)
@@ -1529,7 +1529,7 @@ app.use(cors({ origin: ['https://app.example.com'], credentials: true }));
 
 ### `cors.wildcard-with-credentials` — CORS allows any site AND sends credentials (Access-Control-Allow-Origin: * with Allow-Credentials: true)
 
-Severity: 🟠 **high**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟠 **high**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1185](https://attack.mitre.org/techniques/T1185)
 
 **Why this matters.** CORS is the browser rule that decides which OTHER websites are allowed to
 read responses from your API. `Access-Control-Allow-Origin: *` means "any
@@ -1562,7 +1562,7 @@ if (origin && ALLOWED.has(origin)) {
 
 ### `cors.permissive-middleware` — cors() middleware configured to allow every origin
 
-Severity: 🟡 **medium**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-942](https://cwe.mitre.org/data/definitions/942.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** The popular `cors` middleware (and Express/Hono/Nest equivalents) defaults to
 allowing ALL origins when you call `cors()` with no options, or pass
@@ -1587,7 +1587,7 @@ app.use(cors({
 
 ### `csp.disabled-in-helmet` — Helmet's Content-Security-Policy turned off (contentSecurityPolicy: false)
 
-Severity: 🟡 **medium**  ·  [CWE-693](https://cwe.mitre.org/data/definitions/693.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-693](https://cwe.mitre.org/data/definitions/693.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** Helmet sets a bundle of protective HTTP headers for you, including a
 Content-Security-Policy that limits the damage of a cross-site scripting
@@ -1614,7 +1614,7 @@ app.use(helmet({
 
 ### `csp.frame-ancestors-wildcard` — Clickjacking protection disabled (frame-ancestors *)
 
-Severity: 🟡 **medium**  ·  [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1185](https://attack.mitre.org/techniques/T1185)
 
 **Why this matters.** `frame-ancestors` in your Content-Security-Policy controls which sites are
 allowed to embed your pages inside an `<iframe>`. Setting it to `*` (or
@@ -1634,7 +1634,7 @@ res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
 ### `csp.unsafe-eval` — Content-Security-Policy weakened with 'unsafe-eval'
 
-Severity: 🟡 **medium**  ·  [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** Adding `'unsafe-eval'` to your Content-Security-Policy lets the page turn
 strings into live code again via `eval()`, `new Function()`, and
@@ -1656,7 +1656,7 @@ res.setHeader(
 
 ### `csp.unsafe-inline` — Content-Security-Policy weakened with 'unsafe-inline'
 
-Severity: 🟡 **medium**  ·  [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** A Content-Security-Policy (CSP) is a header that tells the browser which
 scripts and styles it is allowed to run — it is one of your strongest
@@ -1682,7 +1682,7 @@ res.setHeader(
 
 ### `csrf.disabled` — CSRF protection explicitly disabled
 
-Severity: 🟠 **high**  ·  [CWE-352](https://cwe.mitre.org/data/definitions/352.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-352](https://cwe.mitre.org/data/definitions/352.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1185](https://attack.mitre.org/techniques/T1185)
 
 **Why this matters.** Cross-site request forgery (CSRF) is when another website tricks your
 logged-in user's browser into sending a state-changing request to your app
@@ -1704,7 +1704,7 @@ app.use(csrf({ cookie: { httpOnly: true, secure: true, sameSite: 'lax' } }));
 
 ### `csrf.disabled-protection` — CSRF protection explicitly disabled
 
-Severity: 🟠 **high**  ·  [CWE-352](https://cwe.mitre.org/data/definitions/352.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-352](https://cwe.mitre.org/data/definitions/352.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1185](https://attack.mitre.org/techniques/T1185)
 
 **Why this matters.** CSRF (cross-site request forgery) is when another website makes a logged-in
 user's browser send a real request to YOUR app — the browser helpfully
@@ -1727,7 +1727,7 @@ app.use(csurf());                       // do NOT pass { ignoreMethods: [...] } 
 
 ### `csrf.samesite-none-cookie` — Session cookie set with SameSite=None (sent on cross-site requests)
 
-Severity: 🟡 **medium**  ·  [CWE-352](https://cwe.mitre.org/data/definitions/352.html)  ·  A01:2021-Broken Access Control
+Severity: 🟡 **medium**  ·  [CWE-352](https://cwe.mitre.org/data/definitions/352.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1539](https://attack.mitre.org/techniques/T1539)
 
 **Why this matters.** The `SameSite` attribute on a cookie controls whether the browser attaches it
 to requests that other websites trigger. `SameSite=Lax` (the modern default)
@@ -1752,7 +1752,7 @@ res.cookie('session', token, {
 
 ### `headers.missing-csp` — No Content-Security-Policy header
 
-Severity: 🟡 **medium**  ·  [CWE-693](https://cwe.mitre.org/data/definitions/693.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-693](https://cwe.mitre.org/data/definitions/693.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** A Content-Security-Policy tells the browser which scripts, styles, and other resources are allowed to load. Without it, if an attacker manages to inject any HTML/JS (an XSS bug), there is nothing stopping it from running or from exfiltrating data to their server. CSP is your most important safety net against XSS.
 
@@ -1765,7 +1765,7 @@ Severity: 🟡 **medium**  ·  [CWE-693](https://cwe.mitre.org/data/definitions/
 
 ### `headers.missing-hsts` — No Strict-Transport-Security (HSTS) header
 
-Severity: 🟡 **medium**  ·  [CWE-319](https://cwe.mitre.org/data/definitions/319.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-319](https://cwe.mitre.org/data/definitions/319.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1557](https://attack.mitre.org/techniques/T1557)
 
 **Why this matters.** HSTS forces browsers to always use HTTPS for your site. Without it, an attacker on the network can downgrade a user's first request to HTTP and intercept it (cookies, credentials). HSTS closes that window.
 
@@ -1777,7 +1777,7 @@ Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
 
 ### `headers.missing-x-frame-options` — No X-Frame-Options / frame-ancestors (clickjacking)
 
-Severity: 🟡 **medium**  ·  [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1185](https://attack.mitre.org/techniques/T1185)
 
 **Why this matters.** Without X-Frame-Options (or a CSP frame-ancestors directive), an attacker can embed your site invisibly in an iframe on their page and trick users into clicking buttons they can't see (clickjacking) — e.g. confirming a money transfer.
 
@@ -1789,7 +1789,7 @@ X-Frame-Options: DENY
 
 ### `headers.missing-referrer-policy` — No Referrer-Policy header
 
-Severity: 🔵 **low**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🔵 **low**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** The Referer header your users' browsers send can leak internal URLs and tokens to third-party sites. A Referrer-Policy limits what is shared.
 
@@ -1801,7 +1801,7 @@ Referrer-Policy: strict-origin-when-cross-origin
 
 ### `headers.missing-x-content-type-options` — No X-Content-Type-Options: nosniff
 
-Severity: 🔵 **low**  ·  [CWE-430](https://cwe.mitre.org/data/definitions/430.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🔵 **low**  ·  [CWE-430](https://cwe.mitre.org/data/definitions/430.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** Without 'nosniff', browsers may guess (sniff) a response's content type and, for example, run a file you intended as plain text as JavaScript — turning a harmless upload into an XSS vector.
 
@@ -1813,7 +1813,7 @@ X-Content-Type-Options: nosniff
 
 ### `headers.server-version-disclosure` — Server / X-Powered-By reveals software version
 
-Severity: 🔵 **low**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🔵 **low**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** Advertising your exact server/framework version (e.g. 'X-Powered-By: Next.js') hands attackers a shortlist of version-specific exploits to try. It's free reconnaissance for them and gains you nothing.
 
@@ -1828,7 +1828,7 @@ module.exports = { poweredByHeader: false };
 
 ### `config.disabled-tls-verification` — TLS certificate verification disabled
 
-Severity: 🟠 **high**  ·  [CWE-295](https://cwe.mitre.org/data/definitions/295.html)  ·  A02:2021-Cryptographic Failures
+Severity: 🟠 **high**  ·  [CWE-295](https://cwe.mitre.org/data/definitions/295.html)  ·  A02:2021-Cryptographic Failures  ·  [ATT&CK T1557](https://attack.mitre.org/techniques/T1557)
 
 **Why this matters.** Setting NODE_TLS_REJECT_UNAUTHORIZED=0 or `rejectUnauthorized: false` turns off the check that you're really talking to the server you think you are. Anyone on the network can then impersonate that server and read or modify the traffic (man-in-the-middle).
 
@@ -1840,7 +1840,7 @@ Severity: 🟠 **high**  ·  [CWE-295](https://cwe.mitre.org/data/definitions/29
 
 ### `config.missing-security-headers` — Missing security response headers
 
-Severity: 🟡 **medium**  ·  [CWE-693](https://cwe.mitre.org/data/definitions/693.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-693](https://cwe.mitre.org/data/definitions/693.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1185](https://attack.mitre.org/techniques/T1185)
 
 **Why this matters.** Security headers (Content-Security-Policy, X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options) are extra guardrails the browser enforces for you — blocking clickjacking, forcing HTTPS, and limiting the damage of an XSS bug. Without them you lose defense in depth.
 
@@ -1861,7 +1861,7 @@ async headers() {
 
 ### `supply-chain.dangerous-install-script` — Dangerous install lifecycle script in package.json
 
-Severity: 🔴 **critical**  ·  [CWE-506](https://cwe.mitre.org/data/definitions/506.html)  ·  A08:2021-Software and Data Integrity Failures
+Severity: 🔴 **critical**  ·  [CWE-506](https://cwe.mitre.org/data/definitions/506.html)  ·  A08:2021-Software and Data Integrity Failures  ·  [ATT&CK T1195.002](https://attack.mitre.org/techniques/T1195/002)
 
 **Why this matters.** `preinstall`/`postinstall` scripts run automatically on `npm install`, with your user's permissions. A script that pipes a remote file into a shell (curl | sh), opens a reverse shell, or reads credentials is a classic supply-chain attack — it runs before you ever start your app.
 
@@ -1873,7 +1873,7 @@ npm install --ignore-scripts   # then run only the build steps you trust
 
 ### `supply-chain.missing-lockfile` — No lockfile committed
 
-Severity: 🟡 **medium**  ·  [CWE-1104](https://cwe.mitre.org/data/definitions/1104.html)  ·  A06:2021-Vulnerable and Outdated Components
+Severity: 🟡 **medium**  ·  [CWE-1104](https://cwe.mitre.org/data/definitions/1104.html)  ·  A06:2021-Vulnerable and Outdated Components  ·  [ATT&CK T1195.001](https://attack.mitre.org/techniques/T1195/001)
 
 **Why this matters.** Without a lockfile (package-lock.json / yarn.lock / pnpm-lock.yaml), every install can pull different dependency versions. That means a malicious or broken version can slip in without any change to your code, and builds are not reproducible.
 
@@ -1887,7 +1887,7 @@ git add package-lock.json && git commit -m 'add lockfile'
 
 ### `deps.known-vulnerability` — Dependency with a known security vulnerability
 
-Severity: 🟠 **high**  ·  [CWE-1395](https://cwe.mitre.org/data/definitions/1395.html)  ·  A06:2021-Vulnerable and Outdated Components
+Severity: 🟠 **high**  ·  [CWE-1395](https://cwe.mitre.org/data/definitions/1395.html)  ·  A06:2021-Vulnerable and Outdated Components  ·  [ATT&CK T1195.001](https://attack.mitre.org/techniques/T1195/001)
 
 **Why this matters.** This package version has a publicly documented security flaw (a CVE/advisory). Attackers actively scan for apps using vulnerable versions because a working exploit is already published.
 
@@ -1899,7 +1899,7 @@ npm install <package>@<patched-version>
 
 ### `deps.typosquat` — Dependency name looks like a typosquat
 
-Severity: 🟠 **high**  ·  [CWE-427](https://cwe.mitre.org/data/definitions/427.html)  ·  A08:2021-Software and Data Integrity Failures
+Severity: 🟠 **high**  ·  [CWE-427](https://cwe.mitre.org/data/definitions/427.html)  ·  A08:2021-Software and Data Integrity Failures  ·  [ATT&CK T1195.002](https://attack.mitre.org/techniques/T1195/002)
 
 **Why this matters.** Attackers publish packages whose names are one keystroke away from a popular library (e.g. `reactt`, `loadsh`). Install the wrong one and you are running their code. The name in your package.json is very close to a well-known package but not exactly it.
 
@@ -1909,7 +1909,7 @@ Severity: 🟠 **high**  ·  [CWE-427](https://cwe.mitre.org/data/definitions/42
 
 ### `ai.key-clientside` — LLM provider API key exposed to the browser
 
-Severity: 🔴 **critical**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A07:2021-Identification and Authentication Failures
+Severity: 🔴 **critical**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A07:2021-Identification and Authentication Failures  ·  [ATT&CK T1552](https://attack.mitre.org/techniques/T1552)
 
 **Why this matters.** Your OpenAI / Anthropic API key is being put somewhere the browser can see
 it — either in client-side code, or behind a `NEXT_PUBLIC_` / `VITE_` prefix
@@ -1932,7 +1932,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // no NEXT_PU
 
 ### `ai.llm-output-to-sink` — AI model output passed to eval / exec / a shell / SQL (treats LLM output as trusted)
 
-Severity: 🔴 **critical**  ·  [CWE-94](https://cwe.mitre.org/data/definitions/94.html)  ·  LLM05:2025-Improper Output Handling
+Severity: 🔴 **critical**  ·  [CWE-94](https://cwe.mitre.org/data/definitions/94.html)  ·  LLM05:2025-Improper Output Handling  ·  [ATT&CK T1059](https://attack.mitre.org/techniques/T1059)
 
 **Why this matters.** Whatever an AI model returns is NOT trusted code or data — a user can steer
 the model into producing almost anything, and the model can also be fooled by
@@ -1958,7 +1958,7 @@ await handlers[intent]?.();   // unknown label = nothing happens
 
 ### `ai.dangerously-allow-browser` — OpenAI SDK started with dangerouslyAllowBrowser: true
 
-Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A07:2021-Identification and Authentication Failures
+Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A07:2021-Identification and Authentication Failures  ·  [ATT&CK T1552](https://attack.mitre.org/techniques/T1552)
 
 **Why this matters.** The OpenAI SDK refuses to run in the browser by default, on purpose:
 anything that runs in the browser ships your API key to every visitor.
@@ -1980,7 +1980,7 @@ export async function POST(req) { /* ...call model here... */ }
 
 ### `ai.endpoint-no-auth` — AI route calls the model with no sign-in / auth check in the file
 
-Severity: 🟠 **high**  ·  [CWE-770](https://cwe.mitre.org/data/definitions/770.html)  ·  A04:2021-Insecure Design
+Severity: 🟠 **high**  ·  [CWE-770](https://cwe.mitre.org/data/definitions/770.html)  ·  A04:2021-Insecure Design  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1496](https://attack.mitre.org/techniques/T1496)
 
 **Why this matters.** This route handler calls a paid AI model (OpenAI / Anthropic / etc.) but
 nothing in the file checks who is calling it — no session, no login, no API
@@ -2012,7 +2012,7 @@ export async function POST(req) {
 
 ### `ai.llm-output-rendered-as-html` — AI model output rendered as raw HTML (dangerouslySetInnerHTML / innerHTML)
 
-Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  LLM05:2025-Improper Output Handling
+Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  LLM05:2025-Improper Output Handling  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** React normally escapes text for you, so even weird characters render
 harmlessly. Passing the model's reply to `dangerouslySetInnerHTML` or
@@ -2037,7 +2037,7 @@ return <p className="whitespace-pre-wrap">{reply}</p>;
 
 ### `ai.prompt-injection` — User input mixed directly into the AI's instructions (prompt injection)
 
-Severity: 🟠 **high**  ·  [CWE-77](https://cwe.mitre.org/data/definitions/77.html)  ·  LLM01:2025-Prompt Injection
+Severity: 🟠 **high**  ·  [CWE-77](https://cwe.mitre.org/data/definitions/77.html)  ·  LLM01:2025-Prompt Injection  ·  [ATT&CK T1059](https://attack.mitre.org/techniques/T1059)  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** An AI model can't tell the difference between YOUR instructions and text a
 user typed — it just reads one big blob of words. The "system" message (and
@@ -2074,7 +2074,7 @@ const completion = await openai.chat.completions.create({
 
 ### `ai.no-rate-limit` — AI route calls the model with no rate limit in the file
 
-Severity: 🟡 **medium**  ·  [CWE-770](https://cwe.mitre.org/data/definitions/770.html)  ·  A04:2021-Insecure Design
+Severity: 🟡 **medium**  ·  [CWE-770](https://cwe.mitre.org/data/definitions/770.html)  ·  A04:2021-Insecure Design  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1496](https://attack.mitre.org/techniques/T1496)
 
 **Why this matters.** This route calls a paid AI model but nothing in the file limits how often a
 single user (or a bot) can call it. AI calls cost real money per request, so
@@ -2101,7 +2101,7 @@ export async function POST(req) {
 
 ### `ai.pii-or-secret-to-llm` — Secrets or personal data sent into an AI prompt
 
-Severity: 🟡 **medium**  ·  [CWE-201](https://cwe.mitre.org/data/definitions/201.html)  ·  LLM02:2025-Sensitive Information Disclosure
+Severity: 🟡 **medium**  ·  [CWE-201](https://cwe.mitre.org/data/definitions/201.html)  ·  LLM02:2025-Sensitive Information Disclosure  ·  [ATT&CK T1552](https://attack.mitre.org/techniques/T1552)
 
 **Why this matters.** Everything you put in a prompt leaves your server and goes to the model
 provider (OpenAI, Anthropic, etc.). Stuffing secrets or personal data into the
@@ -2131,7 +2131,7 @@ const summary = await openai.chat.completions.create({
 
 ### `ai.system-prompt-clientside` — AI system prompt / instructions defined in browser ('use client') code
 
-Severity: 🟡 **medium**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  LLM07:2025-System Prompt Leakage
+Severity: 🟡 **medium**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  LLM07:2025-System Prompt Leakage  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** A "system prompt" is the hidden instruction that shapes how your AI behaves —
 your secret sauce, and often the only thing stopping users from making the
@@ -2166,7 +2166,7 @@ export async function POST(req: Request) {
 
 ### `ai.unbounded-output` — Model call sets no max output token limit
 
-Severity: 🔵 **low**  ·  [CWE-770](https://cwe.mitre.org/data/definitions/770.html)  ·  A04:2021-Insecure Design
+Severity: 🔵 **low**  ·  [CWE-770](https://cwe.mitre.org/data/definitions/770.html)  ·  A04:2021-Insecure Design  ·  [ATT&CK T1496](https://attack.mitre.org/techniques/T1496)
 
 **Why this matters.** This model call doesn't set a maximum on how much text the model can
 generate (no `max_tokens` / `max_output_tokens` / `maxOutputTokens`). Output
@@ -2193,7 +2193,7 @@ const completion = await openai.chat.completions.create({
 
 ### `ai-endpoint.unauthenticated-live` — AI/LLM endpoint responds without authentication
 
-Severity: 🟠 **high**  ·  [CWE-284](https://cwe.mitre.org/data/definitions/284.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-284](https://cwe.mitre.org/data/definitions/284.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)  ·  [ATT&CK T1496](https://attack.mitre.org/techniques/T1496)
 
 **Why this matters.** A likely AI/LLM endpoint (e.g. /api/chat) answered an unauthenticated request. If it proxies to a paid model (OpenAI/Anthropic) with no auth or rate limit, anyone on the internet can run up your bill, exfiltrate your prompts, or abuse your model quota — a "denial of wallet" attack that has cost startups thousands overnight.
 
@@ -2209,7 +2209,7 @@ if (!session) return new Response('Unauthorized', { status: 401 });
 
 ### `dast.reflected-xss` — Reflected input appears unescaped in the response
 
-Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection
+Severity: 🟠 **high**  ·  [CWE-79](https://cwe.mitre.org/data/definitions/79.html)  ·  A03:2021-Injection  ·  [ATT&CK T1059.007](https://attack.mitre.org/techniques/T1059/007)
 
 **Why this matters.** NjordScan sent a harmless marker in the URL and the live app echoed it back into the HTML without escaping it. That means an attacker can put real <script> in that same parameter and it will run in your users' browsers (reflected XSS) — letting them steal sessions or act as the victim.
 
@@ -2221,7 +2221,7 @@ return <p>{userInput}</p>; // React escapes it automatically
 
 ### `dast.open-redirect` — Open redirect to an attacker-controlled URL
 
-Severity: 🟡 **medium**  ·  [CWE-601](https://cwe.mitre.org/data/definitions/601.html)  ·  A01:2021-Broken Access Control
+Severity: 🟡 **medium**  ·  [CWE-601](https://cwe.mitre.org/data/definitions/601.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1204.001](https://attack.mitre.org/techniques/T1204/001)
 
 **Why this matters.** NjordScan asked the live app to redirect to an external URL and it complied. An attacker can craft a link that starts on your trusted domain but sends users to a phishing site — perfect for stealing credentials because the link looks legitimate.
 
@@ -2233,7 +2233,7 @@ if (!target.startsWith('/')) target = '/';
 
 ### `dast.verbose-error` — Server returns a stack trace / verbose error to the client
 
-Severity: 🟡 **medium**  ·  [CWE-209](https://cwe.mitre.org/data/definitions/209.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-209](https://cwe.mitre.org/data/definitions/209.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** The live app returned a stack trace or detailed error to an unauthenticated request. Stack traces reveal file paths, library versions, and internal logic that help an attacker plan an exploit — and sometimes leak secrets directly.
 
@@ -2247,7 +2247,7 @@ res.status(500).json({ error: 'Internal Server Error' }); // log the real one se
 
 ### `hardening.env-committed` — Environment file appears to be tracked by git
 
-Severity: 🔴 **critical**  ·  [CWE-538](https://cwe.mitre.org/data/definitions/538.html)  ·  A01:2021-Broken Access Control
+Severity: 🔴 **critical**  ·  [CWE-538](https://cwe.mitre.org/data/definitions/538.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** A .env file is tracked in this git repository. Any secret inside it is in the repo (and its history) and is visible to anyone with access — and likely already scraped if the repo is or ever was public. This is a credential leak.
 
@@ -2261,7 +2261,7 @@ git commit -m "stop tracking .env"
 
 ### `hardening.insecure-deserialization` — Untrusted data turned back into objects/code (insecure deserialization)
 
-Severity: 🔴 **critical**  ·  [CWE-502](https://cwe.mitre.org/data/definitions/502.html)  ·  A08:2021-Software and Data Integrity Failures
+Severity: 🔴 **critical**  ·  [CWE-502](https://cwe.mitre.org/data/definitions/502.html)  ·  A08:2021-Software and Data Integrity Failures  ·  [ATT&CK T1059](https://attack.mitre.org/techniques/T1059)
 
 **Why this matters.** Libraries like `node-serialize` (`unserialize()`) and Node's `vm` module
 (`vm.runInNewContext`, `vm.runInThisContext`) can rebuild not just data but live
@@ -2282,7 +2282,7 @@ const parsed = MySchema.parse(data);
 
 ### `hardening.dev-only-branch-shipping-secret-bypass` — Security check bypassed when NODE_ENV is not 'production'
 
-Severity: 🟠 **high**  ·  [CWE-489](https://cwe.mitre.org/data/definitions/489.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟠 **high**  ·  [CWE-489](https://cwe.mitre.org/data/definitions/489.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1078](https://attack.mitre.org/techniques/T1078)  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
 
 **Why this matters.** Code like `if (process.env.NODE_ENV !== 'production') skipAuth()` is meant to
 make local development convenient, but it backfires the moment NODE_ENV is unset
@@ -2303,7 +2303,7 @@ const user = await requireUser(req);
 
 ### `hardening.env-not-gitignored` — Environment file is not ignored by git
 
-Severity: 🟠 **high**  ·  [CWE-538](https://cwe.mitre.org/data/definitions/538.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-538](https://cwe.mitre.org/data/definitions/538.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** This project has a .env file that is NOT listed in .gitignore, so the next `git add .` will commit it. Env files almost always hold secrets (database URLs, API keys), and once a secret is pushed it is in your git history forever — scrapers find committed secrets within minutes. This is one of the most common ways beginners leak credentials.
 
@@ -2318,7 +2318,7 @@ Severity: 🟠 **high**  ·  [CWE-538](https://cwe.mitre.org/data/definitions/53
 
 ### `hardening.debug-enabled-in-prod` — Debug / verbose mode hard-coded on
 
-Severity: 🟡 **medium**  ·  [CWE-489](https://cwe.mitre.org/data/definitions/489.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-489](https://cwe.mitre.org/data/definitions/489.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** A `debug: true` flag (or `devtools: true`, `DEBUG=*`) left on in a config that
 ships to production exposes internal details: verbose errors, query logs,
@@ -2336,7 +2336,7 @@ const config = { debug: process.env.NODE_ENV !== 'production' };
 
 ### `hardening.redos-regex` — Regular expression vulnerable to catastrophic backtracking (ReDoS)
 
-Severity: 🟡 **medium**  ·  [CWE-1333](https://cwe.mitre.org/data/definitions/1333.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-1333](https://cwe.mitre.org/data/definitions/1333.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1499](https://attack.mitre.org/techniques/T1499)
 
 **Why this matters.** A regex with nested quantifiers — like `(a+)+`, `(.*)*`, or `(\d+)+$` — can take
 an exponential amount of time to fail on certain inputs. When that regex runs on
@@ -2355,7 +2355,7 @@ const re = /^[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,255}\.[a-z]{2,}$/i; // bounded, no
 
 ### `hardening.source-map-shipped-to-prod` — Production source maps enabled (ships readable source to the browser)
 
-Severity: 🔵 **low**  ·  [CWE-540](https://cwe.mitre.org/data/definitions/540.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🔵 **low**  ·  [CWE-540](https://cwe.mitre.org/data/definitions/540.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** Source maps let the browser show your original, un-minified code in DevTools.
 That is great while developing, but enabling `productionBrowserSourceMaps: true`
@@ -2374,7 +2374,7 @@ const nextConfig = { productionBrowserSourceMaps: false };
 
 ### `hardening.unhandled-todo-security` — TODO/FIXME marker on a security-sensitive line
 
-Severity: 🔵 **low**  ·  [CWE-546](https://cwe.mitre.org/data/definitions/546.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🔵 **low**  ·  [CWE-546](https://cwe.mitre.org/data/definitions/546.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** A comment like `// TODO: add auth here` or `// FIXME: validate this input` is an
 honest note to yourself — but it is also a signed confession that a security
@@ -2394,7 +2394,7 @@ deploys. Don't leave unfinished auth/validation behind a comment.
 
 ### `info-leak.process-env-to-client` — process.env serialized or sent to the browser
 
-Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control
+Severity: 🟠 **high**  ·  [CWE-200](https://cwe.mitre.org/data/definitions/200.html)  ·  A01:2021-Broken Access Control  ·  [ATT&CK T1552](https://attack.mitre.org/techniques/T1552)
 
 **Why this matters.** `process.env` holds every server secret — database passwords, API keys, signing
 secrets. Serializing the whole object (`JSON.stringify(process.env)`,
@@ -2413,7 +2413,7 @@ return { props: { appName: process.env.NEXT_PUBLIC_APP_NAME } }; // one safe val
 
 ### `info-leak.console-logs-secret` — Secret, token, or password written to the logs
 
-Severity: 🟡 **medium**  ·  [CWE-532](https://cwe.mitre.org/data/definitions/532.html)  ·  A09:2021-Security Logging and Monitoring Failures
+Severity: 🟡 **medium**  ·  [CWE-532](https://cwe.mitre.org/data/definitions/532.html)  ·  A09:2021-Security Logging and Monitoring Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** `console.log(password)` or `console.error('token', token)` looks harmless in
 development, but in production those lines flow into log files, your hosting
@@ -2432,7 +2432,7 @@ console.log('login attempt', { userId, ok: result.success }); // no secret value
 
 ### `info-leak.error-stack-to-client` — Raw error stack or full error object sent to the client
 
-Severity: 🟡 **medium**  ·  [CWE-209](https://cwe.mitre.org/data/definitions/209.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🟡 **medium**  ·  [CWE-209](https://cwe.mitre.org/data/definitions/209.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** When something throws, the error object (and especially `err.stack`) contains
 a goldmine for an attacker: absolute file paths on your server, function names,
@@ -2454,7 +2454,7 @@ catch (err) {
 
 ### `info-leak.console-logs-request-body` — Full request body logged (may contain passwords or PII)
 
-Severity: 🔵 **low**  ·  [CWE-532](https://cwe.mitre.org/data/definitions/532.html)  ·  A09:2021-Security Logging and Monitoring Failures
+Severity: 🔵 **low**  ·  [CWE-532](https://cwe.mitre.org/data/definitions/532.html)  ·  A09:2021-Security Logging and Monitoring Failures  ·  [ATT&CK T1552.001](https://attack.mitre.org/techniques/T1552/001)
 
 **Why this matters.** `console.log(req.body)` dumps everything the user submitted into your logs —
 including passwords on a login form, credit-card-ish fields, and personal data.
@@ -2472,7 +2472,7 @@ console.log('signup', { email: req.body.email }); // not the password field
 
 ### `info-leak.error-message-to-client` — Error message forwarded to the client in an API/route handler
 
-Severity: 🔵 **low**  ·  [CWE-209](https://cwe.mitre.org/data/definitions/209.html)  ·  A05:2021-Security Misconfiguration
+Severity: 🔵 **low**  ·  [CWE-209](https://cwe.mitre.org/data/definitions/209.html)  ·  A05:2021-Security Misconfiguration  ·  [ATT&CK T1592](https://attack.mitre.org/techniques/T1592)
 
 **Why this matters.** Returning `err.message` to the caller leaks whatever the underlying library
 decided to put there — database column names, file paths, "user not found"

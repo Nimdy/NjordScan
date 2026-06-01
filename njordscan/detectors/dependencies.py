@@ -168,10 +168,21 @@ class DependenciesDetector(Detector):
             summary = str(adv.get("summary") or "").strip()
             severity = _SEVERITY_MAP.get(str(adv.get("severity", "")).lower())
 
+            # Exploit intelligence: actively-exploited CVEs (CISA KEV) jump to the
+            # top of the queue regardless of the advisory's nominal severity.
+            from ..core.exploit import epss_for, is_kev
+            kev = is_kev(adv_id)
+            epss = epss_for(adv_id)
+            prefix = "🚨 ACTIVELY EXPLOITED (CISA KEV) — patch immediately. " if kev else ""
+            if kev:
+                severity = Severity.CRITICAL
+
             message = (
-                f"{name}@{declared} is affected by {adv_id} "
+                f"{prefix}{name}@{declared} is affected by {adv_id} "
                 f"(vulnerable {vuln_range}). Upgrade to {patched} or later."
             )
+            if epss is not None:
+                message += f" (EPSS {epss:.0%} 30-day exploit probability)"
             if summary:
                 message += f" {summary}"
 
@@ -199,6 +210,8 @@ class DependenciesDetector(Detector):
                     "cwe": adv.get("cwe"),
                     "references": adv.get("references", []),
                     "summary": summary,
+                    "cisa_kev": kev,
+                    "epss": epss,
                 },
             ))
         return out

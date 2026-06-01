@@ -50,7 +50,11 @@ def cli() -> None:
 @click.option("--format", "fmt", type=click.Choice(available_formats()), default="terminal",
               help="Output format.")
 @click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
-              help="Write the report to a file (for json/sarif).")
+              help="Write the report to a file (for json/sarif/html/attack-navigator).")
+@click.option("--sbom", "sbom_path", type=click.Path(path_type=Path), default=None,
+              help="Also write a Software Bill of Materials (dependency inventory) to this file.")
+@click.option("--sbom-format", type=click.Choice(["cyclonedx", "spdx"]), default="cyclonedx",
+              help="SBOM format (default: cyclonedx).")
 @click.option("--min-severity", type=click.Choice(_SEVERITY_CHOICES), default="info",
               help="Hide findings below this severity.")
 @click.option("--fail-on", type=click.Choice(_SEVERITY_CHOICES), default=None,
@@ -82,17 +86,19 @@ def cli() -> None:
 @click.option("--config", "config_path", type=click.Path(path_type=Path), default=None,
               help="Path to a .njordscan.yml config file (auto-detected by default).")
 @click.option("--no-config", is_flag=True, help="Ignore any .njordscan.yml config file.")
+@click.option("--no-history", is_flag=True, help="Don't save this scan to .njordscan/history (see 'results').")
 @click.option("-v", "--verbose", is_flag=True, help="Show detector errors and extra detail.")
 @click.option("--quiet", is_flag=True, help="Only print the summary line.")
 def scan(
-    target: Path, mode: str, fmt: str, output: Optional[Path], min_severity: str,
+    target: Path, mode: str, fmt: str, output: Optional[Path],
+    sbom_path: Optional[Path], sbom_format: str, min_severity: str,
     fail_on: Optional[str], only: tuple, skip: tuple, ignore: tuple, brief: bool,
     do_fix: bool, dry_run: bool,
     explain_with_ai: bool, ai_provider: Optional[str], no_redact: bool, no_external: bool,
     url: Optional[str], allow_private: bool,
     diff_ref: Optional[str],
     baseline: Optional[Path], update_baseline: bool,
-    config_path: Optional[Path], no_config: bool,
+    config_path: Optional[Path], no_config: bool, no_history: bool,
     verbose: bool, quiet: bool,
 ) -> None:
     """🔍 Scan a project directory for security issues.
@@ -146,6 +152,11 @@ def scan(
             console.print_exception()
         sys.exit(EXIT_ERROR)
 
+    # --- record history for full scans (before diff/baseline filtering skews trends) ---
+    if not no_history and not update_baseline and not only_ids and not diff_ref:
+        from .core.history import record
+        record(result)
+
     # --- diff / PR mode: keep only findings on changed lines ---
     diff_hidden = 0
     if diff_ref:
@@ -185,6 +196,9 @@ def scan(
     _emit(result, fmt, output, verbose=verbose, quiet=quiet, show_fix=not brief)
     if hidden and not quiet and fmt == "terminal":
         console.print(f"[dim]({hidden} known finding(s) hidden by baseline.)[/dim]")
+
+    if sbom_path:
+        _write_sbom(result, sbom_path, sbom_format)
     if diff_hidden and not quiet and fmt == "terminal":
         console.print(f"[dim]({diff_hidden} finding(s) outside the diff hidden by --diff {diff_ref}.)[/dim]")
 
@@ -194,6 +208,22 @@ def scan(
     if config.fail_on and result.exceeds(config.fail_on):
         sys.exit(EXIT_FINDINGS)
     sys.exit(EXIT_OK)
+
+
+def _write_sbom(result: ScanResult, path: Path, fmt: str) -> None:
+    from . import sbom as sbom_mod
+
+    try:
+        content = sbom_mod.generate(result.project, fmt)
+        info = sbom_mod.summary(result.project)
+    except Exception as exc:  # noqa: BLE001 — never let SBOM failure break the scan
+        err_console.print(f"[yellow]SBOM generation failed: {exc!r}[/yellow]")
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    vuln = f", [red]{info['vulnerable']} vulnerable[/red]" if info["vulnerable"] else ""
+    console.print(f"[green]✓[/green] SBOM ({fmt}) written to {path} "
+                  f"[dim]({info['components']} components{vuln})[/dim]")
 
 
 def _run_autofix(result: ScanResult, config: Config, *, dry_run: bool) -> None:
@@ -373,9 +403,69 @@ def update(target: Path, quiet: bool) -> None:
         f"[green]✓[/green] {result['total_advisories']} advisories for "
         f"{result['packages_with_advisories']} packages → {result['path']}"
     )
+    if result.get("kev_total"):
+        console.print(f"[green]✓[/green] Exploit intel: [red]{result['kev_total']} CISA KEV[/red] "
+                      f"(actively exploited) + EPSS scores for {result.get('epss_scored', 0)} CVEs")
     if result["errors"] and not quiet:
-        console.print(f"[yellow]{len(result['errors'])} package(s) could not be fetched "
+        console.print(f"[yellow]{len(result['errors'])} source(s) could not be fetched "
                       "(offline or rate-limited).[/yellow]")
+
+
+@cli.command()
+@click.argument("target", type=click.Path(path_type=Path), default=".")
+@click.option("--last", is_flag=True, help="Show the most recent scan's summary.")
+@click.option("--compare", "compare_ids", nargs=2, default=None,
+              help="Compare two scans by id (new/fixed/persistent). Use 'first'/'last' as shortcuts.")
+def results(target: Path, last: bool, compare_ids: Optional[tuple]) -> None:
+    """📊 Browse past scans of a project and diff them over time."""
+    from rich.table import Table
+
+    from .core.history import compare as compare_snaps
+    from .core.history import list_snapshots, load_snapshot
+
+    snaps = list_snapshots(target)
+    if not snaps:
+        console.print("[yellow]No scan history yet.[/yellow] Run [cyan]njordscan scan .[/cyan] first.")
+        return
+
+    if compare_ids:
+        a, b = compare_ids
+        resolve = {"first": snaps[0].id, "last": snaps[-1].id}
+        sa = load_snapshot(target, resolve.get(a, a))
+        sb = load_snapshot(target, resolve.get(b, b))
+        if not sa or not sb:
+            err_console.print("[red]Could not find one of those scan ids.[/red]")
+            sys.exit(EXIT_ERROR)
+        diff = compare_snaps(sa, sb)
+        console.print(f"Comparing [dim]{sa.id}[/dim] → [dim]{sb.id}[/dim]\n")
+        console.print(f"[green]✓ Fixed: {len(diff.fixed)}[/green]   "
+                      f"[red]✗ New: {len(diff.new)}[/red]   "
+                      f"[dim]• Still present: {len(diff.persistent)}[/dim]\n")
+        for f in diff.new[:30]:
+            console.print(f"  [red]NEW[/red]   [{f['severity']}] {f['rule_id']} — {f['file']}:{f['line']}")
+        for f in diff.fixed[:30]:
+            console.print(f"  [green]FIXED[/green] [{f['severity']}] {f['rule_id']} — {f['file']}:{f['line']}")
+        return
+
+    if last:
+        s = snaps[-1]
+        console.print(f"Most recent scan [dim]{s.id}[/dim] — {s.total} issue(s): "
+                      + ", ".join(f"{n} {sev}" for sev, n in s.counts.items() if n))
+        return
+
+    table = Table(title=f"Scan history — {target}", header_style="bold cyan")
+    table.add_column("Scan id")
+    table.add_column("When (UTC)")
+    table.add_column("Total", justify="right")
+    table.add_column("Crit", justify="right")
+    table.add_column("High", justify="right")
+    table.add_column("Med", justify="right")
+    for s in snaps[-20:]:
+        c = s.counts
+        table.add_row(s.id, s.timestamp[:19].replace("T", " "), str(s.total),
+                      str(c.get("critical", 0)), str(c.get("high", 0)), str(c.get("medium", 0)))
+    console.print(table)
+    console.print("[dim]Compare two:  njordscan results --compare first last[/dim]")
 
 
 @cli.command()
@@ -412,6 +502,19 @@ def doctor() -> None:
     else:
         seed += " (run 'njordscan update' to refresh from OSV.dev)"
     t.add_row("Advisories", seed)
+
+    # exploit intel (CISA KEV + EPSS)
+    from .core.exploit import exploit_path
+    if exploit_path().exists():
+        try:
+            import json as _json
+            ex = _json.loads(exploit_path().read_text())
+            t.add_row("Exploit intel", f"{len(ex.get('kev', []))} CISA KEV + "
+                                        f"{len(ex.get('epss', {}))} EPSS scores")
+        except Exception:  # noqa: BLE001
+            t.add_row("Exploit intel", "present")
+    else:
+        t.add_row("Exploit intel", "[yellow]not loaded (run 'njordscan update')[/yellow]")
 
     # taint engine availability
     try:

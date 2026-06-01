@@ -66,4 +66,7 @@ def enrich(finding: Finding) -> Finding:
         finding.owasp = rule.owasp
     if not finding.references:
         finding.references = list(rule.references)
+    if not finding.attack:
+        from .attack import techniques_for
+        finding.attack = techniques_for(finding.rule_id)
     return finding

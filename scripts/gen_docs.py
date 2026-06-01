@@ -11,6 +11,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from njordscan.knowledge import all_rules
+from njordscan.knowledge.attack import technique, techniques_for
 from njordscan.core.severity import Severity
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -95,6 +96,9 @@ def generate() -> str:
                 meta.append(f"[{r.cwe}](https://cwe.mitre.org/data/definitions/{r.cwe.split('-')[1]}.html)")
             if r.owasp:
                 meta.append(r.owasp)
+            for tid in techniques_for(r.id):
+                t = technique(tid)
+                meta.append(f"[ATT&CK {tid}]({t.url})")
             lines.append("  ·  ".join(meta))
             lines.append("")
             lines.append(f"**Why this matters.** {r.why.strip()}")

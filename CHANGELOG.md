@@ -29,7 +29,13 @@ positives on a clean app, and explains every finding in plain English.
 - **`--diff [ref]`** PR mode: report only findings on changed lines.
 - **Baseline** (`--baseline`, `--update-baseline`) to adopt into an existing repo.
 - **`.njordscan.yml`** config file + `njordscan init`.
-- **Reports**: rich terminal, JSON, SARIF 2.1.0 (with taint code flows), and a self-contained HTML report.
+- **MITRE ATT&CK** mapping on every rule (shown inline + in SARIF), with an **ATT&CK Navigator
+  layer** export (`--format attack-navigator`) of your app's attack surface.
+- **Exploit prioritization** — `njordscan update` pulls the **CISA KEV** catalog (actively-exploited
+  CVEs, which bump the finding to critical) and **EPSS** scores (30-day exploit probability).
+- **SBOM** generation (CycloneDX 1.5 / SPDX 2.3) that correlates components with the CVE database.
+- **Scan history** + the `results` command (list past scans, diff new/fixed/persistent over time).
+- **Reports**: rich terminal, JSON, SARIF 2.1.0 (with taint code flows + ATT&CK tags), HTML, and ATT&CK Navigator.
 - **MCP server** (`njordscan mcp`) so AI coding assistants (Claude Code, Cursor) can scan inline.
 - **Hybrid AI explanations** (`--explain-with-ai`): offline by default; opt-in local Ollama or
   Claude/OpenAI with code redaction and a consent notice.

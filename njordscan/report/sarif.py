@@ -19,11 +19,15 @@ SARIF_SCHEMA = "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Sc
 
 
 def _rules_metadata() -> List[Dict[str, Any]]:
+    from ..knowledge.attack import techniques_for
+
     rules = []
     for rule in all_rules():
         tags = ["security"]
         if rule.cwe:
             tags.append(f"external/cwe/{rule.cwe.lower()}")
+        attack = techniques_for(rule.id)
+        tags += [f"attack/{t}" for t in attack]
         rules.append({
             "id": rule.id,
             "name": rule.id.replace(".", "_"),
@@ -37,6 +41,7 @@ def _rules_metadata() -> List[Dict[str, Any]]:
                 "security-severity": str(rule.severity.security_severity),
                 "cwe": rule.cwe or "",
                 "owasp": rule.owasp or "",
+                "mitre-attack": attack,
             },
         })
     return rules

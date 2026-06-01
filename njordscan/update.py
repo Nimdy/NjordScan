@@ -13,13 +13,17 @@ from __future__ import annotations
 
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from . import __version__
+from .core import exploit as exploit_store
 from .core.paths import user_advisories_path
 
 OSV_QUERY_URL = "https://api.osv.dev/v1/query"
+KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+EPSS_URL = "https://api.first.org/data/v1/epss"
 
 # The packages a Next.js/React/Vite developer is most likely to use. We always
 # refresh these; the scanned project's own dependencies are added on top.
@@ -126,5 +130,49 @@ def refresh(package_names: List[str], progress=None) -> Dict[str, Any]:
     path = user_advisories_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(db, indent=2), encoding="utf-8")
+
+    # Exploit intelligence: CISA KEV (actively exploited) + EPSS (exploit probability).
+    cves = {str(a.get("id")) for entries in advisories.values() for a in entries
+            if str(a.get("id", "")).startswith("CVE-")}
+    kev_count = epss_count = 0
+    try:
+        kev = fetch_kev()
+        epss = fetch_epss(sorted(cves))
+        exploit_store.write(kev, epss)
+        kev_count, epss_count = len(kev), len(epss)
+    except Exception as exc:  # noqa: BLE001 — exploit intel is best-effort
+        errors.append(f"exploit-intel: {exc}")
+
     return {"path": path, "packages_with_advisories": len(advisories),
-            "total_advisories": sum(len(v) for v in advisories.values()), "errors": errors}
+            "total_advisories": sum(len(v) for v in advisories.values()),
+            "kev_total": kev_count, "epss_scored": epss_count, "errors": errors}
+
+
+def fetch_kev(timeout: float = 20.0) -> Set[str]:
+    """The CISA Known Exploited Vulnerabilities catalog (set of CVE ids)."""
+    req = urllib.request.Request(KEV_URL, headers={"User-Agent": f"njordscan/{__version__}"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 — fixed https host
+        data = json.loads(resp.read().decode("utf-8"))
+    return {str(v["cveID"]).upper() for v in (data.get("vulnerabilities") or []) if v.get("cveID")}
+
+
+def fetch_epss(cve_ids: List[str], timeout: float = 20.0) -> Dict[str, float]:
+    """EPSS scores (0-1) for the given CVE ids, batched (~100 per request)."""
+    out: Dict[str, float] = {}
+    for i in range(0, len(cve_ids), 100):
+        batch = cve_ids[i:i + 100]
+        url = f"{EPSS_URL}?cve={urllib.parse.quote(','.join(batch))}"
+        req = urllib.request.Request(url, headers={"User-Agent": f"njordscan/{__version__}"})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310
+                data = json.loads(resp.read().decode("utf-8"))
+        except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+            continue
+        for row in data.get("data") or []:
+            cve, score = row.get("cve"), row.get("epss")
+            if cve and score is not None:
+                try:
+                    out[str(cve).upper()] = float(score)
+                except (TypeError, ValueError):
+                    pass
+    return out

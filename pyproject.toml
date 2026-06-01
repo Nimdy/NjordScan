@@ -49,7 +49,7 @@ Repository = "https://github.com/nimdy/njordscan.git"
 include = ["njordscan*"]
 
 [tool.setuptools.package-data]
-njordscan = ["data/patterns/*.yaml", "data/rules/*.yaml", "data/advisories/*.json"]
+njordscan = ["data/patterns/*.yaml", "data/rules/*.yaml", "data/advisories/*.json", "data/*.yaml"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"

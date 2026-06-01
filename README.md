@@ -105,6 +105,28 @@ njordscan scan . --diff origin/main --fail-on high   # only fail on issues this 
 Reports only findings on the lines your change touched — perfect for adopting NjordScan on an
 existing codebase without fixing the whole backlog at once.
 
+## Threat intelligence & enterprise output
+
+NjordScan speaks the language security teams use:
+
+- **MITRE ATT&CK** — every rule is mapped to ATT&CK technique(s), shown inline and in SARIF.
+  Export your app's attack surface as an **ATT&CK Navigator layer**:
+  ```bash
+  njordscan scan . --format attack-navigator -o layer.json   # load into ATT&CK Navigator
+  ```
+- **Exploit prioritization** — `njordscan update` pulls the **CISA KEV** catalog (CVEs *actively
+  exploited in the wild*) and **EPSS** scores, so dependency findings tell you what to patch
+  *first*: `🚨 ACTIVELY EXPLOITED (CISA KEV)` and `EPSS 79% 30-day exploit probability`.
+- **SBOM** — a CycloneDX or SPDX bill of materials that also flags which components are vulnerable:
+  ```bash
+  njordscan scan . --sbom sbom.json --sbom-format cyclonedx
+  ```
+- **Scan history** — every scan is saved; see issues appear, get fixed, or linger:
+  ```bash
+  njordscan results              # list past scans
+  njordscan results --compare first last   # what's new / fixed / still there
+  ```
+
 ## Plain-English explanations (the whole point)
 
 Every finding ships with an offline, built-in explanation — **no AI, no network, no config**:
@@ -204,12 +226,14 @@ Exit codes: `0` = clean (or below `--fail-on`), `1` = findings met the gate, `2`
 | `njordscan scan [dir]` | Scan a project (default `.`) — see flags below |
 | `njordscan explain <rule>` | Deep-dive a rule (why + fix); no argument lists every rule |
 | `njordscan init [dir]` | Write a starter `.njordscan.yml` |
-| `njordscan update [dir]` | Refresh the dependency CVE database from OSV.dev |
+| `njordscan update [dir]` | Refresh the CVE database (OSV) + exploit intel (CISA KEV, EPSS) |
+| `njordscan results [dir]` | Browse past scans and diff them over time |
 | `njordscan doctor` | Show what's installed and working |
 | `njordscan mcp` | Run as an MCP server for AI coding assistants |
 | `njordscan version` | Show the version |
 
-Key `scan` flags: `--fix` / `--dry-run`, `--fail-on`, `--min-severity`, `--format`, `-o`,
+Key `scan` flags: `--fix` / `--dry-run`, `--fail-on`, `--min-severity`,
+`--format` (terminal/json/sarif/html/attack-navigator), `-o`, `--sbom` / `--sbom-format`,
 `--diff [ref]`, `--baseline` / `--update-baseline`, `--only` / `--skip` (comma-separated ok),
 `--url` / `--allow-private`, `--explain-with-ai` / `--ai-provider`, `--mode quick`, `--config`,
 `--quiet` / `-v`. Run `njordscan scan --help` for the full list. Silence one line with a trailing
