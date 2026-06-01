@@ -21,6 +21,7 @@ New here? Start with **[Getting started](getting-started.md)**, then come back f
 ## Reference
 
 - **[Rules catalog](RULES.md)** — all 120+ checks. Or run `njordscan explain <rule-id>` in your terminal.
+- **[V1 vs V2](V1-vs-V2.md)** — complete feature comparison of the old and new versions.
 - **[Changelog](../CHANGELOG.md)** — what changed.
 - **[Contributing](../CONTRIBUTING.md)** — add a rule, run the tests.
 
