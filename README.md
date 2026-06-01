@@ -197,18 +197,51 @@ repos:
 
 Exit codes: `0` = clean (or below `--fail-on`), `1` = findings met the gate, `2` = scan error.
 
+## Command reference
+
+| Command | What it does |
+|---------|--------------|
+| `njordscan scan [dir]` | Scan a project (default `.`) — see flags below |
+| `njordscan explain <rule>` | Deep-dive a rule (why + fix); no argument lists every rule |
+| `njordscan init [dir]` | Write a starter `.njordscan.yml` |
+| `njordscan update [dir]` | Refresh the dependency CVE database from OSV.dev |
+| `njordscan doctor` | Show what's installed and working |
+| `njordscan mcp` | Run as an MCP server for AI coding assistants |
+| `njordscan version` | Show the version |
+
+Key `scan` flags: `--fix` / `--dry-run`, `--fail-on`, `--min-severity`, `--format`, `-o`,
+`--diff [ref]`, `--baseline` / `--update-baseline`, `--only` / `--skip` (comma-separated ok),
+`--url` / `--allow-private`, `--explain-with-ai` / `--ai-provider`, `--mode quick`, `--config`,
+`--quiet` / `-v`. Run `njordscan scan --help` for the full list. Silence one line with a trailing
+`// njordscan-ignore` comment.
+
+**Exit codes:** `0` = clean (or below `--fail-on`) · `1` = a finding met `--fail-on` · `2` = scan error.
+
+## Documentation
+
+Full guides live in **[docs/](docs/)**:
+
+- [Getting started](docs/getting-started.md) · [Configuration](docs/configuration.md) ·
+  [CI/CD & PRs](docs/ci-cd.md)
+- [Dynamic scanning (DAST)](docs/dynamic-scanning.md) · [AI features](docs/ai-features.md) ·
+  [AI assistants (MCP)](docs/ai-assistant-mcp.md)
+- [Troubleshooting & FAQ](docs/troubleshooting.md) · **[Rules catalog (120+)](docs/RULES.md)**
+
 ## Design principles
 
 - **Installs clean, everywhere.** Pure-Python + prebuilt wheels only. No numpy, no system libraries, no build step.
 - **Never crashes on your code.** One weird file can't take down a scan; detectors fail isolated.
 - **Low false positives.** A clean app produces zero findings — so you can trust a clean result.
-- **Private by default.** Nothing is uploaded unless you pass an AI flag.
+- **Private by default.** Nothing is uploaded unless you pass an AI flag or `--url`.
 
-## Development
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup and how to add a rule, and
+[HANDOFF.md](HANDOFF.md) for the full architecture.
 
 ```bash
 pip install -e '.[dev]'
-pytest -q
+pytest -q          # 55 tests
 ```
 
 ## License

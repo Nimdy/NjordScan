@@ -45,7 +45,8 @@ def cli() -> None:
 @cli.command()
 @click.argument("target", type=click.Path(path_type=Path), default=".")
 @click.option("--mode", type=click.Choice(["quick", "standard", "deep"]), default="standard",
-              help="Scan depth. 'quick' = fast static checks; 'deep' = everything.")
+              help="'quick' skips the heavier detectors (taint, dependencies) for fast feedback; "
+                   "'standard'/'deep' run all applicable detectors.")
 @click.option("--format", "fmt", type=click.Choice(available_formats()), default="terminal",
               help="Output format.")
 @click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
@@ -66,6 +67,8 @@ def cli() -> None:
               help="Which AI backend to use with --explain-with-ai.")
 @click.option("--no-redact", is_flag=True,
               help="Send unredacted code to the AI provider (off by default).")
+@click.option("--no-external", is_flag=True,
+              help="Hard-block any network egress (skips remote AI providers).")
 @click.option("--url", "url", default=None,
               help="Also run a live dynamic scan (DAST + headers) against this URL. Needs 'njordscan[dynamic]'.")
 @click.option("--allow-private", is_flag=True,
@@ -85,7 +88,7 @@ def scan(
     target: Path, mode: str, fmt: str, output: Optional[Path], min_severity: str,
     fail_on: Optional[str], only: tuple, skip: tuple, ignore: tuple, brief: bool,
     do_fix: bool, dry_run: bool,
-    explain_with_ai: bool, ai_provider: Optional[str], no_redact: bool,
+    explain_with_ai: bool, ai_provider: Optional[str], no_redact: bool, no_external: bool,
     url: Optional[str], allow_private: bool,
     diff_ref: Optional[str],
     baseline: Optional[Path], update_baseline: bool,
@@ -120,6 +123,7 @@ def scan(
         explain_with_ai=explain_with_ai,
         ai_provider=ai_provider or (file_cfg.ai_provider if explain_with_ai else None),
         ai_redact=not no_redact,
+        no_external=no_external,
         url=url,
         allow_private=allow_private,
     )

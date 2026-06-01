@@ -28,6 +28,31 @@ def test_fail_on_gates_without_ci_flag():
     assert result.exit_code == 1
 
 
+def test_brief_hides_explanations():
+    full = runner.invoke(cli, ["scan", str(VULN_APP), "--only", "secrets"])
+    brief = runner.invoke(cli, ["scan", str(VULN_APP), "--only", "secrets", "--brief"])
+    assert "Why this matters" in full.output
+    assert "Why this matters" not in brief.output  # terse output drops the detail
+    assert brief.exit_code == 0
+
+
+def test_no_external_blocks_remote_ai():
+    r = runner.invoke(cli, ["scan", str(VULN_APP), "--only", "secrets", "--quiet",
+                            "--explain-with-ai", "--ai-provider", "openai", "--no-external"])
+    assert r.exit_code == 0  # never crashes
+    assert "no-external" in r.output.lower() or "skipping remote" in r.output.lower()
+
+
+def test_mode_quick_runs_fewer_detectors():
+    quick = runner.invoke(cli, ["scan", str(VULN_APP), "--mode", "quick", "--format", "json"])
+    std = runner.invoke(cli, ["scan", str(VULN_APP), "--mode", "standard", "--format", "json"])
+    import json as _json
+    q = {f["detector"] for f in _json.loads(quick.output)["findings"]}
+    s = {f["detector"] for f in _json.loads(std.output)["findings"]}
+    assert "taint" not in q and "dependencies" not in q
+    assert "taint" in s or "dependencies" in s
+
+
 def test_fail_on_clean_app_exits_zero():
     result = runner.invoke(cli, ["scan", str(CLEAN_APP), "--quiet", "--fail-on", "critical"])
     assert result.exit_code == 0

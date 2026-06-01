@@ -83,9 +83,15 @@ class Orchestrator:
             files_scanned=len(project.source_files),
         )
 
+    # 'quick' mode skips the heavier detectors (tree-sitter taint parsing, advisory
+    # matching) for fast feedback; 'standard'/'deep' run everything applicable.
+    _QUICK_SKIP = {"taint", "dependencies"}
+
     def _select(self, detectors: List[Detector]) -> List[Detector]:
         only = self.config.only_detectors
         skip = set(self.config.skip_detectors)
+        if self.config.mode == "quick" and only is None:
+            skip |= self._QUICK_SKIP
         chosen = []
         for d in detectors:
             if only is not None and d.id not in only:

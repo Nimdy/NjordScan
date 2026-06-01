@@ -47,8 +47,9 @@ def render_terminal(result: ScanResult, console: Console, *, verbose: bool = Fal
 
 def _header(result: ScanResult, console: Console) -> None:
     p = result.project
+    fw = p.framework if p.framework != "unknown" else "no framework detected"
     title = Text("🛡  NjordScan", style="bold cyan")
-    meta = Text(f"  ·  {p.framework}  ·  {result.files_scanned} files  ·  {result.duration_s:.2f}s", style="dim")
+    meta = Text(f"  ·  {fw}  ·  {result.files_scanned} files  ·  {result.duration_s:.2f}s", style="dim")
     console.print(Text.assemble(title, meta))
     console.print(Text(str(p.root), style="dim"))
 
@@ -101,7 +102,9 @@ def _render_finding(idx: int, finding: Finding, console: Console, *, show_fix: b
             flow.append(f"({step.file}:{step.line})\n", style="dim")
         blocks.append(flow)
 
-    if finding.why:
+    # --brief (show_fix=False) hides all the explanatory detail for a terse list;
+    # the AI review (if explicitly requested) is always shown.
+    if show_fix and finding.why:
         blocks.append(Text("\n💡 Why this matters", style="bold yellow"))
         blocks.append(Text(finding.why))
 
@@ -115,7 +118,7 @@ def _render_finding(idx: int, finding: Finding, console: Console, *, show_fix: b
         blocks.append(Text("\n🤖 AI review", style="bold magenta"))
         blocks.append(Text(finding.ai_explanation))
 
-    if finding.references:
+    if show_fix and finding.references:
         refs = Text("\n📚 Learn more\n", style="bold")
         for url in finding.references[:3]:
             refs.append(f"   • {url}\n", style="blue underline")

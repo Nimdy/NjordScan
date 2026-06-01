@@ -1,0 +1,47 @@
+# Changelog
+
+All notable changes to NjordScan are documented here. This project follows
+[Semantic Versioning](https://semver.org/).
+
+## 2.0.0b1 — clean-room rebuild (beta)
+
+NjordScan 2.0 is a complete rewrite focused on **trustworthiness for developers who aren't
+security experts**: it installs cleanly, never crashes on your code, produces zero false
+positives on a clean app, and explains every finding in plain English.
+
+### Added
+- **120+ rules** across Next.js / React / Vite / web / AI-app security, each with a plain-English
+  "why this matters" + "how to fix it" + a secure code example, mapped to CWE and OWASP.
+- **Tree-sitter taint tracking** that follows user input to dangerous sinks **across functions**
+  and through **JSX `dangerouslySetInnerHTML`**.
+- **Secrets** detection in code *and* committed `.env*` files, with output masking.
+- **Dependency** scanning against a bundled CVE/GHSA database, refreshable from OSV.dev
+  (`njordscan update`).
+- **Supply-chain** checks (dangerous `postinstall` scripts, missing lockfiles).
+- **Git-hygiene** detector — catches a `.env` that is committed or not in `.gitignore`.
+- **AI / LLM application security** (`ai.*`): prompt injection, LLM output flowing to a sink or
+  rendered as HTML, provider keys in client code, `dangerouslyAllowBrowser`, unauthenticated AI
+  endpoints (denial-of-wallet), and secrets/PII sent to a model.
+- **Dynamic scanning (DAST)** via `--url` (`[dynamic]` extra): live security headers, cookie
+  flags, reflected XSS, open redirects, verbose errors, exposed AI endpoints. TLS verification
+  stays on; private/loopback hosts are refused unless `--allow-private`; only benign probes.
+- **Safe autofix** (`--fix`, `--dry-run`) for provably-safe, additive changes.
+- **`--diff [ref]`** PR mode: report only findings on changed lines.
+- **Baseline** (`--baseline`, `--update-baseline`) to adopt into an existing repo.
+- **`.njordscan.yml`** config file + `njordscan init`.
+- **Reports**: rich terminal, JSON, SARIF 2.1.0 (with taint code flows), and a self-contained HTML report.
+- **MCP server** (`njordscan mcp`) so AI coding assistants (Claude Code, Cursor) can scan inline.
+- **Hybrid AI explanations** (`--explain-with-ai`): offline by default; opt-in local Ollama or
+  Claude/OpenAI with code redaction and a consent notice.
+- **CI**: GitHub composite Action, pre-commit hook, and a CI workflow.
+- `njordscan doctor` for a health check; correct, documented exit codes (0 / 1 / 2).
+
+### Changed from 1.x
+- Single-source packaging (`pyproject.toml`); a small, pure-Python core install with **no numpy or
+  other heavy/system dependencies**. AI and dynamic features live in optional extras.
+- `--fail-on` now works on its own (1.x required `--ci`).
+
+### Removed
+- The crash-on-import "AI/behavioral/threat-intelligence" subsystems, the broken SBOM command, the
+  interactive `legal --accept` gate, and the unsigned plugin loader from 1.x. Their *working* value
+  was reimplemented; their dead weight and security risks were dropped.
