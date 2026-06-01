@@ -204,6 +204,11 @@ def scan(
     _emit(result, fmt, output, verbose=verbose, quiet=quiet, show_fix=not brief)
     if hidden and not quiet and fmt == "terminal":
         console.print(f"[dim]({hidden} known finding(s) hidden by baseline.)[/dim]")
+    if not quiet and fmt == "terminal":
+        from .update import staleness_hint
+        hint = staleness_hint()
+        if hint:
+            console.print(f"[yellow]⚠ {hint}[/yellow]")
 
     if sbom_path:
         _write_sbom(result, sbom_path, sbom_format)
@@ -441,6 +446,23 @@ def update(target: Path, quiet: bool) -> None:
     if result.get("kev_total"):
         console.print(f"[green]✓[/green] Exploit intel: [red]{result['kev_total']} CISA KEV[/red] "
                       f"(actively exploited) + EPSS scores for {result.get('epss_scored', 0)} CVEs")
+
+    # Self-updating detection feed: fresh rules + patterns, no reinstall needed.
+    from .update import fetch_rules_feed
+    try:
+        feed = fetch_rules_feed()
+        n = feed["rules_written"] + feed["patterns_written"]
+        if n:
+            ver = f" (feed {feed['version']})" if feed.get("version") else ""
+            console.print(f"[green]✓[/green] Detection rules: {feed['rules_written']} rule + "
+                          f"{feed['patterns_written']} pattern file(s) updated{ver}")
+        elif not quiet:
+            console.print("[dim]Detection rules already current.[/dim]")
+    except Exception as exc:  # noqa: BLE001 — feed is best-effort; may not be published yet
+        if not quiet:
+            console.print(f"[dim]Rules feed unavailable ({type(exc).__name__}); "
+                          "using shipped rules.[/dim]")
+
     if result["errors"] and not quiet:
         console.print(f"[yellow]{len(result['errors'])} source(s) could not be fetched "
                       "(offline or rate-limited).[/yellow]")
@@ -537,6 +559,27 @@ def doctor() -> None:
     else:
         seed += " (run 'njordscan update' to refresh from OSV.dev)"
     t.add_row("Advisories", seed)
+
+    # threat-data freshness (advisories + exploit intel + fetched rules)
+    from .update import data_age_days
+    age = data_age_days()
+    if age is None:
+        t.add_row("Threat data", "[yellow]never refreshed — run 'njordscan update'[/yellow]")
+    elif age < 1:
+        t.add_row("Threat data", "[green]refreshed today[/green]")
+    else:
+        colour = "yellow" if age > 21 else "green"
+        t.add_row("Threat data", f"[{colour}]last refreshed {int(age)} day(s) ago[/{colour}]")
+
+    # self-updating detection feed (user-cache rules + patterns)
+    from .core.paths import user_patterns_dir, user_rules_dir
+    fetched_rules = len(list(user_rules_dir().glob("*.yaml"))) if user_rules_dir().exists() else 0
+    fetched_pat = len(list(user_patterns_dir().glob("*.yaml"))) if user_patterns_dir().exists() else 0
+    if fetched_rules or fetched_pat:
+        t.add_row("Rules feed", f"[green]{fetched_rules} rule + {fetched_pat} pattern file(s) "
+                                "from feed[/green]")
+    else:
+        t.add_row("Rules feed", "[dim]shipped only (feed adds rules via 'njordscan update')[/dim]")
 
     # exploit intel (CISA KEV + EPSS)
     from .core.exploit import exploit_path

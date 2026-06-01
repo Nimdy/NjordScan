@@ -49,6 +49,9 @@ njordscan-report.*
 njordscan_report_*
 njordscan-baseline.json
 .njordscan/
+# Generated rules feed — built by scripts/gen_rules_feed.py and published to the
+# hosting endpoint per release; never committed (would duplicate data/ and drift).
+feed/
 
 # ─── Local secrets / env (but KEEP the intentional test/example fixtures) ──────
 .env

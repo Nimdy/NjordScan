@@ -12,18 +12,29 @@ default); we never disable it.
 from __future__ import annotations
 
 import json
+import os
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from . import __version__
 from .core import exploit as exploit_store
-from .core.paths import user_advisories_path
+from .core.paths import user_advisories_path, user_patterns_dir, user_rules_dir
+
+# Threat data older than this earns a gentle "run njordscan update" nudge on scan.
+STALE_AFTER_DAYS = 21
 
 OSV_QUERY_URL = "https://api.osv.dev/v1/query"
 KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 EPSS_URL = "https://api.first.org/data/v1/epss"
+# Self-updating detection feed (rules + patterns). Override with $NJORDSCAN_RULES_FEED.
+RULES_FEED_URL = os.getenv(
+    "NJORDSCAN_RULES_FEED",
+    "https://raw.githubusercontent.com/nimdy/njordscan/v2/feed/rules-feed.json",
+)
 
 # The packages a Next.js/React/Vite developer is most likely to use. We always
 # refresh these; the scanned project's own dependencies are added on top.
@@ -176,3 +187,98 @@ def fetch_epss(cve_ids: List[str], timeout: float = 20.0) -> Dict[str, float]:
                 except (TypeError, ValueError):
                     pass
     return out
+
+
+def data_age_days() -> Optional[float]:
+    """Age (days) of the freshest refreshed threat data, or ``None`` if never run.
+
+    Looks at the advisory cache and the exploit-intel store — whichever was
+    written most recently. Used to nudge the user to ``njordscan update`` when the
+    CVE/exploit picture may have moved on since their last refresh.
+    """
+    candidates = [user_advisories_path(), exploit_store.exploit_path(),
+                  user_rules_dir(), user_patterns_dir()]
+    mtimes = [p.stat().st_mtime for p in candidates if p.exists()]
+    if not mtimes:
+        return None
+    return max(0.0, (time.time() - max(mtimes)) / 86400.0)
+
+
+def staleness_hint() -> Optional[str]:
+    """A one-line nudge if threat data is missing or older than ``STALE_AFTER_DAYS``."""
+    age = data_age_days()
+    if age is None:
+        return "Threat data not yet fetched — run 'njordscan update' for live CVE + exploit intel."
+    if age > STALE_AFTER_DAYS:
+        return (f"Threat data is {int(age)} days old — run 'njordscan update' "
+                "to refresh advisories, exploit intel, and detection rules.")
+    return None
+
+
+def _safe_yaml_name(name: str) -> Optional[str]:
+    """Validate a feed file name as a bare ``*.yaml`` (reject anything path-like).
+
+    We do NOT try to *repair* a suspicious name (e.g. basename it) — for a security
+    tool, a feed entry that smells like path traversal is rejected outright.
+    """
+    base = str(name).strip()
+    if not base or base.startswith(".") or ".." in base:
+        return None
+    if "/" in base or "\\" in base or os.path.basename(base) != base:
+        return None
+    if not base.endswith((".yaml", ".yml")):
+        return None
+    return base
+
+
+def _write_feed_files(directory: Path, files: Any) -> int:
+    """Write {name: yaml_text} into ``directory``; ignore unsafe names. Returns count."""
+    if not isinstance(files, dict) or not files:
+        return 0
+    directory.mkdir(parents=True, exist_ok=True)
+    written = 0
+    for name, content in files.items():
+        safe = _safe_yaml_name(name)
+        if not safe or not isinstance(content, str):
+            continue
+        # Validate it parses as YAML before trusting it on disk.
+        try:
+            import yaml
+            yaml.safe_load(content)
+        except Exception:  # noqa: BLE001 — skip malformed feed entries
+            continue
+        (directory / safe).write_text(content, encoding="utf-8")
+        written += 1
+    return written
+
+
+def fetch_rules_feed(url: Optional[str] = None, timeout: float = 20.0) -> Dict[str, Any]:
+    """Fetch the self-updating detection feed (knowledge rules + patterns).
+
+    The feed is a JSON manifest::
+
+        {"version": "...", "generated": "...",
+         "rules":    {"my-rules.yaml": "<yaml text>"},
+         "patterns": {"my-patterns.yaml": "<yaml text>"}}
+
+    File contents are written into ``~/.njordscan/rules`` and
+    ``~/.njordscan/patterns``, which the registry and pattern engine merge on top
+    of the shipped data. Names are sanitized (no path traversal) and each entry
+    must parse as YAML before it is trusted. A missing feed (404) is not an error
+    — it just means there is nothing newer than what shipped.
+    """
+    url = url or RULES_FEED_URL
+    req = urllib.request.Request(url, headers={"User-Agent": f"njordscan/{__version__}"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 — configurable https feed
+        manifest = json.loads(resp.read().decode("utf-8"))
+    if not isinstance(manifest, dict):
+        raise ValueError("rules feed is not a JSON object")
+    n_rules = _write_feed_files(user_rules_dir(), manifest.get("rules"))
+    n_patterns = _write_feed_files(user_patterns_dir(), manifest.get("patterns"))
+    return {
+        "version": manifest.get("version"),
+        "generated": manifest.get("generated"),
+        "rules_written": n_rules,
+        "patterns_written": n_patterns,
+        "url": url,
+    }

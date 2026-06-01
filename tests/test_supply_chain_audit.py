@@ -54,3 +54,56 @@ async def test_no_node_modules_means_no_audit(tmp_path):
     app = _app(tmp_path)   # no node_modules
     r = await scan(app, only_detectors=["supply-chain"])
     assert not any(f.rule_id.startswith("supply-chain.dependency-") for f in r.findings)
+
+
+def _lock(root, packages):
+    """Write a minimal npm v3 package-lock.json with the given packages map."""
+    (root / "package-lock.json").write_text(json.dumps({
+        "name": "app", "lockfileVersion": 3, "packages": packages,
+    }))
+
+
+async def test_missing_integrity_is_flagged(tmp_path):
+    app = _app(tmp_path)
+    _lock(app, {
+        "": {"name": "app"},
+        "node_modules/lib": {  # http-resolved but no integrity hash → unverifiable
+            "version": "1.0.0", "resolved": "https://registry.npmjs.org/lib/-/lib-1.0.0.tgz",
+        },
+    })
+    r = await scan(app, only_detectors=["supply-chain"])
+    assert "supply-chain.missing-integrity" in rule_ids(r.findings)
+
+
+async def test_integrity_change_is_caught_on_redeploy(tmp_path):
+    app = _app(tmp_path)
+    good = "sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+    _lock(app, {"": {"name": "app"}, "node_modules/lib": {
+        "version": "1.0.0", "resolved": "https://registry.npmjs.org/lib/-/lib-1.0.0.tgz",
+        "integrity": good}})
+    first = await scan(app, only_detectors=["supply-chain"])
+    assert "supply-chain.integrity-changed" not in rule_ids(first.findings)  # baseline only
+
+    # same version 1.0.0, but the tarball content (hash) changed → tamper / re-publish
+    evil = "sha512-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=="
+    _lock(app, {"": {"name": "app"}, "node_modules/lib": {
+        "version": "1.0.0", "resolved": "https://registry.npmjs.org/lib/-/lib-1.0.0.tgz",
+        "integrity": evil}})
+    second = await scan(app, only_detectors=["supply-chain"])
+    flagged = [f for f in second.findings if f.rule_id == "supply-chain.integrity-changed"]
+    assert len(flagged) == 1
+    assert "lib@1.0.0" in flagged[0].message
+    assert flagged[0].reachable is True
+
+
+async def test_unchanged_integrity_does_not_flag(tmp_path):
+    app = _app(tmp_path)
+    h = "sha512-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC=="
+    pkgs = {"": {"name": "app"}, "node_modules/lib": {
+        "version": "2.3.4", "resolved": "https://registry.npmjs.org/lib/-/lib-2.3.4.tgz",
+        "integrity": h}}
+    _lock(app, pkgs)
+    await scan(app, only_detectors=["supply-chain"])      # establishes baseline
+    _lock(app, pkgs)                                        # identical lockfile
+    again = await scan(app, only_detectors=["supply-chain"])
+    assert "supply-chain.integrity-changed" not in rule_ids(again.findings)

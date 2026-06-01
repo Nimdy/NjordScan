@@ -121,9 +121,19 @@ no advisory for days. NjordScan scans your **installed dependencies** (`node_mod
              — investigate before deploying (possible compromised update).
 ```
 
+- records each pinned package's **lockfile integrity hash** and flags it if the *same version* ever
+  resolves to **different content** — the signature of a re-published / poisoned tarball or a
+  compromised mirror, even when nothing else in `package.json` changed:
+
+```
+🔴 [CRITICAL] left-pad@1.3.0 now has a DIFFERENT integrity hash than your last scan — the same
+             version resolves to different content (possible tampering / re-publish).
+```
+
 Run it in CI after `npm ci`, or on every redeploy. (Honest scope: this catches the *common* attack
-patterns — malicious/obfuscated install behavior — which is how most real npm compromises work; a
-sophisticated backdoor hidden in legit-looking code can still evade behavioral analysis.)
+patterns — malicious/obfuscated install behavior and content tampering — which is how most real npm
+compromises work; a sophisticated backdoor hidden in legit-looking code can still evade behavioral
+analysis.)
 
 ## Reachability — fix what's actually exploitable first
 
@@ -188,6 +198,14 @@ NjordScan speaks the language security teams use:
   ```bash
   njordscan results              # list past scans
   njordscan results --compare first last   # what's new / fixed / still there
+  ```
+- **Self-updating threat intel** — `njordscan update` refreshes advisories (OSV), exploit intel
+  (KEV/EPSS) **and the detection rules + patterns themselves** from a signed-by-host JSON feed, so
+  new rules ship **without a reinstall**. Scans nudge you when the data goes stale, and `njordscan
+  doctor` shows exactly how fresh it is:
+  ```bash
+  njordscan update               # advisories + exploit intel + fresh rules/patterns
+  NJORDSCAN_RULES_FEED=https://my.host/feed.json njordscan update   # self-host the feed
   ```
 
 ## Plain-English explanations (the whole point)

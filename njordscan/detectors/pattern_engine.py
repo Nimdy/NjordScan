@@ -225,7 +225,13 @@ def _compile(entry: dict, source_file: str) -> Optional[CompiledPattern]:
 
 
 def _load_patterns(directory: Optional[Path] = None) -> List[CompiledPattern]:
-    directory = directory or _PATTERNS_DIR
+    if directory is None:
+        # shipped patterns + self-updating user-cache patterns (njordscan update)
+        from ..core.paths import user_patterns_dir
+        out: List[CompiledPattern] = []
+        for d in (_PATTERNS_DIR, user_patterns_dir()):
+            out.extend(_load_patterns(d))
+        return out
     patterns: List[CompiledPattern] = []
     if not directory.exists():
         return patterns

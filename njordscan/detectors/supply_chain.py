@@ -110,7 +110,7 @@ class SupplyChainDetector(Detector):
                         break
 
         # change detection vs the previous scan's baseline
-        baseline = self._load_dep_baseline(project)
+        baseline = self._load_baseline(project, "dep-scripts.json")
         if baseline:   # skip on the very first scan (no baseline yet)
             for name, scripts in current.items():
                 old = baseline.get(name)
@@ -126,24 +126,20 @@ class SupplyChainDetector(Detector):
                             message=(f"Dependency '{name}' {kind} '{sname}' install script since your "
                                      "last scan — investigate before deploying (possible compromised update)."),
                         ))
-        self._save_dep_baseline(project, current)
+        self._save_baseline(project, "dep-scripts.json", current)
         return findings
 
-    @staticmethod
-    def _dep_baseline_path(project: Project) -> Path:
-        return project.root / ".njordscan" / "dep-scripts.json"
-
-    def _load_dep_baseline(self, project: Project) -> Dict[str, Dict[str, str]]:
+    def _load_baseline(self, project: Project, filename: str):
         try:
-            return json.loads(self._dep_baseline_path(project).read_text(encoding="utf-8"))
+            return json.loads((project.root / ".njordscan" / filename).read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return {}
 
-    def _save_dep_baseline(self, project: Project, current: Dict[str, Dict[str, str]]) -> None:
+    def _save_baseline(self, project: Project, filename: str, data) -> None:
         try:
-            path = self._dep_baseline_path(project)
+            path = project.root / ".njordscan" / filename
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(current, sort_keys=True), encoding="utf-8")
+            path.write_text(json.dumps(data, sort_keys=True), encoding="utf-8")
         except OSError:
             pass
 
@@ -199,29 +195,54 @@ class SupplyChainDetector(Detector):
 
         packages = data.get("packages") or {}
         out: List[Finding] = []
-        flagged_git = 0
         flagged_registry = 0
-        for name, meta in packages.items():
-            if not name or not isinstance(meta, dict):
+        integrity: Dict[str, str] = {}   # name@version -> integrity hash
+        missing = 0
+        for path, meta in packages.items():
+            if not path or not isinstance(meta, dict):
                 continue
             resolved = str(meta.get("resolved", ""))
-            if resolved.startswith(("git+", "git:")) or "github.com" in resolved and resolved.endswith(".git"):
-                flagged_git += 1
-            elif resolved.startswith("http") and "registry.npmjs.org" not in resolved and "registry.yarnpkg.com" not in resolved:
+            if resolved.startswith("http") and "registry.npmjs.org" not in resolved and "registry.yarnpkg.com" not in resolved:
                 flagged_registry += 1
+            name = path.split("node_modules/")[-1]
+            version = str(meta.get("version", ""))
+            if not name or not version or resolved.startswith(("git+", "git:", "file:", "link:")):
+                continue
+            ihash = meta.get("integrity")
+            if ihash:
+                integrity[f"{name}@{version}"] = str(ihash)
+            elif resolved.startswith("http"):
+                missing += 1
 
         if flagged_registry:
             out.append(Finding(
-                rule_id="deps.typosquat",
-                file=lockfile.name,
-                line=1,
-                detector=self.id,
+                rule_id="deps.typosquat", file=lockfile.name, line=1, detector=self.id,
                 confidence="low",
-                message=(
-                    f"{flagged_registry} dependencies resolve from a non-standard registry. "
-                    "Confirm this is intentional (dependency-confusion risk)."
-                ),
+                message=(f"{flagged_registry} dependencies resolve from a non-standard registry. "
+                         "Confirm this is intentional (dependency-confusion risk)."),
             ))
+        if missing:
+            out.append(Finding(
+                rule_id="supply-chain.missing-integrity", file=lockfile.name, line=1, detector=self.id,
+                confidence="medium",
+                message=(f"{missing} dependencies in {lockfile.name} have no integrity hash — their "
+                         "downloaded content can't be verified."),
+            ))
+
+        # tamper / re-publish detection: same version, different integrity hash than last scan
+        baseline = self._load_baseline(project, "lockfile-integrity.json")
+        if baseline:
+            for key, ihash in integrity.items():
+                old = baseline.get(key)
+                if old is not None and old != ihash:
+                    out.append(Finding(
+                        rule_id="supply-chain.integrity-changed", file=lockfile.name, line=1,
+                        detector=self.id, confidence="high", reachable=True,
+                        message=(f"{key} now has a DIFFERENT integrity hash than your last scan — the "
+                                 "same version resolves to different content (possible tampering / "
+                                 "re-publish / poisoned mirror)."),
+                    ))
+        self._save_baseline(project, "lockfile-integrity.json", integrity)
         return out
 
 

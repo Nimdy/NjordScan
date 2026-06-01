@@ -16,10 +16,13 @@ __all__ = ["enrich", "get_rule", "all_rules", "Rule", "registry"]
 
 @lru_cache(maxsize=1)
 def registry() -> Dict[str, Rule]:
-    """All rules, core + YAML-loaded. Core rules win on id collision."""
+    """All rules: shipped YAML < self-updating user-cache YAML < built-in core."""
+    from ..core.paths import user_rules_dir
+
     merged: Dict[str, Rule] = {}
-    merged.update(load_yaml_rules())   # data/rules/*.yaml
-    merged.update(_CORE_RULES)         # built-in core takes precedence
+    merged.update(load_yaml_rules())                  # shipped data/rules/*.yaml
+    merged.update(load_yaml_rules(user_rules_dir()))  # ~/.njordscan/rules (njordscan update)
+    merged.update(_CORE_RULES)                        # built-in core stays authoritative
     return merged
 
 

@@ -294,6 +294,10 @@ rules:
   - T1195.002
   supply-chain.dependency-script-changed:
   - T1195.002
+  supply-chain.integrity-changed:
+  - T1195.002
+  supply-chain.missing-integrity:
+  - T1195.001
   supply-chain.missing-lockfile:
   - T1195.001
   vite.define-inlines-secret:

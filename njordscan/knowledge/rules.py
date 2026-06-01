@@ -324,6 +324,49 @@ RULES: Dict[str, Rule] = dict(
             references=["https://owasp.org/www-community/attacks/Software_Supply_Chain_Attacks"],
         )),
         _rule(Rule(
+            id="supply-chain.integrity-changed",
+            title="A pinned dependency's integrity hash changed under you",
+            severity=Severity.CRITICAL,
+            cwe="CWE-494",
+            owasp="A08:2021-Software and Data Integrity Failures",
+            why=(
+                "The integrity hash for a dependency at the SAME version changed since your last "
+                "scan. A published version is supposed to be immutable, so the same version should "
+                "always have the same hash. A change means the content you'd install is now "
+                "different — a sign of a re-published (compromised) version, a poisoned cache/mirror, "
+                "or a tampered lockfile. This is the kind of integrity break that lets malicious "
+                "code slip in without any version bump."
+            ),
+            fix=(
+                "Do not install or deploy. Compare the lockfile against version control, clear your "
+                "npm cache, re-resolve from the official registry, and verify the package on npm. "
+                "If the hash genuinely changed upstream, treat the version as compromised and pin "
+                "to a known-good one."
+            ),
+            secure_example="npm cache clean --force && rm -rf node_modules && npm ci   # re-resolve cleanly",
+            references=["https://docs.npmjs.com/cli/v10/configuring-npm/package-lock-json#integrity"],
+        )),
+        _rule(Rule(
+            id="supply-chain.missing-integrity",
+            title="A dependency in the lockfile has no integrity hash",
+            severity=Severity.MEDIUM,
+            cwe="CWE-353",
+            owasp="A08:2021-Software and Data Integrity Failures",
+            why=(
+                "This dependency is recorded in your lockfile without an integrity (subresource) "
+                "hash, so npm cannot verify that what it downloads is what was published. Without "
+                "it, a compromised registry, mirror, or man-in-the-middle could serve different "
+                "content and you'd never know."
+            ),
+            fix=(
+                "Re-generate the lockfile against the official registry (`rm package-lock.json && "
+                "npm install`) so every entry gets an integrity hash. Avoid git/URL/file "
+                "dependencies for anything security-sensitive."
+            ),
+            secure_example="rm package-lock.json && npm install   # regenerate with integrity hashes",
+            references=["https://docs.npmjs.com/cli/v10/configuring-npm/package-lock-json#integrity"],
+        )),
+        _rule(Rule(
             id="supply-chain.missing-lockfile",
             title="No lockfile committed",
             severity=Severity.MEDIUM,

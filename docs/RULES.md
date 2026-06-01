@@ -1,6 +1,6 @@
 # NjordScan rules
 
-NjordScan ships **123 rules**. Every one is explained in plain English — why it matters and how to fix it — both here and inline when a scan finds it.
+NjordScan ships **125 rules**. Every one is explained in plain English — why it matters and how to fix it — both here and inline when a scan finds it.
 
 > Auto-generated from the knowledge base by `scripts/gen_docs.py`. Don't edit by hand.
 
@@ -30,7 +30,7 @@ Run `njordscan explain <rule-id>` for any of these in your terminal.
 - [CSRF](#csrf) (3)
 - [Security headers (live)](#security-headers-live) (6)
 - [Configuration](#configuration) (2)
-- [Supply chain](#supply-chain) (4)
+- [Supply chain](#supply-chain) (6)
 - [Dependencies](#dependencies) (2)
 - [AI / LLM application security](#ai--llm-application-security) (10)
 - [AI endpoints (dynamic)](#ai-endpoints-dynamic) (1)
@@ -1894,6 +1894,30 @@ Severity: 🔴 **critical**  ·  [CWE-506](https://cwe.mitre.org/data/definition
 
 ```js
 npm view <pkg> versions   # inspect what changed; pin to a trusted version
+```
+
+### `supply-chain.integrity-changed` — A pinned dependency's integrity hash changed under you
+
+Severity: 🔴 **critical**  ·  [CWE-494](https://cwe.mitre.org/data/definitions/494.html)  ·  A08:2021-Software and Data Integrity Failures  ·  [ATT&CK T1195.002](https://attack.mitre.org/techniques/T1195/002)
+
+**Why this matters.** The integrity hash for a dependency at the SAME version changed since your last scan. A published version is supposed to be immutable, so the same version should always have the same hash. A change means the content you'd install is now different — a sign of a re-published (compromised) version, a poisoned cache/mirror, or a tampered lockfile. This is the kind of integrity break that lets malicious code slip in without any version bump.
+
+**How to fix it.** Do not install or deploy. Compare the lockfile against version control, clear your npm cache, re-resolve from the official registry, and verify the package on npm. If the hash genuinely changed upstream, treat the version as compromised and pin to a known-good one.
+
+```js
+npm cache clean --force && rm -rf node_modules && npm ci   # re-resolve cleanly
+```
+
+### `supply-chain.missing-integrity` — A dependency in the lockfile has no integrity hash
+
+Severity: 🟡 **medium**  ·  [CWE-353](https://cwe.mitre.org/data/definitions/353.html)  ·  A08:2021-Software and Data Integrity Failures  ·  [ATT&CK T1195.001](https://attack.mitre.org/techniques/T1195/001)
+
+**Why this matters.** This dependency is recorded in your lockfile without an integrity (subresource) hash, so npm cannot verify that what it downloads is what was published. Without it, a compromised registry, mirror, or man-in-the-middle could serve different content and you'd never know.
+
+**How to fix it.** Re-generate the lockfile against the official registry (`rm package-lock.json && npm install`) so every entry gets an integrity hash. Avoid git/URL/file dependencies for anything security-sensitive.
+
+```js
+rm package-lock.json && npm install   # regenerate with integrity hashes
 ```
 
 ### `supply-chain.missing-lockfile` — No lockfile committed

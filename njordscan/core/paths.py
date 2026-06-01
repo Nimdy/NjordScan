@@ -20,3 +20,13 @@ def user_data_dir() -> Path:
 def user_advisories_path() -> Path:
     """Where ``njordscan update`` writes refreshed dependency advisories."""
     return user_data_dir() / "advisories.json"
+
+
+def user_rules_dir() -> Path:
+    """Where ``njordscan update`` writes self-updating knowledge rules (YAML)."""
+    return user_data_dir() / "rules"
+
+
+def user_patterns_dir() -> Path:
+    """Where ``njordscan update`` writes self-updating detection patterns (YAML)."""
+    return user_data_dir() / "patterns"
