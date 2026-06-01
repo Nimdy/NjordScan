@@ -48,8 +48,8 @@
     <h1>🛡 NjordScan report</h1>
     <div class="sub">Security scan — explained in plain English</div>
   </header>
-  <div class="meta">/home/megatron/Coding/NjordScan/examples/vulnerable-shop · nextjs · 7 files · 0.15s · 18 issue(s)</div>
-  <div class="chips"><span class="chip" style="background:#dc2626">3 critical</span><span class="chip" style="background:#ea580c">8 high</span><span class="chip" style="background:#ca8a04">5 medium</span><span class="chip" style="background:#0891b2">2 low</span></div>
+  <div class="meta">/home/megatron/Coding/NjordScan/examples/vulnerable-shop · nextjs · 7 files · 0.14s · 19 issue(s)</div>
+  <div class="chips"><span class="chip" style="background:#dc2626">4 critical</span><span class="chip" style="background:#ea580c">8 high</span><span class="chip" style="background:#ca8a04">5 medium</span><span class="chip" style="background:#0891b2">2 low</span></div>
   <section class="paths"><h2>🎯 Attack paths — how these issues chain into a breach</h2><p class="psub">The routes an attacker can actually walk. Fix the ★ step in each — it collapses the whole chain.</p>
     <div class="path" style="border-left-color:#dc2626">
       <div class="phead">
@@ -58,9 +58,9 @@
         <span class="ptitle">Cloud/account pivot: server access → harvested secret</span>
       </div>
       <p class="impact">Impact: Compromise of external systems the leaked credential unlocks</p>
-      <ol class="steps"><li><span class="star">★</span> <b>[Execution]</b> Server-side code/query execution <span class="muted">lib/db.ts:7</span><div class="narr">SQL query built by glueing strings together (lib/db.ts:7) can run code or queries on the server.</div></li><li><b>[Credential Access]</b> A real secret is sitting right there <span class="muted">.env.local:2</span><div class="narr">AWS access key committed to the repository (.env.local:2) puts a live credential within reach of that primitive.</div></li><li><b>[Lateral Movement]</b> Pivot beyond the app with stolen keys <span class="muted">.env.local:2</span><div class="narr">With the secret in hand, the attacker authenticates to your cloud / database / third-party services — the blast radius now extends past this app.</div></li></ol>
-      <p class="advice">🛠 Break the chain at step 1 — parameterise the query / stop running attacker-controlled input (lib/db.ts:7). Fixing that one thing stops this whole path.</p>
-      <p class="muted">Why this scores 100: critical finding (sqli.string-concatenation); server-side reachable from an entrypoint; chain reaches a concrete impact (data/system compromise); exposes a credential — blast radius beyond this app; 2 distinct weaknesses align into one chain; every step is high-confidence.</p>
+      <ol class="steps"><li><span class="star">★</span> <b>[Execution]</b> Server-side code/query execution <span class="muted">app/api/products/route.ts:7</span><div class="narr">User input flows into a database query (app/api/products/route.ts:7) can run code or queries on the server.</div></li><li><b>[Credential Access]</b> A real secret is sitting right there <span class="muted">.env.local:2</span><div class="narr">AWS access key committed to the repository (.env.local:2) puts a live credential within reach of that primitive.</div></li><li><b>[Lateral Movement]</b> Pivot beyond the app with stolen keys <span class="muted">.env.local:2</span><div class="narr">With the secret in hand, the attacker authenticates to your cloud / database / third-party services — the blast radius now extends past this app.</div></li></ol>
+      <p class="advice">🛠 Break the chain at step 1 — parameterise the query / stop running attacker-controlled input (app/api/products/route.ts:7). Fixing that one thing stops this whole path.</p>
+      <p class="muted">Why this scores 100: critical finding (sqli.tainted-query); server-side reachable from an entrypoint; chain reaches a concrete impact (data/system compromise); exposes a credential — blast radius beyond this app; 2 distinct weaknesses align into one chain; every step is high-confidence.</p>
     </div>
 
     <div class="path" style="border-left-color:#dc2626">
@@ -116,6 +116,40 @@
         </div>
         
         <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html" rel="noopener noreferrer" target="_blank">https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html</a></li></ul></div>
+      </div>
+    </details>
+
+    <details class="finding" style="border-left-color:#dc2626">
+      <summary>
+        <span class="sev" style="background:#dc2626">CRITICAL</span>
+        <span class="ftitle">User input flows into a database query</span>
+        <span class="floc">app/api/products/route.ts:7</span>
+      </summary>
+      <div class="body">
+        <p class="tags">CWE-89 · A03:2021-Injection · confidence: high</p>
+        <p class="msg">User input from `req.body` flows into searchProducts() -&gt; client.query(...) [in lib/db.ts].</p>
+        <div class="block"><h4>Found here</h4><pre><code>const rows = await searchProducts(body.term);</code></pre></div>
+        <div class="block"><h4>Data flow</h4><ol class="flow"><li><b>source</b>: <code>req.body</code> <span class="muted">(app/api/products/route.ts:5)</span></li><li><b>propagation</b>: <code>searchProducts() in lib/db.ts (param 0 -&gt; client.query(...))</code> <span class="muted">(lib/db.ts:7)</span></li><li><b>sink</b>: <code>searchProducts() -&gt; client.query(...) [in lib/db.ts]</code> <span class="muted">(app/api/products/route.ts:7)</span></li></ol></div>
+        <div class="block"><h4>💡 Why this matters</h4><p>NjordScan traced a value that started from user input (a request body, query
+string, route param, etc.) all the way into a database call — `.query()`,
+`.execute()`, a Prisma `$queryRawUnsafe`/`$executeRawUnsafe`, or a `.raw()`
+query — without it being parameterized along the way. Because the value lands
+in the *query text*, an attacker can inject their own SQL: read other users&#x27;
+rows, bypass a login with `OR 1=1 --`, or `DROP TABLE`. This is SQL injection
+proven by data flow, not just a suspicious-looking string.</p></div>
+        <div class="block"><h4>🛠 How to fix it</h4><p>Pass user data as parameters, never as part of the query text. Use placeholders
+(`?` / `$1`) with a values array, or an ORM/query-builder (Prisma&#x27;s typed
+client, Drizzle, Knex&#x27;s binding API). For Prisma specifically, prefer the safe
+tagged-template `$queryRaw`/`$executeRaw` (which parameterizes `${...}`) over
+the `...Unsafe` variants. Validate/allow-list anything that must be part of the
+SQL structure itself (table/column names), since those can&#x27;t be parameterized.</p>
+          <pre class="fix"><code>// unsafe: db.query(`SELECT * FROM users WHERE id = ${req.query.id}`)
+db.query(&#x27;SELECT * FROM users WHERE id = ?&#x27;, [req.query.id]); // value sent separately
+// Prisma: use the safe tagged template, not $queryRawUnsafe
+await prisma.$queryRaw`SELECT * FROM users WHERE id = ${req.query.id}`;</code></pre>
+        </div>
+        
+        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://owasp.org/www-community/attacks/SQL_Injection" rel="noopener noreferrer" target="_blank">https://owasp.org/www-community/attacks/SQL_Injection</a></li><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html" rel="noopener noreferrer" target="_blank">https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html</a></li></ul></div>
       </div>
     </details>
 

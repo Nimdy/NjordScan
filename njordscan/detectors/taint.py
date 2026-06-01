@@ -150,6 +150,26 @@ _MEMBER_ARG_SINKS: Dict[str, str] = {
 # Only treat axios/http/https/fetch receivers as SSRF sinks, to keep precision.
 _SSRF_RECEIVERS = {"axios", "http", "https", "fetch", "got", "superagent", "request"}
 
+# SQL-execution sinks: a tainted value reaching the QUERY-TEXT argument is SQL
+# injection. The receiver is constrained for the common method names (`query` /
+# `execute` / `raw` are used by non-DB libraries too) to keep false positives low;
+# Prisma's `$queryRawUnsafe`/`$executeRawUnsafe` are unambiguous, so any receiver is
+# accepted. Only the FIRST argument (the SQL string) is checked — a parameterized
+# call like `db.query('... ?', [userInput])` keeps the taint in the values array and
+# is correctly NOT flagged.
+_DB_RECEIVERS = {
+    "db", "pool", "conn", "connection", "client", "sequelize", "knex", "sql",
+    "database", "pg", "prisma", "mysql", "mariadb", "sqlite", "drizzle", "dbClient",
+    "datasource", "pgPool", "pgClient", "dbConn",
+}
+_SQL_SINK_PROPS: Dict[str, Optional[Set[str]]] = {
+    "$queryRawUnsafe": None,        # Prisma raw — unambiguous, any receiver
+    "$executeRawUnsafe": None,
+    "query": _DB_RECEIVERS,
+    "execute": _DB_RECEIVERS,
+    "raw": {"knex", "sequelize", "db", "sql", "Sequelize", "datasource"},
+}
+
 # setTimeout/setInterval are sinks only when the first arg is a STRING (or tainted
 # string), never when it's a function. Handled specially.
 _TIMER_SINKS = {"setTimeout", "setInterval"}
@@ -437,6 +457,17 @@ class _FileAnalyzer:
                 )
                 return
 
+        # db.query(`... ${input}`) / pool.execute(...) / prisma.$queryRawUnsafe(...)
+        if prop in _SQL_SINK_PROPS:
+            allowed = _SQL_SINK_PROPS[prop]
+            if allowed is None or recv in allowed:
+                self._report_query_text_taint(
+                    args_node, tainted, rule_id="sqli.tainted-query",
+                    sink_label=f"{recv or ''}.{prop}(...)".lstrip("."),
+                    node=node, record=record,
+                )
+                return
+
         # Cross-function: obj.method(taint) where method forwards a param to a sink.
         if prop in self.sink_funcs:
             self._handle_cross_function(prop, args_node, tainted, record)
@@ -599,8 +630,22 @@ class _FileAnalyzer:
         if fn.type == "member_expression":
             prop = _prop_name(fn)
             recv = _root_object_name(fn)
-            if prop == "get" and recv in _GET_SOURCE_RECEIVERS:
-                return f"{recv}.get(...)"
+            if prop == "get":
+                # Check the IMMEDIATE receiver, not the chain root, so the idiomatic
+                # App Router shapes resolve: `url.searchParams.get('x')`,
+                # `new URL(req.url).searchParams.get('x')`, `req.nextUrl.searchParams.get('x')`
+                # — the receiver of `.get` is a `*.searchParams` member.
+                if recv in _GET_SOURCE_RECEIVERS:
+                    return f"{recv}.get(...)"
+                obj = fn.child_by_field_name("object")
+                imm = None
+                if obj is not None:
+                    if obj.type == "identifier":
+                        imm = _text(obj)
+                    elif obj.type in ("member_expression", "subscript_expression"):
+                        imm = _prop_name(obj)
+                if imm in _GET_SOURCE_RECEIVERS:
+                    return f"{imm}.get(...)"
         return None
 
     # -- reporting helpers ---------------------------------------------------
@@ -636,6 +681,28 @@ class _FileAnalyzer:
                     sink_label=sink_label, taint=taint, confidence="high", record=record,
                 )
                 return
+
+    def _report_query_text_taint(self, args_node, tainted, *, rule_id, sink_label, node, record) -> None:
+        """Flag only when the FIRST argument (the SQL text) carries taint.
+
+        Unlike :meth:`_report_tainted_arg_at`, a tainted *template literal* or string
+        concatenation in arg 0 IS reported (that's the dangerous shape). A constant /
+        placeholder query string evaluates to no taint, so a parameterized call —
+        ``db.query('... ?', [userInput])`` — is correctly left alone (the taint sits
+        in the second-argument values array, never in the query text)."""
+        if args_node is None:
+            return
+        args = _arg_list(args_node)
+        if not args:
+            return
+        arg = args[0]
+        taint = self._taint_of_expr(arg, tainted)
+        if taint is None:
+            return  # constant or parameterized query text → safe
+        self._report(
+            rule_id=rule_id, node=node, value_node=arg,
+            sink_label=sink_label, taint=taint, confidence="high", record=record,
+        )
 
     def _report_tainted_arg_at(self, args_node, tainted, *, rule_id, sink_label, node, record, index) -> None:
         if args_node is None:

@@ -1,13 +1,13 @@
 
-🛡  NjordScan  ·  nextjs  ·  7 files  ·  0.15s
+🛡  NjordScan  ·  nextjs  ·  7 files  ·  0.14s
 /home/megatron/Coding/NjordScan/examples/vulnerable-shop
 ╭────── Summary ───────╮
 │  Severity     Count  │
-│  🔴 Critical      3  │
+│  🔴 Critical      4  │
 │  🟠 High          8  │
 │  🟡 Medium        5  │
 │  🔵 Low           2  │
-│  Total           18  │
+│  Total           19  │
 ╰──────────────────────╯
 
 🎯 Attack paths  ·  how these issues chain into a real breach
@@ -20,9 +20,9 @@ chain.
 │  Impact: Compromise of external systems the leaked credential unlocks                            │
 │                                                                                                  │
 │  ★ 1. [Execution] Server-side code/query execution                                               │
-│       lib/db.ts:7                                                                                │
-│       SQL query built by glueing strings together (lib/db.ts:7) can run code or queries on the   │
-│  server.                                                                                         │
+│       app/api/products/route.ts:7                                                                │
+│       User input flows into a database query (app/api/products/route.ts:7) can run code or       │
+│  queries on the server.                                                                          │
 │                                                                                                  │
 │    2. [Credential Access] A real secret is sitting right there                                   │
 │       .env.local:2                                                                               │
@@ -35,11 +35,11 @@ chain.
 │  third-party services — the blast radius now extends past this app.                              │
 │                                                                                                  │
 │  🛠  Break the chain at step 1 — parameterise the query / stop running attacker-controlled input  │
-│  (lib/db.ts:7). Fixing that one thing stops this whole path.                                     │
+│  (app/api/products/route.ts:7). Fixing that one thing stops this whole path.                     │
 │                                                                                                  │
-│  Why this scores 100: critical finding (sqli.string-concatenation); server-side reachable from   │
-│  an entrypoint; chain reaches a concrete impact (data/system compromise); exposes a credential   │
-│  — blast radius beyond this app; 2 distinct weaknesses align into one chain; every step is       │
+│  Why this scores 100: critical finding (sqli.tainted-query); server-side reachable from an       │
+│  entrypoint; chain reaches a concrete impact (data/system compromise); exposes a credential —    │
+│  blast radius beyond this app; 2 distinct weaknesses align into one chain; every step is         │
 │  high-confidence.                                                                                │
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -140,7 +140,56 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  2. 🔴 [CRITICAL] SQL query built by glueing strings together ──────────────────────────────────╮
+╭─  2. 🔴 [CRITICAL] User input flows into a database query ───────────────────────────────────────╮
+│                                                                                                  │
+│  app/api/products/route.ts:7                                                                     │
+│  CWE-89  ·  A03:2021-Injection  ·  ATT&CK T1190  ·  confidence: high                             │
+│                                                                                                  │
+│  🎯 Reachable (server-side) from app/api/products/route.ts                                       │
+│                                                                                                  │
+│  User input from `req.body` flows into searchProducts() -> client.query(...) [in lib/db.ts].     │
+│                                                                                                  │
+│  Found here:                                                                                     │
+│    const rows = await searchProducts(body.term);                                                 │
+│                                                                                                  │
+│  Data flow (untrusted input → dangerous use):                                                    │
+│          source: req.body (app/api/products/route.ts:5)                                          │
+│     ↓                                                                                            │
+│     propagation: searchProducts() in lib/db.ts (param 0 -> client.query(...)) (lib/db.ts:7)      │
+│     ↓                                                                                            │
+│            sink: searchProducts() -> client.query(...) [in lib/db.ts]                            │
+│  (app/api/products/route.ts:7)                                                                   │
+│                                                                                                  │
+│                                                                                                  │
+│  💡 Why this matters                                                                             │
+│  NjordScan traced a value that started from user input (a request body, query                    │
+│  string, route param, etc.) all the way into a database call — `.query()`,                       │
+│  `.execute()`, a Prisma `$queryRawUnsafe`/`$executeRawUnsafe`, or a `.raw()`                     │
+│  query — without it being parameterized along the way. Because the value lands                   │
+│  in the *query text*, an attacker can inject their own SQL: read other users'                    │
+│  rows, bypass a login with `OR 1=1 --`, or `DROP TABLE`. This is SQL injection                   │
+│  proven by data flow, not just a suspicious-looking string.                                      │
+│                                                                                                  │
+│  🛠  How to fix it                                                                                │
+│  Pass user data as parameters, never as part of the query text. Use placeholders                 │
+│  (`?` / `$1`) with a values array, or an ORM/query-builder (Prisma's typed                       │
+│  client, Drizzle, Knex's binding API). For Prisma specifically, prefer the safe                  │
+│  tagged-template `$queryRaw`/`$executeRaw` (which parameterizes `${...}`) over                   │
+│  the `...Unsafe` variants. Validate/allow-list anything that must be part of the                 │
+│  SQL structure itself (table/column names), since those can't be parameterized.                  │
+│    // unsafe: db.query(`SELECT * FROM users WHERE id = ${req.query.id}`)                         │
+│    db.query('SELECT * FROM users WHERE id = ?', [req.query.id]); // value sent separately        │
+│    // Prisma: use the safe tagged template, not $queryRawUnsafe                                  │
+│    await prisma.$queryRaw`SELECT * FROM users WHERE id = ${req.query.id}`;                       │
+│                                                                                                  │
+│  📚 Learn more                                                                                   │
+│     • https://owasp.org/www-community/attacks/SQL_Injection                                      │
+│     • https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html   │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭─  3. 🔴 [CRITICAL] SQL query built by glueing strings together ──────────────────────────────────╮
 │                                                                                                  │
 │  lib/db.ts:7                                                                                     │
 │  CWE-89  ·  A03:2021-Injection  ·  ATT&CK T1190  ·  confidence: high                             │
@@ -178,7 +227,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  3. 🔴 [CRITICAL] Dangerous install lifecycle script in package.json ───────────────────────────╮
+╭─  4. 🔴 [CRITICAL] Dangerous install lifecycle script in package.json ───────────────────────────╮
 │                                                                                                  │
 │  package.json:8                                                                                  │
 │  CWE-506  ·  A08:2021-Software and Data Integrity Failures  ·  ATT&CK T1195.002  ·  confidence:  │
@@ -208,7 +257,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  4. 🟠 [HIGH] Hard-coded secret or credential ──────────────────────────────────────────────────╮
+╭─  5. 🟠 [HIGH] Hard-coded secret or credential ──────────────────────────────────────────────────╮
 │                                                                                                  │
 │  .env.local:3                                                                                    │
 │  CWE-798  ·  A07:2021-Identification and Authentication Failures  ·  ATT&CK T1552.001  ·         │
@@ -239,7 +288,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  5. 🟠 [HIGH] Secret exposed to the browser via NEXT_PUBLIC_ / VITE_ ───────────────────────────╮
+╭─  6. 🟠 [HIGH] Secret exposed to the browser via NEXT_PUBLIC_ / VITE_ ───────────────────────────╮
 │                                                                                                  │
 │  .env.local:5                                                                                    │
 │  CWE-200  ·  A01:2021-Broken Access Control  ·  ATT&CK T1552  ·  confidence: medium              │
@@ -268,7 +317,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  6. 🟠 [HIGH] AI route calls the model with no sign-in / auth check in the file ────────────────╮
+╭─  7. 🟠 [HIGH] AI route calls the model with no sign-in / auth check in the file ────────────────╮
 │                                                                                                  │
 │  app/api/chat/route.ts:1                                                                         │
 │  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1190, T1496  ·  confidence: medium             │
@@ -315,7 +364,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  7. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
+╭─  8. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
 │                                                                                                  │
 │  app/api/chat/route.ts:14                                                                        │
 │  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                       │
@@ -345,7 +394,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  8. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
+╭─  9. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
 │                                                                                                  │
 │  app/api/products/route.ts:10                                                                    │
 │  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: high                         │
@@ -382,7 +431,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  9. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
+╭─  10. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ────────────────────────────────────╮
 │                                                                                                  │
 │  lib/render.ts:3                                                                                 │
 │  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                       │
@@ -412,7 +461,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  10. 🟠 [HIGH] Dependency with a known security vulnerability ──────────────────────────────────╮
+╭─  11. 🟠 [HIGH] Dependency with a known security vulnerability ──────────────────────────────────╮
 │                                                                                                  │
 │  package.json:14                                                                                 │
 │  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·  confidence:   │
@@ -444,7 +493,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  11. 🟠 [HIGH] Untrusted data rendered with dangerouslySetInnerHTML ────────────────────────────╮
+╭─  12. 🟠 [HIGH] Untrusted data rendered with dangerouslySetInnerHTML ────────────────────────────╮
 │                                                                                                  │
 │  components/ProductReview.tsx:3                                                                  │
 │  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                       │
@@ -480,7 +529,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  12. 🟡 [MEDIUM] AI route calls the model with no rate limit in the file ───────────────────────╮
+╭─  13. 🟡 [MEDIUM] AI route calls the model with no rate limit in the file ───────────────────────╮
 │                                                                                                  │
 │  app/api/chat/route.ts:1                                                                         │
 │  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1190, T1496  ·  confidence: low                │
@@ -524,7 +573,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  13. 🟡 [MEDIUM] Missing security response headers ─────────────────────────────────────────────╮
+╭─  14. 🟡 [MEDIUM] Missing security response headers ─────────────────────────────────────────────╮
 │                                                                                                  │
 │  next.config.js:1                                                                                │
 │  CWE-693  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190, T1185  ·  confidence: low      │
@@ -559,7 +608,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  14. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
+╭─  15. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
 │                                                                                                  │
 │  next.config.js:2                                                                                │
 │  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high             │
@@ -588,7 +637,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  15. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
+╭─  16. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
 │                                                                                                  │
 │  next.config.js:3                                                                                │
 │  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high             │
@@ -617,7 +666,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  16. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
+╭─  17. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
 │                                                                                                  │
 │  next.config.js:4                                                                                │
 │  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high             │
@@ -646,7 +695,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  17. 🔵 [LOW] Model call sets no max output token limit ────────────────────────────────────────╮
+╭─  18. 🔵 [LOW] Model call sets no max output token limit ────────────────────────────────────────╮
 │                                                                                                  │
 │  app/api/chat/route.ts:7                                                                         │
 │  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1496  ·  confidence: medium                    │
@@ -692,7 +741,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  18. 🔵 [LOW] Dependency with a known security vulnerability ───────────────────────────────────╮
+╭─  19. 🔵 [LOW] Dependency with a known security vulnerability ───────────────────────────────────╮
 │                                                                                                  │
 │  package.json:14                                                                                 │
 │  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·  confidence:   │

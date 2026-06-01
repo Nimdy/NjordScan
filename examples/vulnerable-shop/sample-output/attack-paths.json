@@ -7,9 +7,9 @@
     "score": 100,
     "band": "critical",
     "kev": false,
-    "advice": "Break the chain at step 1 \u2014 parameterise the query / stop running attacker-controlled input (lib/db.ts:7). Fixing that one thing stops this whole path.",
+    "advice": "Break the chain at step 1 \u2014 parameterise the query / stop running attacker-controlled input (app/api/products/route.ts:7). Fixing that one thing stops this whole path.",
     "score_factors": [
-      "critical finding (sqli.string-concatenation)",
+      "critical finding (sqli.tainted-query)",
       "server-side reachable from an entrypoint",
       "chain reaches a concrete impact (data/system compromise)",
       "exposes a credential \u2014 blast radius beyond this app",
@@ -25,15 +25,15 @@
         "order": 1,
         "tactic": "Execution",
         "title": "Server-side code/query execution",
-        "narrative": "SQL query built by glueing strings together (lib/db.ts:7) can run code or queries on the server.",
-        "file": "lib/db.ts",
+        "narrative": "User input flows into a database query (app/api/products/route.ts:7) can run code or queries on the server.",
+        "file": "app/api/products/route.ts",
         "line": 7,
-        "location": "lib/db.ts:7",
+        "location": "app/api/products/route.ts:7",
         "rule_ids": [
-          "sqli.string-concatenation"
+          "sqli.tainted-query"
         ],
         "fingerprints": [
-          "0fd61599837b40f7"
+          "6540a704cb17c2a2"
         ],
         "breakpoint": true
       },

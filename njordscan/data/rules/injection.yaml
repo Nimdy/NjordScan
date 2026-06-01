@@ -53,6 +53,35 @@
     - https://owasp.org/www-community/attacks/SQL_Injection
     - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
 
+- id: sqli.tainted-query
+  title: User input flows into a database query
+  severity: critical
+  cwe: CWE-89
+  owasp: "A03:2021-Injection"
+  why: |
+    NjordScan traced a value that started from user input (a request body, query
+    string, route param, etc.) all the way into a database call — `.query()`,
+    `.execute()`, a Prisma `$queryRawUnsafe`/`$executeRawUnsafe`, or a `.raw()`
+    query — without it being parameterized along the way. Because the value lands
+    in the *query text*, an attacker can inject their own SQL: read other users'
+    rows, bypass a login with `OR 1=1 --`, or `DROP TABLE`. This is SQL injection
+    proven by data flow, not just a suspicious-looking string.
+  fix: |
+    Pass user data as parameters, never as part of the query text. Use placeholders
+    (`?` / `$1`) with a values array, or an ORM/query-builder (Prisma's typed
+    client, Drizzle, Knex's binding API). For Prisma specifically, prefer the safe
+    tagged-template `$queryRaw`/`$executeRaw` (which parameterizes `${...}`) over
+    the `...Unsafe` variants. Validate/allow-list anything that must be part of the
+    SQL structure itself (table/column names), since those can't be parameterized.
+  secure_example: |
+    // unsafe: db.query(`SELECT * FROM users WHERE id = ${req.query.id}`)
+    db.query('SELECT * FROM users WHERE id = ?', [req.query.id]); // value sent separately
+    // Prisma: use the safe tagged template, not $queryRawUnsafe
+    await prisma.$queryRaw`SELECT * FROM users WHERE id = ${req.query.id}`;
+  references:
+    - https://owasp.org/www-community/attacks/SQL_Injection
+    - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+
 - id: nosqli.where-operator
   title: MongoDB $where clause runs server-side JavaScript
   severity: critical

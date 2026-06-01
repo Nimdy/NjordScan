@@ -284,6 +284,8 @@ rules:
   - T1552.001
   sqli.string-concatenation:
   - T1190
+  sqli.tainted-query:
+  - T1190
   sqli.template-literal:
   - T1190
   ssrf.fetch:

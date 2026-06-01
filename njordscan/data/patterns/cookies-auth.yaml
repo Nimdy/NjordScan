@@ -129,8 +129,12 @@
 # A function whose name signals it is an auth guard, that immediately returns a
 # truthy/next() value, or an obvious commented-out / forced bypass.
 
+# `const isAuthenticated = (req) => true`, `isLoggedIn: () => true`,
+# `requireAuth = async () => true`, `canActivate = req => true` — an auth guard whose
+# body is literally `true`. Requires the `true` to END the expression (followed by
+# ; , ) } or EOL) so `() => true && realCheck()` is NOT mis-flagged.
 - rule_id: auth.middleware-bypass
-  pattern: '(?:isAuthenticated|isAuthorized|requireAuth|checkAuth|authGuard|canActivate|isLoggedIn|verifyAuth|ensureAuth|isAdmin)\b[^\n=]*=>\s*true\b'
+  pattern: '(?:isAuthenticated|isAuthorized|requireAuth|checkAuth|authGuard|canActivate|isLoggedIn|verifyAuth|ensureAuth|isAdmin)\b\s*[:=]\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*true\b\s*(?:[;,)}]|$)'
   languages: [js, jsx, ts, tsx]
   confidence: high
   severity: critical

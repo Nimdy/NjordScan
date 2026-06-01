@@ -6,17 +6,17 @@
     "attack": "15"
   },
   "domain": "enterprise-attack",
-  "description": "Attack surface of vulnerable-shop from a NjordScan v2.0.0b1 scan: 18 findings across 8 ATT&CK techniques. Score = number of findings mapping to each technique.",
+  "description": "Attack surface of vulnerable-shop from a NjordScan v2.0.0b1 scan: 19 findings across 8 ATT&CK techniques. Score = number of findings mapping to each technique.",
   "techniques": [
     {
       "techniqueID": "T1190",
-      "score": 7,
+      "score": 8,
       "enabled": true,
-      "comment": "7 finding(s) — Exploit Public-Facing Application [Initial Access]. Rules: ai.endpoint-no-auth, ai.no-rate-limit, config.missing-security-headers, nextjs.dangerous-config, sqli.string-concatenation",
+      "comment": "8 finding(s) — Exploit Public-Facing Application [Initial Access]. Rules: ai.endpoint-no-auth, ai.no-rate-limit, config.missing-security-headers, nextjs.dangerous-config, sqli.string-concatenation, sqli.tainted-query",
       "metadata": [
         {
           "name": "njordscan-findings",
-          "value": "7"
+          "value": "8"
         }
       ]
     },
@@ -112,7 +112,7 @@
       "#cc0000"
     ],
     "minValue": 0,
-    "maxValue": 7
+    "maxValue": 8
   },
   "legendItems": [
     {

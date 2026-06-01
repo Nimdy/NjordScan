@@ -4,16 +4,16 @@
   "target": "/home/megatron/Coding/NjordScan/examples/vulnerable-shop",
   "framework": "nextjs",
   "summary": {
-    "total": 18,
+    "total": 19,
     "by_severity": {
-      "critical": 3,
+      "critical": 4,
       "high": 8,
       "medium": 5,
       "low": 2,
       "info": 0
     },
     "files_scanned": 7,
-    "duration_seconds": 0.152,
+    "duration_seconds": 0.143,
     "errors": []
   },
   "attack_paths": [
@@ -25,9 +25,9 @@
       "score": 100,
       "band": "critical",
       "kev": false,
-      "advice": "Break the chain at step 1 \u2014 parameterise the query / stop running attacker-controlled input (lib/db.ts:7). Fixing that one thing stops this whole path.",
+      "advice": "Break the chain at step 1 \u2014 parameterise the query / stop running attacker-controlled input (app/api/products/route.ts:7). Fixing that one thing stops this whole path.",
       "score_factors": [
-        "critical finding (sqli.string-concatenation)",
+        "critical finding (sqli.tainted-query)",
         "server-side reachable from an entrypoint",
         "chain reaches a concrete impact (data/system compromise)",
         "exposes a credential \u2014 blast radius beyond this app",
@@ -43,15 +43,15 @@
           "order": 1,
           "tactic": "Execution",
           "title": "Server-side code/query execution",
-          "narrative": "SQL query built by glueing strings together (lib/db.ts:7) can run code or queries on the server.",
-          "file": "lib/db.ts",
+          "narrative": "User input flows into a database query (app/api/products/route.ts:7) can run code or queries on the server.",
+          "file": "app/api/products/route.ts",
           "line": 7,
-          "location": "lib/db.ts:7",
+          "location": "app/api/products/route.ts:7",
           "rule_ids": [
-            "sqli.string-concatenation"
+            "sqli.tainted-query"
           ],
           "fingerprints": [
-            "0fd61599837b40f7"
+            "6540a704cb17c2a2"
           ],
           "breakpoint": true
         },
@@ -280,6 +280,68 @@
       },
       "fingerprint": "db06433f86618b0b",
       "location": ".env.local:2"
+    },
+    {
+      "rule_id": "sqli.tainted-query",
+      "file": "app/api/products/route.ts",
+      "line": 7,
+      "column": 37,
+      "end_line": null,
+      "end_column": null,
+      "code_snippet": "const rows = await searchProducts(body.term);",
+      "detector": "taint",
+      "message": "User input from `req.body` flows into searchProducts() -> client.query(...) [in lib/db.ts].",
+      "confidence": "high",
+      "title": "User input flows into a database query",
+      "severity": "critical",
+      "why": "NjordScan traced a value that started from user input (a request body, query\nstring, route param, etc.) all the way into a database call \u2014 `.query()`,\n`.execute()`, a Prisma `$queryRawUnsafe`/`$executeRawUnsafe`, or a `.raw()`\nquery \u2014 without it being parameterized along the way. Because the value lands\nin the *query text*, an attacker can inject their own SQL: read other users'\nrows, bypass a login with `OR 1=1 --`, or `DROP TABLE`. This is SQL injection\nproven by data flow, not just a suspicious-looking string.",
+      "fix": "Pass user data as parameters, never as part of the query text. Use placeholders\n(`?` / `$1`) with a values array, or an ORM/query-builder (Prisma's typed\nclient, Drizzle, Knex's binding API). For Prisma specifically, prefer the safe\ntagged-template `$queryRaw`/`$executeRaw` (which parameterizes `${...}`) over\nthe `...Unsafe` variants. Validate/allow-list anything that must be part of the\nSQL structure itself (table/column names), since those can't be parameterized.",
+      "secure_example": "// unsafe: db.query(`SELECT * FROM users WHERE id = ${req.query.id}`)\ndb.query('SELECT * FROM users WHERE id = ?', [req.query.id]); // value sent separately\n// Prisma: use the safe tagged template, not $queryRawUnsafe\nawait prisma.$queryRaw`SELECT * FROM users WHERE id = ${req.query.id}`;",
+      "cwe": "CWE-89",
+      "owasp": "A03:2021-Injection",
+      "attack": [
+        "T1190"
+      ],
+      "references": [
+        "https://owasp.org/www-community/attacks/SQL_Injection",
+        "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+      ],
+      "taint_flow": [
+        {
+          "label": "req.body",
+          "file": "app/api/products/route.ts",
+          "line": 5,
+          "kind": "source",
+          "code": "const body = req.body;"
+        },
+        {
+          "label": "searchProducts() in lib/db.ts (param 0 -> client.query(...))",
+          "file": "lib/db.ts",
+          "line": 7,
+          "kind": "propagation",
+          "code": "const rows = await searchProducts(body.term);"
+        },
+        {
+          "label": "searchProducts() -> client.query(...) [in lib/db.ts]",
+          "file": "app/api/products/route.ts",
+          "line": 7,
+          "kind": "sink",
+          "code": "const rows = await searchProducts(body.term);"
+        }
+      ],
+      "ai_explanation": null,
+      "reachable": true,
+      "metadata": {
+        "reachability": {
+          "kind": "server",
+          "entrypoint": "app/api/products/route.ts",
+          "path": [
+            "app/api/products/route.ts"
+          ]
+        }
+      },
+      "fingerprint": "6540a704cb17c2a2",
+      "location": "app/api/products/route.ts:7"
     },
     {
       "rule_id": "sqli.string-concatenation",

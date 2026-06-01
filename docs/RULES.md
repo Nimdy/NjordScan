@@ -1,6 +1,6 @@
 # NjordScan rules
 
-NjordScan ships **125 rules**. Every one is explained in plain English — why it matters and how to fix it — both here and inline when a scan finds it.
+NjordScan ships **126 rules**. Every one is explained in plain English — why it matters and how to fix it — both here and inline when a scan finds it.
 
 > Auto-generated from the knowledge base by `scripts/gen_docs.py`. Don't edit by hand.
 
@@ -15,7 +15,7 @@ Run `njordscan explain <rule-id>` for any of these in your terminal.
 - [Next.js](#nextjs) (10)
 - [Vite](#vite) (9)
 - [Injection (eval / command / SSTI)](#injection-eval--command--ssti) (5)
-- [SQL injection](#sql-injection) (2)
+- [SQL injection](#sql-injection) (3)
 - [NoSQL injection](#nosql-injection) (2)
 - [Path traversal](#path-traversal) (2)
 - [Server-side request forgery](#server-side-request-forgery) (1)
@@ -884,6 +884,32 @@ Sequelize), use its query builder instead of raw string SQL.
 ```js
 // instead of: db.query('SELECT * FROM users WHERE id = ' + id)
 db.query('SELECT * FROM users WHERE id = ?', [id]); // value is sent separately
+```
+
+### `sqli.tainted-query` — User input flows into a database query
+
+Severity: 🔴 **critical**  ·  [CWE-89](https://cwe.mitre.org/data/definitions/89.html)  ·  A03:2021-Injection  ·  [ATT&CK T1190](https://attack.mitre.org/techniques/T1190)
+
+**Why this matters.** NjordScan traced a value that started from user input (a request body, query
+string, route param, etc.) all the way into a database call — `.query()`,
+`.execute()`, a Prisma `$queryRawUnsafe`/`$executeRawUnsafe`, or a `.raw()`
+query — without it being parameterized along the way. Because the value lands
+in the *query text*, an attacker can inject their own SQL: read other users'
+rows, bypass a login with `OR 1=1 --`, or `DROP TABLE`. This is SQL injection
+proven by data flow, not just a suspicious-looking string.
+
+**How to fix it.** Pass user data as parameters, never as part of the query text. Use placeholders
+(`?` / `$1`) with a values array, or an ORM/query-builder (Prisma's typed
+client, Drizzle, Knex's binding API). For Prisma specifically, prefer the safe
+tagged-template `$queryRaw`/`$executeRaw` (which parameterizes `${...}`) over
+the `...Unsafe` variants. Validate/allow-list anything that must be part of the
+SQL structure itself (table/column names), since those can't be parameterized.
+
+```js
+// unsafe: db.query(`SELECT * FROM users WHERE id = ${req.query.id}`)
+db.query('SELECT * FROM users WHERE id = ?', [req.query.id]); // value sent separately
+// Prisma: use the safe tagged template, not $queryRawUnsafe
+await prisma.$queryRaw`SELECT * FROM users WHERE id = ${req.query.id}`;
 ```
 
 ### `sqli.template-literal` — SQL query built with a template literal containing a variable
