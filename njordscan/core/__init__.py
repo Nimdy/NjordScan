@@ -1,28 +1,19 @@
-"""
-Core engine components for NjordScan.
-"""
+"""Core scanning primitives: severity, findings, config, project model, orchestrator."""
 
-from .circuit_breaker import CircuitBreaker
-from .rate_limiter import GlobalRateLimiter, TokenBucketRateLimiter, SlidingWindowRateLimiter, AdaptiveRateLimiter
-from .retry_handler import RetryHandler
+from __future__ import annotations
 
-try:
-    from .performance_monitor import PerformanceMonitor
-except ImportError:
-    PerformanceMonitor = None
-
-try:
-    from .scan_orchestrator_enhanced import EnhancedScanOrchestrator
-except ImportError:
-    EnhancedScanOrchestrator = None
+from .config import Config
+from .finding import Finding, TaintStep
+from .orchestrator import Orchestrator, ScanResult
+from .project import Project
+from .severity import Severity
 
 __all__ = [
-    'CircuitBreaker',
-    'GlobalRateLimiter',
-    'TokenBucketRateLimiter',
-    'SlidingWindowRateLimiter',
-    'AdaptiveRateLimiter',
-    'RetryHandler',
-    'PerformanceMonitor',
-    'EnhancedScanOrchestrator'
+    "Config",
+    "Finding",
+    "TaintStep",
+    "Orchestrator",
+    "ScanResult",
+    "Project",
+    "Severity",
 ]

@@ -1,0 +1,156 @@
+{
+  "_meta": {
+    "description": "Seed advisory database for NjordScan's dependencies detector. A small, curated set of well-known, real npm advisories. Ranges use npm/PEP 440-compatible version specifiers and are intentionally conservative. Each entry cites its CVE/GHSA id. This is NOT a complete vulnerability feed; it ships so the scanner gives real results offline. Update by adding entries below.",
+    "schema": "package -> [ { id, vulnerable_range, patched, severity, summary, cwe?, references? } ]",
+    "source": "GitHub Advisory Database (https://github.com/advisories)",
+    "last_reviewed": "2026-06-01"
+  },
+  "advisories": {
+    "lodash": [
+      {
+        "id": "CVE-2019-10744",
+        "ghsa": "GHSA-jf85-cpcp-j695",
+        "vulnerable_range": "<4.17.12",
+        "patched": "4.17.12",
+        "severity": "high",
+        "summary": "Prototype pollution in lodash via defaultsDeep: an attacker can modify Object.prototype, leading to denial of service or property injection.",
+        "cwe": "CWE-1321",
+        "references": ["https://github.com/advisories/GHSA-jf85-cpcp-j695"]
+      },
+      {
+        "id": "CVE-2020-8203",
+        "ghsa": "GHSA-p6mc-m468-83gw",
+        "vulnerable_range": "<4.17.20",
+        "patched": "4.17.20",
+        "severity": "high",
+        "summary": "Prototype pollution in lodash via zipObjectDeep / set-like paths allowing modification of Object.prototype.",
+        "cwe": "CWE-1321",
+        "references": ["https://github.com/advisories/GHSA-p6mc-m468-83gw"]
+      },
+      {
+        "id": "CVE-2021-23337",
+        "ghsa": "GHSA-35jh-r3h4-6jhm",
+        "vulnerable_range": "<4.17.21",
+        "patched": "4.17.21",
+        "severity": "high",
+        "summary": "Command injection in lodash via the template function: untrusted templates/options can execute arbitrary code.",
+        "cwe": "CWE-94",
+        "references": ["https://github.com/advisories/GHSA-35jh-r3h4-6jhm"]
+      }
+    ],
+    "next": [
+      {
+        "id": "CVE-2022-23646",
+        "ghsa": "GHSA-fmvm-x8mv-47mj",
+        "vulnerable_range": ">=10.0.0,<12.1.0",
+        "patched": "12.1.0",
+        "severity": "medium",
+        "summary": "Improper CSP in the Image Optimization API: a permissive images.domains config can allow user-provided SVG to be served, enabling UI misrepresentation / stored XSS conditions.",
+        "cwe": "CWE-1021",
+        "references": ["https://github.com/advisories/GHSA-fmvm-x8mv-47mj"]
+      },
+      {
+        "id": "CVE-2023-46298",
+        "ghsa": "GHSA-c59h-r6p8-q9wc",
+        "vulnerable_range": ">=13.0.0,<13.4.20",
+        "patched": "13.4.20",
+        "severity": "high",
+        "summary": "Missing Cache-Control header on prefetch responses can let a CDN cache an empty reply, causing a denial of service for all users behind that CDN.",
+        "cwe": "CWE-525",
+        "references": ["https://github.com/advisories/GHSA-c59h-r6p8-q9wc"]
+      },
+      {
+        "id": "CVE-2024-34351",
+        "ghsa": "GHSA-fr5h-rqp8-mj6g",
+        "vulnerable_range": ">=13.4.0,<14.1.1",
+        "patched": "14.1.1",
+        "severity": "high",
+        "summary": "Server-Side Request Forgery (SSRF) in Server Actions: a crafted Host header during a redirect to a relative path lets an attacker make requests that appear to originate from the server.",
+        "cwe": "CWE-918",
+        "references": ["https://github.com/advisories/GHSA-fr5h-rqp8-mj6g"]
+      }
+    ],
+    "react-dom": [
+      {
+        "id": "CVE-2018-6341",
+        "ghsa": "GHSA-mvjj-gqq2-p4hw",
+        "vulnerable_range": ">=16.0.0,<16.4.2",
+        "patched": "16.4.2",
+        "severity": "medium",
+        "summary": "Cross-site scripting (XSS) in react-dom server-side rendering of attributes: certain attribute names could allow injection of markup.",
+        "cwe": "CWE-79",
+        "references": ["https://github.com/advisories/GHSA-mvjj-gqq2-p4hw"]
+      }
+    ],
+    "axios": [
+      {
+        "id": "CVE-2023-45857",
+        "ghsa": "GHSA-wf5p-g6vw-rhxx",
+        "vulnerable_range": ">=1.0.0,<1.6.0",
+        "patched": "1.6.0",
+        "severity": "medium",
+        "summary": "Axios leaks the XSRF-TOKEN cookie value in the X-XSRF-TOKEN header to any host the client is redirected to, exposing the CSRF token to third-party sites.",
+        "cwe": "CWE-200",
+        "references": ["https://github.com/advisories/GHSA-wf5p-g6vw-rhxx"]
+      },
+      {
+        "id": "CVE-2024-28849",
+        "ghsa": "GHSA-8hc4-vh64-cxmj",
+        "vulnerable_range": "<1.7.4",
+        "patched": "1.7.4",
+        "severity": "medium",
+        "summary": "Axios follows cross-origin redirects and forwards sensitive Authorization/Proxy-Authorization headers, leaking credentials to the redirect target.",
+        "cwe": "CWE-200",
+        "references": ["https://github.com/advisories/GHSA-8hc4-vh64-cxmj"]
+      }
+    ],
+    "minimist": [
+      {
+        "id": "CVE-2021-44906",
+        "ghsa": "GHSA-xvch-5gmm-93hp",
+        "vulnerable_range": "<1.2.6",
+        "patched": "1.2.6",
+        "severity": "critical",
+        "summary": "Prototype pollution in minimist: crafted arguments can set properties on Object.prototype.",
+        "cwe": "CWE-1321",
+        "references": ["https://github.com/advisories/GHSA-xvch-5gmm-93hp"]
+      }
+    ],
+    "express": [
+      {
+        "id": "CVE-2024-29041",
+        "ghsa": "GHSA-rv95-896h-c2vc",
+        "vulnerable_range": "<4.19.2",
+        "patched": "4.19.2",
+        "severity": "medium",
+        "summary": "Open redirect in express via res.location()/res.redirect() with malformed URLs that bypass the intended host, enabling phishing.",
+        "cwe": "CWE-601",
+        "references": ["https://github.com/advisories/GHSA-rv95-896h-c2vc"]
+      }
+    ],
+    "ws": [
+      {
+        "id": "CVE-2024-37890",
+        "ghsa": "GHSA-3h5v-q93c-6h6q",
+        "vulnerable_range": ">=8.0.0,<8.17.1",
+        "patched": "8.17.1",
+        "severity": "high",
+        "summary": "Denial of service in ws: a request with many HTTP headers can exhaust memory/CPU when handling the WebSocket upgrade.",
+        "cwe": "CWE-476",
+        "references": ["https://github.com/advisories/GHSA-3h5v-q93c-6h6q"]
+      }
+    ],
+    "semver": [
+      {
+        "id": "CVE-2022-25883",
+        "ghsa": "GHSA-c2qf-rxjj-qqgw",
+        "vulnerable_range": ">=7.0.0,<7.5.2",
+        "patched": "7.5.2",
+        "severity": "medium",
+        "summary": "Regular Expression Denial of Service (ReDoS) in semver when parsing untrusted version ranges.",
+        "cwe": "CWE-1333",
+        "references": ["https://github.com/advisories/GHSA-c2qf-rxjj-qqgw"]
+      }
+    ]
+  }
+}

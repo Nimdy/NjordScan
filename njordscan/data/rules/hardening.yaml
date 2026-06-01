@@ -1,0 +1,249 @@
+# Hardening & info-leak rules. These are the "defense in depth" and "stop
+# leaking clues to attackers" rules. Most are medium/low — they rarely hand an
+# attacker the keys directly, but they make every OTHER attack easier and leak
+# information a real app should keep to itself. Voice: explain the consequence
+# before the label, assume the reader has never heard the jargon.
+
+- id: info-leak.error-stack-to-client
+  title: Raw error stack or full error object sent to the client
+  severity: medium
+  cwe: CWE-209
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    When something throws, the error object (and especially `err.stack`) contains
+    a goldmine for an attacker: absolute file paths on your server, function names,
+    library versions, SQL fragments, and sometimes the very secret that failed to
+    validate. Sending that straight back in the HTTP response — `res.send(err.stack)`
+    or `res.json({ error: err })` — turns every crash into a free map of your
+    internals. Attackers deliberately trigger errors just to read these messages.
+  fix: |
+    Show the user a short, generic message ("Something went wrong") and log the
+    real error server-side where only you can see it. Send a stable error code or
+    request id the user can quote to support, never the stack trace.
+  secure_example: |
+    catch (err) {
+      console.error(err);              // full detail stays on the server
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+    - https://cwe.mitre.org/data/definitions/209.html
+
+- id: info-leak.error-message-to-client
+  title: Error message forwarded to the client in an API/route handler
+  severity: low
+  cwe: CWE-209
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    Returning `err.message` to the caller leaks whatever the underlying library
+    decided to put there — database column names, file paths, "user not found"
+    vs "wrong password" (which lets attackers enumerate accounts), or pieces of an
+    internal URL. It is a smaller leak than a full stack trace, but it still hands
+    attackers details they should have to guess.
+  fix: |
+    Map errors to your own generic, user-safe messages. Keep the original
+    `err.message` in your server logs only. For auth, use one identical message
+    for "wrong email" and "wrong password" so attackers cannot tell which is which.
+  secure_example: |
+    catch (err) {
+      logger.error(err);
+      return Response.json({ error: 'Request failed' }, { status: 500 });
+    }
+  references:
+    - https://owasp.org/www-community/Improper_Error_Handling
+
+- id: info-leak.console-logs-secret
+  title: Secret, token, or password written to the logs
+  severity: medium
+  cwe: CWE-532
+  owasp: "A09:2021-Security Logging and Monitoring Failures"
+  why: |
+    `console.log(password)` or `console.error('token', token)` looks harmless in
+    development, but in production those lines flow into log files, your hosting
+    dashboard, and third-party log collectors (Datadog, CloudWatch, Sentry) where
+    far more people can read them than can read your database. Logged secrets are a
+    very common way credentials leak — they sit in plaintext, get backed up, and
+    are rarely scrubbed.
+  fix: |
+    Never log secrets, passwords, tokens, or full request bodies. Log an id or a
+    boolean ("auth succeeded") instead of the value. If you must debug a value,
+    redact it (`token.slice(0, 4) + '…'`) and remove the line before shipping.
+  secure_example: |
+    console.log('login attempt', { userId, ok: result.success }); // no secret values
+  references:
+    - https://cwe.mitre.org/data/definitions/532.html
+    - https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
+
+- id: info-leak.console-logs-request-body
+  title: Full request body logged (may contain passwords or PII)
+  severity: low
+  cwe: CWE-532
+  owasp: "A09:2021-Security Logging and Monitoring Failures"
+  why: |
+    `console.log(req.body)` dumps everything the user submitted into your logs —
+    including passwords on a login form, credit-card-ish fields, and personal data.
+    Once it is in a log it is copied, backed up, and shared with whoever can see
+    your logging tool, often forever. This is how plaintext passwords end up in a
+    breach even when the database stored them hashed.
+  fix: |
+    Log only the specific, non-sensitive fields you actually need to debug. Never
+    log a whole request/response body in production. If you need request logging,
+    use a logger with a redaction allowlist (e.g. pino's `redact`).
+  secure_example: |
+    console.log('signup', { email: req.body.email }); // not the password field
+  references:
+    - https://cwe.mitre.org/data/definitions/532.html
+
+- id: hardening.debug-enabled-in-prod
+  title: Debug / verbose mode hard-coded on
+  severity: medium
+  cwe: CWE-489
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    A `debug: true` flag (or `devtools: true`, `DEBUG=*`) left on in a config that
+    ships to production exposes internal details: verbose errors, query logs,
+    framework dashboards, and source maps. Anything meant for "while I'm developing"
+    becomes visible to anyone poking at your live site, giving attackers a clearer
+    picture of how your app works and where it breaks.
+  fix: |
+    Drive debug flags from the environment, defaulting to OFF, so production never
+    runs in debug mode by accident: `debug: process.env.NODE_ENV !== 'production'`.
+    Make sure source maps and dev dashboards are disabled in your production build.
+  secure_example: |
+    const config = { debug: process.env.NODE_ENV !== 'production' };
+  references:
+    - https://cwe.mitre.org/data/definitions/489.html
+    - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
+
+- id: hardening.dev-only-branch-shipping-secret-bypass
+  title: Security check bypassed when NODE_ENV is not 'production'
+  severity: high
+  cwe: CWE-489
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    Code like `if (process.env.NODE_ENV !== 'production') skipAuth()` is meant to
+    make local development convenient, but it backfires the moment NODE_ENV is unset
+    or wrong on a real server — and it often is (a missed env var, a preview deploy,
+    a misconfigured container all default to a non-production value). The "dev only"
+    shortcut then runs in the open, disabling authentication or other checks for
+    real users. The safe default must be the secure one.
+  fix: |
+    Never gate a security control on "are we in development". Keep auth and checks
+    always on, and instead make development easier with seeded test accounts or a
+    separate dev-only login that does not bypass the real check. If you must guard
+    debug-only code, fail closed (default to the secure branch).
+  secure_example: |
+    // auth always runs; dev convenience comes from a seeded test user, not a bypass
+    const user = await requireUser(req);
+  references:
+    - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
+
+- id: info-leak.process-env-to-client
+  title: process.env serialized or sent to the browser
+  severity: high
+  cwe: CWE-200
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    `process.env` holds every server secret — database passwords, API keys, signing
+    secrets. Serializing the whole object (`JSON.stringify(process.env)`,
+    `{ ...process.env }` in props, or returning it from an API) ships those secrets
+    to the browser, where any visitor can read them in the page source or network
+    tab. One line like this can leak your entire backend's credentials at once.
+  fix: |
+    Pick out only the specific, non-secret values the browser needs and pass those.
+    On Next.js, expose public values with the `NEXT_PUBLIC_` prefix (on Vite, `VITE_`)
+    and read real secrets only in server code. Never hand the whole env object to the
+    client.
+  secure_example: |
+    return { props: { appName: process.env.NEXT_PUBLIC_APP_NAME } }; // one safe value
+  references:
+    - https://nextjs.org/docs/app/building-your-application/configuring/environment-variables
+    - https://cwe.mitre.org/data/definitions/200.html
+
+- id: hardening.insecure-deserialization
+  title: Untrusted data turned back into objects/code (insecure deserialization)
+  severity: critical
+  cwe: CWE-502
+  owasp: "A08:2021-Software and Data Integrity Failures"
+  why: |
+    Libraries like `node-serialize` (`unserialize()`) and Node's `vm` module
+    (`vm.runInNewContext`, `vm.runInThisContext`) can rebuild not just data but live
+    functions from a string. If that string comes from a user — a cookie, a request
+    body, a query param — an attacker can craft a payload that runs their own code on
+    your server the instant you deserialize it. This is one of the most reliable ways
+    to fully take over a server.
+  fix: |
+    For data, use `JSON.parse` — it only produces plain values, never executable code.
+    Never feed user input to `node-serialize`, `vm.runInNewContext`, or similar. If you
+    genuinely need structured objects, validate the parsed JSON against a schema (Zod)
+    before using it.
+  secure_example: |
+    const data = JSON.parse(req.body.payload); // never functions; then validate:
+    const parsed = MySchema.parse(data);
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+    - https://cwe.mitre.org/data/definitions/502.html
+
+- id: hardening.redos-regex
+  title: Regular expression vulnerable to catastrophic backtracking (ReDoS)
+  severity: medium
+  cwe: CWE-1333
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    A regex with nested quantifiers — like `(a+)+`, `(.*)*`, or `(\d+)+$` — can take
+    an exponential amount of time to fail on certain inputs. When that regex runs on
+    user input (validating an email, a URL, a header), an attacker sends one short
+    crafted string and your single Node.js thread spins at 100% CPU, freezing the
+    whole app for everyone. This is a denial-of-service with no special access needed.
+  fix: |
+    Rewrite the pattern to avoid a quantifier inside another quantifier. Use specific
+    character classes and bounded repetition (`{1,64}`) instead of `+`/`*` stacks, or
+    validate with a parser/library instead of a hand-rolled regex. Test patterns with
+    a ReDoS checker (e.g. `recheck`, `safe-regex`).
+  secure_example: |
+    const re = /^[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,255}\.[a-z]{2,}$/i; // bounded, no nesting
+  references:
+    - https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+    - https://cwe.mitre.org/data/definitions/1333.html
+
+- id: hardening.unhandled-todo-security
+  title: TODO/FIXME marker on a security-sensitive line
+  severity: low
+  cwe: CWE-546
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    A comment like `// TODO: add auth here` or `// FIXME: validate this input` is an
+    honest note to yourself — but it is also a signed confession that a security
+    control is missing, sitting in code that may already be live. These get forgotten,
+    survive into production, and conveniently point an attacker (who can read your
+    public repo) straight at the soft spot you meant to come back to.
+  fix: |
+    Treat a security TODO as a blocker, not a nice-to-have: finish the control before
+    shipping, or track it as a real issue/ticket and remove the marker from code that
+    deploys. Don't leave unfinished auth/validation behind a comment.
+  secure_example: |
+    // resolved: input is now validated with Zod below — no outstanding security TODO
+  references:
+    - https://cwe.mitre.org/data/definitions/546.html
+
+- id: hardening.source-map-shipped-to-prod
+  title: Production source maps enabled (ships readable source to the browser)
+  severity: low
+  cwe: CWE-540
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    Source maps let the browser show your original, un-minified code in DevTools.
+    That is great while developing, but enabling `productionBrowserSourceMaps: true`
+    (Next.js) or `build.sourcemap: true` (Vite) publishes your readable source —
+    comments, internal logic, sometimes commented-out secrets — to every visitor.
+    Attackers download the maps to study exactly how your app works.
+  fix: |
+    Leave production source maps off (the default). If you need them for error
+    monitoring, upload them privately to your error tracker (Sentry) instead of
+    serving them to browsers, and delete them from the public build output.
+  secure_example: |
+    // next.config.js — keep maps off the public bundle
+    const nextConfig = { productionBrowserSourceMaps: false };
+  references:
+    - https://cwe.mitre.org/data/definitions/540.html
+    - https://nextjs.org/docs/app/api-reference/next-config-js/productionBrowserSourceMaps

@@ -1,0 +1,105 @@
+# Injection detection patterns (server-side). Each rule_id maps 1:1 to
+# njordscan/data/rules/injection.yaml. Patterns are framework-agnostic on
+# purpose (server code runs under nextjs/react/vite/unknown alike) and target
+# JS/TS only — never .jsx/.tsx UI files — to keep precision high.
+
+# --- SQL injection -----------------------------------------------------------
+
+# query('SELECT ... ' + something)  — string concatenation into a SQL verb.
+- rule_id: sqli.string-concatenation
+  pattern: '\b(query|execute|raw|prepare)\s*\(\s*[`"''].*?\b(SELECT|INSERT|UPDATE|DELETE|WHERE|FROM)\b.*?[`"'']\s*\+'
+  languages: [js, ts]
+  confidence: high
+  severity: critical
+  message: 'SQL query is concatenated with a variable — a user can inject their own SQL. Use a parameterized query with ? / $1 placeholders.'
+
+# `SELECT ... ${var} ...` passed to a plain .query()/.execute() (not a tagged template).
+- rule_id: sqli.template-literal
+  pattern: '\b(query|execute|raw|prepare)\s*\(\s*`[^`]*\b(SELECT|INSERT|UPDATE|DELETE|WHERE|FROM)\b[^`]*\$\{'
+  languages: [js, ts]
+  confidence: high
+  severity: critical
+  message: 'SQL query interpolates ${...} via a template literal — a user can inject SQL. Use placeholders and a values array (or a library sql`` tag that escapes for you).'
+
+# --- NoSQL injection ---------------------------------------------------------
+
+# Mongo $where clause (runs JS in the database).
+- rule_id: nosqli.where-operator
+  pattern: '\$where\s*:'
+  languages: [js, ts]
+  confidence: high
+  severity: critical
+  message: 'MongoDB $where runs JavaScript inside the database — slow and injectable. Use normal query operators like $gt / $eq / $in instead.'
+
+# find/findOne/etc. given req.body / req.query directly as the filter object.
+- rule_id: nosqli.untrusted-query-filter
+  pattern: '\.(find|findOne|findOneAndUpdate|findOneAndDelete|deleteOne|deleteMany|updateOne|updateMany|count|countDocuments|aggregate)\s*\(\s*req\.(body|query|params)\b'
+  languages: [js, ts]
+  confidence: high
+  severity: high
+  message: 'A request object is passed straight into a database filter — a user can smuggle operators like {"$ne": null}. Pick and coerce the fields you expect first.'
+
+# --- Path traversal ----------------------------------------------------------
+
+# fs.readFile / readFileSync / createReadStream whose path is built from the request.
+- rule_id: path-traversal.fs-read
+  pattern: '\b(readFile|readFileSync|createReadStream|readdir|readdirSync|open|openSync)\s*\([^)]*\breq\.(params|query|body|url|headers)\b'
+  languages: [js, ts]
+  confidence: high
+  severity: high
+  message: 'A file is opened using a path from the request — a user can send ../ to read files outside your folder (path traversal). Resolve and confine the path first.'
+
+# path.join / path.resolve fed a request value, then read or sent.
+- rule_id: path-traversal.fs-read
+  pattern: '\bpath\.(join|resolve)\s*\([^)]*\breq\.(params|query|body|url)\b'
+  languages: [js, ts]
+  requires_file: '\b(readFile|readFileSync|createReadStream|sendFile|download|fs\.)'
+  exclude_line: '\bbasename\b'
+  confidence: medium
+  severity: high
+  message: 'A filesystem path is built from request input — a user can send ../ to escape your folder (path traversal). Confine the resolved path with path.basename and a startsWith() check.'
+
+# res.sendFile / res.download given a request-derived path (no fixed root nearby).
+- rule_id: path-traversal.send-file
+  pattern: '\.(sendFile|download)\s*\([^)]*\breq\.(params|query|body|url)\b'
+  languages: [js, ts]
+  exclude_line: '\bbasename\b'
+  confidence: high
+  severity: high
+  message: 'A file is served using a request-controlled path — a user can request ../ files like .env (path traversal). Pass a fixed { root } and path.basename(name).'
+
+# --- Server-side template injection -----------------------------------------
+
+# Template engine .render()/.compile() given a concatenated or interpolated string built from the request.
+- rule_id: injection.template-ssti
+  pattern: '\b(compile|render|renderString|template)\s*\(\s*[`"''][^)]*\$\{[^)]*\breq\.'
+  languages: [js, ts]
+  confidence: medium
+  severity: critical
+  message: 'User input is interpolated into a template SOURCE string — an attacker can inject template code that runs on your server (SSTI). Pass user input as data in the context object, not into the template text.'
+
+- rule_id: injection.template-ssti
+  pattern: '\b(compile|render|renderString|template)\s*\([^)]*\+\s*req\.'
+  languages: [js, ts]
+  confidence: medium
+  severity: critical
+  message: 'User input is concatenated into a template SOURCE string — an attacker can inject template code that runs on your server (SSTI). Pass user input as data in the context object, not into the template text.'
+
+# --- Prototype pollution -----------------------------------------------------
+
+# Object.assign / _.merge / merge into a fresh object from req.body (or similar).
+- rule_id: injection.prototype-pollution-merge
+  pattern: '\b(Object\.assign|_\.merge|_\.mergeWith|_\.defaultsDeep|merge|extend|deepmerge)\s*\([^)]*\breq\.(body|query|params)\b'
+  languages: [js, ts]
+  confidence: medium
+  severity: high
+  message: 'A request object is merged into another object — an attacker can smuggle __proto__ and poison every object in your app (prototype pollution). Pick the exact keys you expect instead.'
+
+# obj[userKey] = ... where the key is a request value (bracket-assign).
+- rule_id: injection.prototype-pollution-bracket
+  pattern: '\[\s*req\.(body|query|params)\.[A-Za-z_$][\w$]*\s*\]\s*='
+  languages: [js, ts]
+  exclude_line: '__proto__|constructor|prototype'
+  confidence: low
+  severity: medium
+  message: 'An object key comes straight from the request in a bracket assignment — sending __proto__ as the key can poison the prototype (prototype pollution). Reject __proto__/constructor or use a Map.'

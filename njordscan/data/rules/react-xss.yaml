@@ -1,0 +1,262 @@
+# React / DOM XSS & client-side injection rules.
+# Every id here is referenced 1:1 by njordscan/data/patterns/react-xss.yaml.
+# Voice: explain the consequence in plain English before naming the jargon.
+
+- id: react.javascript-url
+  title: 'Link/script URL set to a "javascript:" string'
+  severity: high
+  cwe: CWE-79
+  owasp: "A03:2021-Injection"
+  why: |
+    A URL that starts with `javascript:` is not a real address — the browser
+    runs whatever comes after it as code the moment the link is clicked (or the
+    element loads). If any part of that URL can be influenced by a user, an
+    attacker can run their own JavaScript in your visitors' browsers, steal their
+    login session, or act as them. This is cross-site scripting (XSS). Even a
+    hard-coded `javascript:` URL is a bad habit that trains the codebase to treat
+    URLs as a place to put code.
+  fix: |
+    Point links and image/script sources at real `http(s):` or relative URLs.
+    For a button that runs code, use an actual `<button onClick={...}>` instead of
+    a `javascript:` link. If a URL comes from user data, validate that it begins
+    with `http://`, `https://`, or `/` before using it.
+  secure_example: |
+    // a real action, not a javascript: URL
+    <button type="button" onClick={handleClick}>Run</button>
+    // for a user-supplied link, allow only safe schemes:
+    const safe = /^(https?:|\/)/.test(url) ? url : '#';
+    <a href={safe}>Open</a>
+  references:
+    - https://owasp.org/www-community/attacks/xss/
+    - https://developer.mozilla.org/en-US/docs/Web/URI/Schemes/javascript
+
+- id: react.href-user-value
+  title: "Link href set directly from a user-controlled value"
+  severity: medium
+  cwe: CWE-79
+  owasp: "A03:2021-Injection"
+  why: |
+    Putting a raw user value straight into an `href` (or image `src`) is risky:
+    if the value is something like `javascript:stealCookies()`, clicking the link
+    runs that code in your visitor's browser (cross-site scripting). It can also
+    be used to send users to a phishing page from a link that looks like it lives
+    on your trusted site. "User-controlled" means it came from a form field, the
+    URL, an API response, or your database.
+  fix: |
+    Validate the value before using it as a URL. Allow only links that start with
+    `http://`, `https://`, or `/` (a path on your own site). Reject `javascript:`,
+    `data:`, and `vbscript:` schemes. The `URL` constructor is a handy way to
+    parse and check the protocol.
+  secure_example: |
+    function safeHref(value) {
+      try {
+        const u = new URL(value, window.location.origin);
+        return ['http:', 'https:'].includes(u.protocol) ? u.href : '#';
+      } catch { return '#'; }
+    }
+    <a href={safeHref(userUrl)}>Visit</a>
+  references:
+    - https://owasp.org/www-community/attacks/xss/
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+
+- id: dom.document-write
+  title: "document.write() called with non-literal content"
+  severity: high
+  cwe: CWE-79
+  owasp: "A03:2021-Injection"
+  why: |
+    `document.write()` / `document.writeln()` drops a string straight into the
+    page and parses it as HTML. If the string contains anything a user controls,
+    an attacker can inject a `<script>` (or an `onerror` handler) and run code in
+    your visitors' browsers — stealing sessions or acting as them (cross-site
+    scripting). It also blocks rendering and can wipe the whole page if called
+    after load, so it's discouraged even with trusted input.
+  fix: |
+    Stop using `document.write`. Build the page with React/JSX, or create DOM
+    nodes and set their `textContent` (which is inserted as text, never executed).
+    If you must inject HTML you do not fully control, sanitize it with DOMPurify
+    first.
+  secure_example: |
+    // instead of document.write(userInput)
+    const el = document.createElement('p');
+    el.textContent = userInput;   // inserted as text, never run as code
+    container.appendChild(el);
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/API/Document/write
+    - https://owasp.org/www-community/attacks/xss/
+
+- id: dom.insert-adjacent-html
+  title: "insertAdjacentHTML() / outerHTML assigned non-literal content"
+  severity: high
+  cwe: CWE-79
+  owasp: "A03:2021-Injection"
+  why: |
+    `element.insertAdjacentHTML(...)` and assigning to `element.outerHTML` parse
+    their argument as HTML and splice it into the page. When that argument holds
+    data an attacker can influence, they can inject markup that runs JavaScript in
+    your visitors' browsers (cross-site scripting), letting them hijack accounts
+    or steal data — the same risk as `innerHTML`.
+  fix: |
+    Insert text with `textContent`, or build elements with
+    `document.createElement` and `append`. In React, render `{value}` and let
+    React escape it. If you genuinely need to insert HTML from an untrusted
+    source, sanitize it with DOMPurify first.
+  secure_example: |
+    // instead of el.insertAdjacentHTML('beforeend', userHtml)
+    const node = document.createElement('span');
+    node.textContent = userText;
+    el.append(node);
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentHTML
+    - https://owasp.org/www-community/attacks/xss/
+
+- id: dom.jquery-html
+  title: "jQuery .html() / .append() called with a non-literal value"
+  severity: high
+  cwe: CWE-79
+  owasp: "A03:2021-Injection"
+  why: |
+    jQuery's `$(...).html(value)` (and `.append(value)`) treats the value as HTML
+    and inserts it into the page. If the value contains user-controlled data, an
+    attacker can smuggle in a `<script>` or event handler that runs JavaScript in
+    your visitors' browsers (cross-site scripting). jQuery does NOT sanitize for
+    you.
+  fix: |
+    Use `.text(value)` to insert text safely (it escapes everything). If you must
+    render HTML from an untrusted source, sanitize it with DOMPurify first and
+    only then pass it to `.html()`.
+  secure_example: |
+    // instead of $('#out').html(userInput)
+    $('#out').text(userInput);              // inserted as text, never executed
+    // or, if HTML is required:
+    $('#out').html(DOMPurify.sanitize(userHtml));
+  references:
+    - https://api.jquery.com/html/
+    - https://owasp.org/www-community/attacks/xss/
+
+- id: dom.location-from-fragment
+  title: "Page navigation built from location.hash / location.search (DOM-XSS)"
+  severity: high
+  cwe: CWE-79
+  owasp: "A03:2021-Injection"
+  why: |
+    The part of the URL after `#` (`location.hash`) and after `?`
+    (`location.search`) is fully attacker-controlled — anyone can craft a link
+    with whatever they want there. Feeding it straight into `location`,
+    `location.href`, or `location.assign(...)` can navigate to a
+    `javascript:` URL and run code in your visitor's browser, or redirect them to
+    a phishing site. This is a classic DOM-based cross-site scripting / open
+    redirect bug.
+  fix: |
+    Never trust the hash or query string as a destination. Decode it, then check
+    it against an allowlist of known paths, or require it to start with a single
+    `/` (and not `//`, which means another site). Reject anything containing a
+    scheme like `javascript:`.
+  secure_example: |
+    const next = decodeURIComponent(location.hash.slice(1));
+    // only allow same-site paths
+    if (/^\/(?!\/)/.test(next)) location.assign(next);
+  references:
+    - https://owasp.org/www-community/attacks/DOM_Based_XSS
+    - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+
+- id: react.ref-inner-html
+  title: "innerHTML assigned via a React ref (ref.current.innerHTML)"
+  severity: high
+  cwe: CWE-79
+  owasp: "A03:2021-Injection"
+  why: |
+    React escapes everything you render through JSX, which keeps your users safe
+    automatically. Reaching around React with a ref and writing
+    `ref.current.innerHTML = value` throws that protection away and parses the
+    value as HTML. If the value contains user data, an attacker can inject a
+    `<script>` or event handler and run JavaScript in your visitors' browsers
+    (cross-site scripting).
+  fix: |
+    Render the value as `{value}` in JSX and let React handle it, or set
+    `ref.current.textContent` to insert it as plain text. If you truly need raw
+    HTML, sanitize it with DOMPurify and use `dangerouslySetInnerHTML` so the
+    intent is explicit.
+  secure_example: |
+    // render through React, which escapes for you
+    return <div>{value}</div>;
+    // if you must touch the node directly, use textContent:
+    ref.current.textContent = value;
+  references:
+    - https://react.dev/learn/manipulating-the-dom-with-refs
+    - https://owasp.org/www-community/attacks/xss/
+
+- id: react.unsanitized-markdown
+  title: "Rendered Markdown passed to dangerouslySetInnerHTML without sanitizing"
+  severity: high
+  cwe: CWE-79
+  owasp: "A03:2021-Injection"
+  why: |
+    Markdown-to-HTML libraries like `marked` and `markdown-it` deliberately let
+    raw HTML pass through by default — `<script>alert(1)</script>` in the Markdown
+    becomes a real script tag in the output. If you then hand that HTML to
+    `dangerouslySetInnerHTML`, an attacker who can write Markdown (a comment, a
+    bio, a wiki page) can run JavaScript in your visitors' browsers (cross-site
+    scripting).
+  fix: |
+    Sanitize the generated HTML with DOMPurify before rendering it, every time.
+    Don't rely on the Markdown library's own options alone — sanitize the final
+    HTML string.
+  secure_example: |
+    import { marked } from 'marked';
+    import DOMPurify from 'isomorphic-dompurify';
+    const html = DOMPurify.sanitize(marked.parse(userMarkdown));
+    return <div dangerouslySetInnerHTML={{ __html: html }} />;
+  references:
+    - https://github.com/cure53/DOMPurify
+    - https://owasp.org/www-community/attacks/xss/
+
+- id: dom.postmessage-no-origin-check
+  title: "window message handler does not verify event.origin"
+  severity: high
+  cwe: CWE-345
+  owasp: "A08:2021-Software and Data Integrity Failures"
+  why: |
+    A `message` event listener (`window.addEventListener('message', ...)`) can be
+    triggered by ANY other page or iframe — including a malicious site that
+    embeds yours or that you embed. If your handler trusts `event.data` without
+    first checking `event.origin`, an attacker can send forged messages to
+    control your app: navigate it, inject content, or steal data the handler has
+    access to.
+  fix: |
+    At the very top of the handler, verify the message came from an origin you
+    trust and ignore everything else. Compare `event.origin` against an exact
+    expected origin (not a substring match).
+  secure_example: |
+    window.addEventListener('message', (event) => {
+      if (event.origin !== 'https://trusted.example.com') return; // reject others
+      handle(event.data);
+    });
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#security_concerns
+    - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
+
+- id: react.token-in-web-storage
+  title: "Auth token or secret stored in localStorage / sessionStorage"
+  severity: medium
+  cwe: CWE-922
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    `localStorage` and `sessionStorage` are readable by any JavaScript running on
+    your page. If your site ever has a cross-site scripting (XSS) bug — even in a
+    third-party script you include — the attacker's code can read a token or
+    secret you stored there and use it to impersonate the user. Unlike a cookie,
+    web storage cannot be marked HttpOnly, so there is no way to hide it from
+    JavaScript.
+  fix: |
+    Keep session tokens in a cookie set by the server with the `HttpOnly`,
+    `Secure`, and `SameSite` flags, so page JavaScript can never read them. If you
+    must hold something client-side, keep it in memory for the session and never
+    persist long-lived credentials in web storage.
+  secure_example: |
+    // server response sets the cookie; the browser sends it automatically:
+    // Set-Cookie: session=...; HttpOnly; Secure; SameSite=Lax; Path=/
+    // client code never touches the token at all
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#local-storage
+    - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html

@@ -1,0 +1,84 @@
+# Vite detection patterns. Each rule_id has a 1:1 knowledge entry in
+# njordscan/data/rules/vite.yaml. Regexes are Python 're'; single-quoted YAML.
+
+# --- 1) secret read out of import.meta.env in client code -------------------
+- rule_id: vite.import-meta-env-secret
+  pattern: 'import\.meta\.env\.[A-Za-z0-9_]*(secret|password|passwd|private[_-]?key|api[_-]?key|access[_-]?key|auth[_-]?token|service[_-]?role|db[_-]?pass|client[_-]?secret)[A-Za-z0-9_]*'
+  frameworks: [vite]
+  confidence: high
+  severity: high
+  message: 'This reads a secret out of import.meta.env — Vite inlines it into the public bundle, so the secret ships to every visitor.'
+
+# --- 2) defining a secret-looking VITE_ variable ----------------------------
+# exclude_line prevents double-firing with rule 1 on `import.meta.env.VITE_...`.
+- rule_id: vite.vite-prefixed-secret
+  pattern: '\bVITE_[A-Z0-9_]*(SECRET|PASSWORD|PASSWD|PRIVATE_KEY|API_KEY|ACCESS_KEY|AUTH_TOKEN|SERVICE_ROLE|DB_PASS|CLIENT_SECRET)[A-Z0-9_]*'
+  frameworks: [vite]
+  exclude_line: 'import\.meta\.env'
+  confidence: high
+  severity: high
+  message: 'A VITE_-prefixed secret is exposed to the browser bundle — only use the VITE_ prefix for values that are safe to be public.'
+
+# --- 3) define: inlining a secret / process.env into the bundle -------------
+- rule_id: vite.define-inlines-secret
+  pattern: '(["'']?process\.env(\.[A-Za-z0-9_]*(SECRET|PASSWORD|PRIVATE_KEY|API_KEY|ACCESS_KEY|TOKEN))?["'']?\s*:\s*(JSON\.stringify\()?\s*process\.env\b|["''][A-Za-z0-9_.]*(SECRET|PASSWORD|PRIVATE_KEY|ACCESS_KEY)[A-Za-z0-9_.]*["'']\s*:\s*(JSON\.stringify\()?\s*process\.env)'
+  paths: ["**/vite.config.*", "**/vite.config.*.*", "**/*.vite.config.*"]
+  multiline: false
+  requires_file: '\bdefine\b'
+  confidence: high
+  severity: high
+  message: 'Vite `define` inlines this secret / process.env value into the public bundle — every visitor can read it.'
+
+# --- 4) dev server bound to all interfaces ----------------------------------
+- rule_id: vite.dev-server-host-exposed
+  pattern: '\bhost\s*:\s*(true|["'']0\.0\.0\.0["''])'
+  paths: ["**/vite.config.*", "**/vite.config.*.*", "**/*.vite.config.*"]
+  requires_file: '\bserver\b'
+  confidence: high
+  severity: medium
+  message: 'server.host exposes the Vite dev server on every network interface — anyone on the same network can reach it.'
+
+# --- 5) wildcard CORS on the dev server -------------------------------------
+- rule_id: vite.dev-server-cors-wildcard
+  pattern: '\bcors\s*:\s*true'
+  paths: ["**/vite.config.*", "**/vite.config.*.*", "**/*.vite.config.*"]
+  requires_file: '\bserver\b'
+  confidence: high
+  severity: medium
+  message: 'server.cors: true sends Access-Control-Allow-Origin:* — any website can read your dev server responses.'
+
+# --- 6) server.fs.allow opened to the whole filesystem ----------------------
+- rule_id: vite.fs-allow-too-broad
+  pattern: 'allow\s*:\s*\[[^\]]*["''](/|\.\.|\.\./?)["'']'
+  paths: ["**/vite.config.*", "**/vite.config.*.*", "**/*.vite.config.*"]
+  requires_file: '\bfs\b'
+  confidence: high
+  severity: high
+  message: 'server.fs.allow includes "/" or ".." — the dev server can now read arbitrary files on your disk (path traversal).'
+
+# --- 7) server.fs.strict disabled -------------------------------------------
+- rule_id: vite.fs-strict-disabled
+  pattern: 'strict\s*:\s*false'
+  paths: ["**/vite.config.*", "**/vite.config.*.*", "**/*.vite.config.*"]
+  requires_file: '\bfs\b'
+  confidence: high
+  severity: medium
+  message: 'server.fs.strict: false lets the dev server serve files outside the project root (arbitrary file read).'
+
+# --- 8) production source maps ----------------------------------------------
+- rule_id: vite.prod-sourcemap
+  pattern: 'sourcemap\s*:\s*true'
+  paths: ["**/vite.config.*", "**/vite.config.*.*", "**/*.vite.config.*"]
+  requires_file: '\bbuild\b'
+  confidence: medium
+  severity: low
+  message: 'build.sourcemap: true ships .map files that reveal your original source to anyone in the browser.'
+
+# --- 9) dev proxy with TLS verification disabled ----------------------------
+- rule_id: vite.proxy-target-insecure
+  pattern: 'secure\s*:\s*false'
+  paths: ["**/vite.config.*", "**/vite.config.*.*", "**/*.vite.config.*"]
+  requires_file: '\bproxy\b'
+  confidence: high
+  severity: medium
+  message: 'A server.proxy entry with secure:false skips TLS verification — traffic through the proxy can be silently intercepted.'

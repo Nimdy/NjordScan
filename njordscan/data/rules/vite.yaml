@@ -1,0 +1,214 @@
+# Vite-specific knowledge rules. Tone: explain the consequence before the label,
+# assume the reader has never heard the security jargon. 1:1 with patterns/vite.yaml.
+
+- id: vite.import-meta-env-secret
+  title: Secret read from import.meta.env in client code
+  severity: high
+  cwe: CWE-200
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    Vite replaces every `import.meta.env.SOMETHING` you write with the literal
+    value at build time and ships it inside the JavaScript bundle that every
+    visitor downloads. Vite only ever exposes variables whose name starts with
+    `VITE_`, so reading a secret-looking var like `import.meta.env.VITE_API_SECRET`
+    (or a Stripe/AWS/DB token) means you are publishing that secret to the whole
+    internet — anyone can open the browser dev tools and read it.
+  fix: |
+    Real secrets must never reach the browser bundle. Keep secret keys on a
+    server you control (an API route, a serverless function, your own backend)
+    and have the browser call that server instead. In Vite, only put values
+    behind the `VITE_` prefix that are genuinely safe to be public (a public
+    site URL, a publishable/anon key that is designed to be shared).
+  secure_example: |
+    // browser code calls YOUR server, which holds the secret:
+    const res = await fetch('/api/charge', { method: 'POST', body });
+    // server (not bundled) reads the real secret from process.env.STRIPE_SECRET_KEY
+  references:
+    - https://vitejs.dev/guide/env-and-mode.html#env-variables
+    - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+
+- id: vite.vite-prefixed-secret
+  title: Secret-looking variable exposed with the VITE_ prefix
+  severity: high
+  cwe: CWE-200
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    Any environment variable whose name starts with `VITE_` is inlined into the
+    public JavaScript bundle and downloaded by every visitor. Defining something
+    like `VITE_SECRET_KEY`, `VITE_DB_PASSWORD`, or `VITE_STRIPE_SECRET_KEY` in a
+    `.env` file or in code means that secret is shipped to the browser in
+    plain text — it is effectively published to the world.
+  fix: |
+    Drop the `VITE_` prefix from anything secret so Vite stops exposing it, and
+    read it only in server-side code. ROTATE any secret that already shipped this
+    way (assume it is compromised). Reserve `VITE_` for values that are safe to be
+    public.
+  secure_example: |
+    # .env  — secret stays server-side (NO VITE_ prefix), public URL may be exposed
+    STRIPE_SECRET_KEY=sk_live_xxx        # server only
+    VITE_PUBLIC_API_URL=https://api.example.com   # safe to ship to the browser
+  references:
+    - https://vitejs.dev/guide/env-and-mode.html#env-variables
+
+- id: vite.define-inlines-secret
+  title: Vite `define` inlines a secret or process.env into the bundle
+  severity: high
+  cwe: CWE-200
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    The `define` option in vite.config performs a raw find-and-replace at build
+    time: whatever value you give it is hard-coded into the public JavaScript
+    bundle. Feeding a secret token, or a whole `process.env` reference that
+    resolves to a secret, into `define` publishes that value to every visitor —
+    they can read it straight out of the shipped JavaScript.
+  fix: |
+    Never put secrets in `define`. If you need a build-time constant in the
+    browser, make sure it is non-sensitive. For anything secret, keep it on the
+    server and expose only a public API endpoint to the browser. Note that
+    `define: { 'process.env': process.env }` is especially dangerous because it
+    can leak every environment variable on the build machine.
+  secure_example: |
+    // vite.config.ts — only inline NON-secret, public constants
+    export default defineConfig({
+      define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+    });
+  references:
+    - https://vitejs.dev/config/shared-options.html#define
+
+- id: vite.dev-server-host-exposed
+  title: Vite dev server bound to all network interfaces
+  severity: medium
+  cwe: CWE-668
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    Setting `server.host` to `true` or `'0.0.0.0'` makes the Vite dev server
+    listen on every network interface, not just your own machine. On a shared
+    Wi-Fi, an office network, or a coffee shop, anyone on the same network can
+    reach your dev server — read your source, hit your unprotected dev API
+    proxies, and sometimes pull local files. The dev server has none of the
+    hardening of a production deployment.
+  fix: |
+    Leave `server.host` unset (Vite defaults to localhost-only). If you truly
+    need to test from a phone on the same network, enable it temporarily with
+    the `--host` CLI flag instead of committing it, and never expose the dev
+    server to an untrusted network.
+  secure_example: |
+    // vite.config.ts — dev server stays on localhost
+    export default defineConfig({ server: { /* host left unset */ } });
+  references:
+    - https://vitejs.dev/config/server-options.html#server-host
+
+- id: vite.dev-server-cors-wildcard
+  title: Vite dev server CORS opened to any origin
+  severity: medium
+  cwe: CWE-942
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    `server.cors: true` tells the Vite dev server to send an
+    `Access-Control-Allow-Origin: *` header, which lets any website your browser
+    visits make requests to your dev server and read the responses. A malicious
+    page you happen to open in another tab could then probe your dev server,
+    read your modules, or call dev-only API proxies that sit behind it.
+  fix: |
+    Don't enable wildcard CORS on the dev server. If a specific origin needs
+    access during development, pass an explicit `origin` allowlist to `cors`
+    instead of `true`.
+  secure_example: |
+    // vite.config.ts — allow one trusted origin instead of "*"
+    export default defineConfig({
+      server: { cors: { origin: 'http://localhost:3000' } },
+    });
+  references:
+    - https://vitejs.dev/config/server-options.html#server-cors
+
+- id: vite.fs-allow-too-broad
+  title: Vite `server.fs.allow` opened to the whole filesystem
+  severity: high
+  cwe: CWE-22
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    Vite's dev server only serves files inside an allowed list of directories so
+    that a crafted URL can't reach the rest of your disk. Adding `'/'` or `'..'`
+    to `server.fs.allow` removes that fence: a request like
+    `/@fs/etc/passwd` (or one that climbs out with `..`) can now read arbitrary
+    files on your machine — including `.env` files, SSH keys, and source outside
+    the project. This is a path-traversal / arbitrary-file-read hole.
+  fix: |
+    Remove `'/'` and `'..'` from `server.fs.allow`. Let Vite use its safe
+    defaults, or list only the specific extra directories you actually need
+    (for example a shared packages folder in a monorepo).
+  secure_example: |
+    // vite.config.ts — allow only a specific sibling package dir
+    export default defineConfig({
+      server: { fs: { allow: ['..\/shared-ui'] } },
+    });
+  references:
+    - https://vitejs.dev/config/server-options.html#server-fs-allow
+
+- id: vite.fs-strict-disabled
+  title: Vite `server.fs.strict` disabled
+  severity: medium
+  cwe: CWE-22
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    `server.fs.strict` is the guard that stops the dev server from serving files
+    outside your project root. Setting `server.fs.strict: false` turns that guard
+    off, so a crafted URL can read files anywhere on your disk — `.env` files,
+    keys, and other projects — through the dev server. It re-opens the same
+    arbitrary-file-read risk as a wide-open `fs.allow`.
+  fix: |
+    Remove `fs: { strict: false }` — strict mode is on by default and should stay
+    on. If a specific outside directory is genuinely needed, add it to
+    `server.fs.allow` instead of disabling strict mode entirely.
+  secure_example: |
+    // vite.config.ts — keep strict mode (the default) on
+    export default defineConfig({ server: { fs: { strict: true } } });
+  references:
+    - https://vitejs.dev/config/server-options.html#server-fs-strict
+
+- id: vite.prod-sourcemap
+  title: Source maps enabled for the production build
+  severity: low
+  cwe: CWE-540
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    `build.sourcemap: true` ships `.map` files alongside your bundle, which let
+    anyone reconstruct your original, un-minified source code in the browser dev
+    tools. That makes it easy for an attacker to read your client logic, spot
+    hidden endpoints, and notice any secret or comment you assumed was hidden by
+    minification. It is not a critical hole on its own, but it removes a layer of
+    obscurity and can leak information.
+  fix: |
+    Don't enable source maps for production. If you need them for error
+    monitoring, generate "hidden" source maps and upload them privately to your
+    error tracker instead of serving them to users (`build.sourcemap: 'hidden'`).
+  secure_example: |
+    // vite.config.ts — no public source maps in prod
+    export default defineConfig({ build: { sourcemap: false } });
+  references:
+    - https://vitejs.dev/config/build-options.html#build-sourcemap
+
+- id: vite.proxy-target-insecure
+  title: Vite dev proxy with TLS verification disabled
+  severity: medium
+  cwe: CWE-295
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    A Vite `server.proxy` entry with `secure: false` tells the dev proxy to
+    accept the upstream server's TLS certificate without checking it. That means
+    anyone on the network between you and the upstream can impersonate it and
+    read or modify the traffic flowing through the proxy (a man-in-the-middle).
+    Developers often copy this setting into shared config where it can mask a
+    real certificate problem.
+  fix: |
+    Remove `secure: false`. If you are proxying to a development server with a
+    self-signed certificate, trust that specific certificate locally instead of
+    turning verification off for everything.
+  secure_example: |
+    // vite.config.ts — keep TLS verification on for the proxy
+    export default defineConfig({
+      server: { proxy: { '/api': { target: 'https://api.example.com', changeOrigin: true } } },
+    });
+  references:
+    - https://vitejs.dev/config/server-options.html#server-proxy
+    - https://cwe.mitre.org/data/definitions/295.html

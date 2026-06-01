@@ -1,1046 +1,413 @@
-"""
-🛡️ NjordScan v1.0.0 - The Ultimate Security Scanner CLI
+"""NjordScan command-line interface.
 
-Advanced command-line interface with AI-powered intelligence, community features,
-and comprehensive security analysis for Next.js, React, and Vite applications.
+Design goals for a non-expert audience:
+  - the happy path is one command: ``njordscan scan .``
+  - exit codes are correct and predictable (great for CI without ceremony)
+  - nothing blocks on interactive prompts; nothing phones home by default
 """
+
+from __future__ import annotations
+
+import asyncio
+import sys
+from pathlib import Path
+from typing import List, Optional
 
 import click
-import sys
-import os
-import asyncio
-from pathlib import Path
-from typing import Dict, Any
 from rich.console import Console
-from rich.panel import Panel
-from rich.text import Text
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from .scanner import ScanOrchestrator
-from .config import Config
-from .utils import validate_target, display_banner, explain_vulnerability
-from .cache import CacheManager
-from .plugins import PluginManager
-from .legal import require_legal_acceptance, legal_manager
-
-# Optional imports for advanced features
-try:
-    from .data_updater import VulnerabilityDataManager
-    DATA_UPDATER_AVAILABLE = True
-except ImportError:
-    DATA_UPDATER_AVAILABLE = False
-    VulnerabilityDataManager = None
-
-# Import new orchestrators and engines
-try:
-    from .core.scan_orchestrator_enhanced import EnhancedScanOrchestrator
-    from .intelligence.intelligence_orchestrator import IntelligenceOrchestrator
-    from .ai.ai_orchestrator import AISecurityOrchestrator
-    from .performance.performance_orchestrator import PerformanceOrchestrator
-    ADVANCED_FEATURES = True
-except ImportError:
-    ADVANCED_FEATURES = False
-
-try:
-    from .community.community_orchestrator import CommunityOrchestrator
-    COMMUNITY_AVAILABLE = True
-except ImportError:
-    COMMUNITY_AVAILABLE = False
-    
-from . import __version__, BANNER, FEATURES
+from . import __version__
+from .core.baseline import Baseline, write_baseline
+from .core.config import Config
+from .core.configfile import FileConfig, find_config, load_config_file
+from .core.orchestrator import Orchestrator, ScanResult
+from .core.severity import Severity
+from .knowledge import all_rules, get_rule
+from .report import available_formats, render_terminal, render_to_string
 
 console = Console()
+err_console = Console(stderr=True)
 
-def show_pentest_warning() -> bool:
-    """Show ethical warning for pentest mode."""
-    warning_text = Text()
-    warning_text.append("⚠️  PENTEST MODE WARNING ⚠️\n\n", style="bold red")
-    warning_text.append("Pentest mode enables aggressive framework-specific security testing that may:\n", style="yellow")
-    warning_text.append("• Test React, Next.js, and Vite apps with exploit payloads\n", style="white")
-    warning_text.append("• Attempt authentication bypasses and middleware exploits\n", style="white")
-    warning_text.append("• Trigger security monitoring systems\n", style="white")
-    warning_text.append("\nOnly use pentest mode on systems you own or have explicit permission to test.\n\n", style="red")
-    warning_text.append("Do you have permission to test this target? (y/N): ", style="bold white")
-    
-    panel = Panel(warning_text, title="Ethical Usage Agreement", border_style="red")
-    console.print(panel)
-    
-    response = input().strip().lower()
-    return response in ['y', 'yes']
+_SEVERITY_CHOICES = [s.value for s in Severity]
 
-def _get_topic_info(topic: str) -> str:
-    """Get detailed information about a specific security topic."""
-    topic_info = {
-        'xss': """
-🔴 Cross-Site Scripting (XSS) - A Beginner's Guide
+# Exit codes (documented, stable):
+EXIT_OK = 0           # scan ran; no findings at/above --fail-on (or no gate set)
+EXIT_FINDINGS = 1     # scan ran; findings met the --fail-on threshold
+EXIT_ERROR = 2        # scan could not run (bad path, internal error)
 
-What is XSS?
-XSS allows attackers to inject malicious scripts into your website that run in your users' browsers.
 
-Real-World Example:
-Imagine a comment system where users can post HTML. An attacker posts:
-<script>alert('Hacked!')</script>
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+@click.version_option(__version__, "-V", "--version", prog_name="njordscan")
+def cli() -> None:
+    """🛡  NjordScan — security scanning for Next.js, React & Vite, explained in plain English."""
 
-This could:
-• Steal user cookies and login sessions
-• Redirect users to fake login pages
-• Monitor user keystrokes
-• Display fake content
 
-How to Fix:
-✅ Use React's built-in XSS protection (automatic)
-✅ Never use dangerouslySetInnerHTML
-✅ Sanitize user input with libraries like DOMPurify
-✅ Implement Content Security Policy (CSP) headers
+@cli.command()
+@click.argument("target", type=click.Path(path_type=Path), default=".")
+@click.option("--mode", type=click.Choice(["quick", "standard", "deep"]), default="standard",
+              help="Scan depth. 'quick' = fast static checks; 'deep' = everything.")
+@click.option("--format", "fmt", type=click.Choice(available_formats()), default="terminal",
+              help="Output format.")
+@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
+              help="Write the report to a file (for json/sarif).")
+@click.option("--min-severity", type=click.Choice(_SEVERITY_CHOICES), default="info",
+              help="Hide findings below this severity.")
+@click.option("--fail-on", type=click.Choice(_SEVERITY_CHOICES), default=None,
+              help="Exit with code 1 if any finding is at or above this severity (for CI).")
+@click.option("--only", "only", multiple=True, help="Run only these detectors (repeatable).")
+@click.option("--skip", "skip", multiple=True, help="Skip these detectors (repeatable).")
+@click.option("--ignore", "ignore", multiple=True, help="Extra ignore glob(s) (repeatable).")
+@click.option("--brief", is_flag=True, help="Hide the 'why/how to fix' detail (terse output).")
+@click.option("--fix", "do_fix", is_flag=True, help="Apply safe, additive autofixes for supported rules.")
+@click.option("--dry-run", is_flag=True, help="With --fix: preview the diff without writing changes.")
+@click.option("--explain-with-ai", is_flag=True,
+              help="Add AI-written explanations (opt-in; see --ai-provider).")
+@click.option("--ai-provider", type=click.Choice(["ollama", "claude", "openai"]), default=None,
+              help="Which AI backend to use with --explain-with-ai.")
+@click.option("--no-redact", is_flag=True,
+              help="Send unredacted code to the AI provider (off by default).")
+@click.option("--baseline", type=click.Path(path_type=Path), default=None,
+              help="Baseline file: hide known findings and only fail on NEW ones.")
+@click.option("--update-baseline", is_flag=True,
+              help="Write the current findings to the --baseline file and exit.")
+@click.option("--config", "config_path", type=click.Path(path_type=Path), default=None,
+              help="Path to a .njordscan.yml config file (auto-detected by default).")
+@click.option("--no-config", is_flag=True, help="Ignore any .njordscan.yml config file.")
+@click.option("-v", "--verbose", is_flag=True, help="Show detector errors and extra detail.")
+@click.option("--quiet", is_flag=True, help="Only print the summary line.")
+def scan(
+    target: Path, mode: str, fmt: str, output: Optional[Path], min_severity: str,
+    fail_on: Optional[str], only: tuple, skip: tuple, ignore: tuple, brief: bool,
+    do_fix: bool, dry_run: bool,
+    explain_with_ai: bool, ai_provider: Optional[str], no_redact: bool,
+    baseline: Optional[Path], update_baseline: bool,
+    config_path: Optional[Path], no_config: bool,
+    verbose: bool, quiet: bool,
+) -> None:
+    """🔍 Scan a project directory for security issues.
 
-Why This Matters:
-XSS is one of the most common web vulnerabilities and can lead to complete account takeover!
-        """,
-        'headers': """
-🔒 HTTP Security Headers - Your Website's Security Shield
+    TARGET defaults to the current directory.
+    """
+    if not target.exists():
+        err_console.print(f"[red]✗ Path does not exist:[/red] {target}")
+        sys.exit(EXIT_ERROR)
+    if not target.is_dir():
+        err_console.print(f"[red]✗ Target must be a directory:[/red] {target}")
+        sys.exit(EXIT_ERROR)
 
-What are Security Headers?
-HTTP headers that tell browsers how to behave securely when visiting your site.
+    file_cfg = _resolve_file_config(target, config_path, no_config, verbose)
+    only_ids = _split_csv(only)
+    skip_ids = _split_csv(skip)
 
-Key Headers You Need:
-
-1. Content-Security-Policy (CSP)
-   • Prevents XSS attacks
-   • Controls which resources can load
-   • Example: script-src 'self' https://trusted-cdn.com
-
-2. X-Frame-Options
-   • Prevents clickjacking attacks
-   • Options: DENY, SAMEORIGIN
-   • Example: X-Frame-Options: DENY
-
-3. Strict-Transport-Security (HSTS)
-   • Forces HTTPS connections
-   • Prevents downgrade attacks
-   • Example: max-age=31536000; includeSubDomains
-
-4. X-Content-Type-Options
-   • Prevents MIME type sniffing
-   • Example: nosniff
-
-Quick Implementation:
-Add these headers to your Next.js app in next.config.js or middleware.
-        """,
-        'authentication': """
-🔑 Authentication Security - Protecting User Accounts
-
-Common Authentication Mistakes:
-
-❌ Don't store passwords in plain text
-❌ Don't use weak password requirements
-❌ Don't expose user IDs in URLs
-❌ Don't forget to implement rate limiting
-
-✅ Do implement:
-• Strong password hashing (bcrypt, Argon2)
-• Multi-factor authentication (MFA)
-• Session management with secure cookies
-• Account lockout after failed attempts
-• Password reset with secure tokens
-
-Next.js Best Practices:
-• Use NextAuth.js for authentication
-• Implement proper session handling
-• Use environment variables for secrets
-• Add rate limiting to login endpoints
-        """
-    }
-    
-    return topic_info.get(topic, f"📚 Information about {topic} coming soon!")
-
-def _has_critical_issues(results: dict) -> bool:
-    """Check if scan results contain critical or high severity issues."""
-    summary = results.get('summary', {})
-    severity_breakdown = summary.get('severity_breakdown', {})
-    return severity_breakdown.get('critical', 0) > 0 or severity_breakdown.get('high', 0) > 0
-
-def display_scan_results(results: Dict[str, Any], config: Config, verbose: bool = False):
-    """Display scan results in a formatted way."""
-    from rich.table import Table
-    from rich.panel import Panel
-    
-    # Extract key information
-    summary = results.get('summary', {})
-    vulnerabilities = results.get('vulnerabilities', [])
-    scan_info = results.get('scan_info', {})
-    
-    # Display scan summary
-    if summary:
-        summary_table = Table(title="📊 Scan Summary", show_header=True, header_style="bold magenta")
-        summary_table.add_column("Metric", style="cyan", width=20)
-        summary_table.add_column("Value", style="green", width=15)
-        
-        total_issues = summary.get('total_issues', 0)
-        severity_breakdown = summary.get('severity_breakdown', {})
-        
-        summary_table.add_row("Total Issues", str(total_issues))
-        summary_table.add_row("Scan Duration", f"{scan_info.get('duration', 'N/A')}")
-        summary_table.add_row("Files Scanned", str(scan_info.get('files_scanned', 0)))
-        
-        if severity_breakdown:
-            for severity, count in severity_breakdown.items():
-                if count > 0:
-                    summary_table.add_row(f"{severity.title()} Issues", str(count))
-        
-        console.print(summary_table)
-    
-    # Display vulnerabilities if any
-    if vulnerabilities:
-        # Handle both flat list and grouped vulnerabilities
-        if isinstance(vulnerabilities, dict):
-            # Grouped by module
-            total_vulns = sum(len(vuln_list) for vuln_list in vulnerabilities.values())
-            
-            vuln_table = Table(title="🚨 Security Vulnerabilities by Module", show_header=True, header_style="bold red")
-            vuln_table.add_column("Module", style="cyan", width=15)
-            vuln_table.add_column("Count", style="yellow", width=10)
-            vuln_table.add_column("Severities", style="green", width=30)
-            
-            for module_name, vuln_list in vulnerabilities.items():
-                if vuln_list:
-                    # Count severities for this module
-                    severity_counts = {}
-                    for vuln in vuln_list:
-                        sev = vuln.get('severity', 'unknown')
-                        severity_counts[sev] = severity_counts.get(sev, 0) + 1
-                    
-                    severity_str = ", ".join([f"{sev}:{count}" for sev, count in severity_counts.items()])
-                    vuln_table.add_row(module_name, str(len(vuln_list)), severity_str)
-            
-            console.print(vuln_table)
-            
-            # Show detailed vulnerabilities for first few modules
-            if verbose:
-                console.print(f"\n📋 Detailed findings:")
-                for module_name, vuln_list in list(vulnerabilities.items())[:3]:  # Show first 3 modules
-                    if vuln_list:
-                        module_table = Table(title=f"🔍 {module_name.title()} Module Findings", show_header=True, header_style="bold blue")
-                        module_table.add_column("Severity", style="red", width=10)
-                        module_table.add_column("Type", style="yellow", width=20)
-                        module_table.add_column("Description", style="white", width=50)
-                        
-                        for vuln in vuln_list[:5]:  # Show first 5 per module
-                            severity = vuln.get('severity', 'unknown').upper()
-                            vuln_type = vuln.get('vuln_type', 'unknown')
-                            description = vuln.get('description', 'No description')[:47] + "..." if len(vuln.get('description', '')) > 50 else vuln.get('description', 'No description')
-                            
-                            module_table.add_row(severity, vuln_type, description)
-                        
-                        console.print(module_table)
-                        if len(vuln_list) > 5:
-                            console.print(f"... and {len(vuln_list) - 5} more in {module_name}")
-                        console.print()
-                
-                if verbose:
-                    console.print(f"\n📋 Total vulnerabilities found: {total_vulns}")
-        else:
-            # Flat list (fallback)
-            vuln_table = Table(title="🚨 Security Vulnerabilities", show_header=True, header_style="bold red")
-            vuln_table.add_column("Severity", style="red", width=10)
-            vuln_table.add_column("Type", style="yellow", width=20)
-            vuln_table.add_column("Location", style="cyan", width=30)
-            vuln_table.add_column("Description", style="white", width=40)
-            
-            for vuln in vulnerabilities[:10]:  # Show first 10
-                severity = vuln.get('severity', 'unknown').upper()
-                vuln_type = vuln.get('vuln_type', 'unknown')
-                location = vuln.get('location', 'unknown')
-                description = vuln.get('description', 'No description')
-                
-                vuln_table.add_row(severity, vuln_type, location, description)
-            
-            if len(vulnerabilities) > 10:
-                vuln_table.add_row("...", "...", "...", f"... and {len(vulnerabilities) - 10} more")
-            
-            console.print(vuln_table)
-            
-            if verbose:
-                console.print(f"\n📋 Full results: {len(vulnerabilities)} vulnerabilities found")
-    else:
-        console.print("✅ No security vulnerabilities found!", style="green")
-    
-    # Display scan configuration
-    if verbose:
-        config_panel = Panel(
-            f"Target: {config.target}\n"
-            f"Mode: {config.mode}\n"
-            f"Framework: {config.framework or 'auto-detected'}\n"
-            f"AI Enhanced: {'✅' if config.ai_enhanced else '❌'}\n"
-            f"Behavioral Analysis: {'✅' if config.behavioral_analysis else '❌'}",
-            title="⚙️ Scan Configuration",
-            border_style="blue"
-        )
-        console.print(config_panel)
-
-def show_banner():
-    """Display the NjordScan banner."""
-    console.print(BANNER, style="bold cyan")
-
-@click.group(context_settings=dict(help_option_names=['-h', '--help']))
-@click.pass_context
-def main(ctx):
-    """🛡️ NjordScan - The Ultimate Security Scanner for Next.js, React, and Vite applications."""
-    
-    # Handle version display
-    if ctx.invoked_subcommand is None:
-        # Show help if no subcommand
-        ctx.get_help()
-        return
-
-@main.command()
-@click.argument('target', default='.')
-@click.option('--format', 'output_format', type=click.Choice(['terminal', 'html', 'json', 'sarif', 'csv', 'xml']), 
-              default='terminal', help='Output format')
-@click.option('--output', '-o', help='Output file path')
-@click.option('--mode', type=click.Choice(['quick', 'standard', 'deep', 'enterprise']), 
-              default='standard', help='Scanning mode')
-@click.option('--framework', type=click.Choice(['auto', 'nextjs', 'react', 'vite']), 
-              default='auto', help='Force framework detection')
-@click.option('--severity', type=click.Choice(['info', 'low', 'medium', 'high', 'critical']), 
-              default='info', help='Minimum severity level')
-@click.option('--verbose', '-v', is_flag=True, help='Verbose output')
-@click.option('--quiet', '-q', is_flag=True, help='Quiet mode (errors only)')
-@click.option('--no-cache', is_flag=True, help='Disable caching')
-@click.option('--pentest', is_flag=True, help='Enable framework-specific pentest mode for React/Next.js/Vite (requires ethical consent)')
-@click.option('--explain', help='Explain a specific vulnerability by ID')
-@click.option('--interactive', is_flag=True, help='Launch interactive mode with setup wizard')
-@click.option('--theme', default='default', 
-              type=click.Choice(['default', 'dark', 'cyberpunk', 'hacker', 'professional']),
-              help='UI theme')
-@click.option('--ai-enhanced', is_flag=True, help='Enable AI-powered analysis')
-@click.option('--behavioral-analysis', is_flag=True, help='Enable behavioral anomaly detection')
-@click.option('--threat-intel', is_flag=True, help='Enable real-time threat intelligence')
-@click.option('--community-rules', is_flag=True, help='Use community security rules')
-@click.option('--web', is_flag=True, help='Enable web scanning mode (auto-sets mode to dynamic for URLs)')
-@click.option('--threads', type=int, help='Number of scanning threads (auto for optimal)')
-@click.option('--cache-strategy', type=click.Choice(['off', 'basic', 'intelligent', 'aggressive']), 
-              default='intelligent', help='Caching strategy')
-@click.option('--fail-on', type=click.Choice(['critical', 'high', 'medium', 'low']), 
-              help='Fail build on severity level')
-@click.option('--quality-gate', help='Quality gate policy file')
-@click.option('--ci', is_flag=True, help='CI/CD mode (non-interactive)')
-@click.option('--show-progress', is_flag=True, help='Show real-time progress')
-@click.option('--include-remediation', is_flag=True, help='Include fix suggestions')
-@click.option('--executive-summary', is_flag=True, help='Generate executive summary')
-@click.option('--skip', multiple=True, help='Skip specific modules (e.g., --skip runtime --skip ai)')
-@click.option('--only', multiple=True, help='Run only specific modules')
-@click.option('--timeout', type=int, default=300, help='Scan timeout in seconds')
-@click.option('--memory-limit', type=int, help='Memory limit in MB')
-@click.option('--no-color', is_flag=True, help='Disable colored output')
-@click.option('--enhanced', '-e', is_flag=True, help='Use enhanced scanner with advanced features')
-@click.option('--custom-rules', is_flag=True, help='Enable custom security rules')
-@click.option('--false-positive-filter', is_flag=True, help='Enable false positive filtering')
-@click.option('--trend-analysis', is_flag=True, help='Enable trend analysis')
-@click.option('--sbom', 'sbom_output', help='Generate SBOM (Software Bill of Materials) to file')
-@click.option('--sbom-format', type=click.Choice(['cyclonedx', 'spdx']),
-              default='cyclonedx', help='SBOM output format')
-@click.option('--explain-with-ai', is_flag=True, help='Use LLM to explain findings and suggest fixes (requires API key)')
-@click.option('--ai-provider', type=click.Choice(['claude', 'openai']),
-              default='claude', help='LLM provider for --explain-with-ai')
-@click.pass_context
-@require_legal_acceptance
-def scan(ctx, target, output_format, output, mode, framework, severity, verbose, quiet,
-         no_cache, pentest, explain, interactive, theme, ai_enhanced, behavioral_analysis,
-         threat_intel, community_rules, web, threads, cache_strategy, fail_on, quality_gate,
-         ci, show_progress, include_remediation, executive_summary, skip, only, timeout,
-         memory_limit, no_color, enhanced, custom_rules, false_positive_filter, trend_analysis,
-         sbom_output, sbom_format, explain_with_ai, ai_provider):
-    """🔍 Scan a target for security vulnerabilities."""
-    # Show banner unless in quiet mode
-    if not quiet and not ci:
-        show_banner()
-    
-    # Handle explain mode
-    if explain:
-        explain_vulnerability(explain)
-        return
-    
-    # Handle interactive mode (not yet implemented)
-    if interactive:
-        console.print("Interactive mode is not yet available.", style="yellow")
-        return
-    
-    # Auto-detect web mode for URLs
-    if web or (target and target.startswith(('http://', 'https://'))):
-        if mode not in ['deep', 'enterprise']:
-            mode = 'dynamic'
-            if verbose:
-                console.print(f"[blue]Auto-detected web target, switching to dynamic mode[/blue]")
-    
-    # Handle pentest mode warning
-    if pentest and not show_pentest_warning():
-        console.print("❌ Pentest mode cancelled - ethical consent required.", style="red")
-        return
-    
-    # Create configuration
     config = Config(
         target=target,
         mode=mode,
-        framework=framework,
-        report_format=output_format,
-        output_file=output,
-        min_severity=severity,
-        verbose=verbose,
-        use_cache=not no_cache,
-        pentest_mode=pentest,
-        theme=theme,
-        ai_enhanced=ai_enhanced,
-        behavioral_analysis=behavioral_analysis,
-        threat_intel=threat_intel,
-        community_rules=community_rules,
-        threads=threads,
-        cache_strategy=cache_strategy,
-        ci_mode=ci,
-        show_progress=show_progress,
-        include_remediation=include_remediation,
-        executive_summary=executive_summary,
-        timeout=timeout,
-        memory_limit=memory_limit,
-        no_color=no_color,
-        skip_modules=list(skip),
-        only_modules=list(only)
+        min_severity=Severity.from_str(min_severity if min_severity != "info" else (file_cfg.min_severity or "info")),
+        fail_on=Severity.from_str(fail_on) if fail_on else (Severity.from_str(file_cfg.fail_on) if file_cfg.fail_on else None),
+        extra_ignores=[*ignore, *file_cfg.ignore],
+        only_detectors=only_ids or file_cfg.only_detectors,
+        skip_detectors=[*skip_ids, *file_cfg.skip_detectors],
+        disabled_rules=set(file_cfg.disable_rules),
+        severity_overrides={k: Severity.from_str(str(v)) for k, v in file_cfg.severity.items()},
+        explain_with_ai=explain_with_ai,
+        ai_provider=ai_provider or (file_cfg.ai_provider if explain_with_ai else None),
+        ai_redact=not no_redact,
     )
-    
+
     try:
-        # Run the scan
-        if enhanced or ADVANCED_FEATURES and (ai_enhanced or behavioral_analysis or mode == 'enterprise'):
-            # Use enhanced scanner for advanced features
-            from .scanner_enhanced import EnhancedScanner
-            enhanced_scanner = EnhancedScanner(config)
-            
-            # Configure enhanced options
-            enhanced_options = {
-                'enable_custom_rules': custom_rules,
-                'enable_filtering': false_positive_filter,
-                'enable_trends': trend_analysis,
-                'verbose': verbose,
-                'no_cache': no_cache,
-                'pentest': pentest
-            }
-            
-            results = asyncio.run(enhanced_scanner.scan_target(target, mode, enhanced_options))
-            
-            # Convert to expected format
-            results = {
-                'success': True,
-                'vulnerabilities': results.get('vulnerabilities', []),
-                'summary': results.get('summary', {}),
-                'scan_info': {
-                    'duration': results.get('duration', 'N/A'),
-                    'files_scanned': 0
-                },
-                'data': {
-                    'vulnerabilities': results.get('vulnerabilities', []),
-                    'summary': results.get('summary', {}),
-                    'trends': results.get('trends', {}),
-                    'false_positives': results.get('false_positives', []),
-                    'custom_rule_matches': results.get('custom_rule_matches', [])
-                }
-            }
-            # Create a mock orchestrator for display purposes
-            orchestrator = type('MockOrchestrator', (), {
-                'display_results': lambda self, results: display_scan_results(results, config, verbose)
-            })()
-        else:
-            # Use standard orchestrator
-            if verbose:
-                console.print("[blue]Using standard ScanOrchestrator[/blue]")
-            orchestrator = ScanOrchestrator(config)
-            results = asyncio.run(orchestrator.scan())
-        
-        # LLM-powered analysis (opt-in)
-        if explain_with_ai:
-            try:
-                from .analysis.llm_analyzer import LLMAnalyzer, LLMConfig, LLMProvider
-                provider = LLMProvider.CLAUDE if ai_provider == 'claude' else LLMProvider.OPENAI
-                llm = LLMAnalyzer(LLMConfig(provider=provider))
-
-                # Flatten vulnerabilities for LLM analysis
-                all_vulns = []
-                grouped = results.get('vulnerabilities', {})
-                if isinstance(grouped, dict):
-                    for mod_vulns in grouped.values():
-                        if isinstance(mod_vulns, list):
-                            all_vulns.extend(mod_vulns)
-
-                if all_vulns:
-                    console.print(f"\nAnalyzing {len(all_vulns)} finding(s) with {ai_provider}...", style="blue")
-                    for v in all_vulns[:20]:  # Limit to 20 findings
-                        vuln_dict = v if isinstance(v, dict) else (v.to_dict() if hasattr(v, 'to_dict') else {})
-                        fp = vuln_dict.get('file_path', '')
-                        code_ctx = ''
-                        if fp and Path(fp).exists():
-                            try:
-                                code_ctx = Path(fp).read_text(encoding='utf-8')[:2000]
-                            except Exception:
-                                pass
-                        try:
-                            explanation = asyncio.run(llm.explain_finding(vuln_dict, code_ctx, fp))
-                            console.print(f"\n[bold]{vuln_dict.get('title', '')}[/bold]")
-                            console.print(f"  {explanation.summary}")
-                            if explanation.fix_suggestion:
-                                console.print(f"  Fix: {explanation.fix_suggestion}", style="green")
-                            if explanation.is_false_positive:
-                                console.print("  (LLM suggests this may be a false positive)", style="yellow")
-                        except Exception as e:
-                            if verbose:
-                                console.print(f"  LLM analysis failed: {e}", style="red")
-                else:
-                    console.print("No findings to analyze with LLM.", style="yellow")
-            except (ImportError, ValueError) as e:
-                console.print(f"LLM analysis unavailable: {e}", style="yellow")
-
-        # Handle CI/CD exit codes
-        if ci and fail_on:
-            severity_levels = ['info', 'low', 'medium', 'high', 'critical']
-            fail_level_index = severity_levels.index(fail_on)
-            
-            summary = results.get('summary', {})
-            severity_breakdown = summary.get('severity_breakdown', {})
-            
-            for i in range(fail_level_index, len(severity_levels)):
-                if severity_breakdown.get(severity_levels[i], 0) > 0:
-                    console.print(f"❌ Build failed: Found {severity_levels[i]} severity issues", style="red")
-                    sys.exit(1)
-        
-        # Display scan results
-        if not quiet and not ci:
-            # Use orchestrator's display method which includes report saving
-            orchestrator.display_results(results)
-        else:
-            # For quiet/CI mode, still save the report but don't display
-            if hasattr(orchestrator, 'display_results'):
-                # Save report without displaying
-                orchestrator.display_results(results)
-        
-        # Generate SBOM if requested
-        if sbom_output:
-            try:
-                from .dependencies.sbom_generator import SBOMGenerator, SBOMFormat
-                sbom_gen = SBOMGenerator()
-                format_map = {
-                    'cyclonedx': SBOMFormat.CYCLONEDX_JSON,
-                    'spdx': SBOMFormat.SPDX_JSON,
-                }
-                sbom_fmt = format_map.get(sbom_format, SBOMFormat.CYCLONEDX_JSON)
-
-                # Build dependency graph from package.json if available
-                dep_graph = {}
-                pkg_path = Path(target) / 'package.json' if Path(target).is_dir() else None
-                if pkg_path and pkg_path.exists():
-                    import json as _json
-                    with open(pkg_path) as _f:
-                        pkg = _json.load(_f)
-                    for name, ver in {**pkg.get('dependencies', {}), **pkg.get('devDependencies', {})}.items():
-                        dep_graph[name] = {'version': ver.lstrip('^~>=<'), 'type': 'npm'}
-
-                project_info = {
-                    'name': Path(target).name,
-                    'version': '0.0.0',
-                    'framework': framework,
-                }
-
-                sbom_list = asyncio.run(sbom_gen.generate_sbom(dep_graph, project_info, [sbom_fmt]))
-                if sbom_list:
-                    asyncio.run(sbom_gen.export_sbom(sbom_list[0], sbom_fmt, sbom_output))
-                    console.print(f"SBOM written to {sbom_output}", style="green")
-            except ImportError:
-                console.print("SBOM generation requires the dependencies module.", style="yellow")
-            except Exception as e:
-                console.print(f"SBOM generation failed: {e}", style="yellow")
-
-        # Auto-generate SARIF in CI mode
-        if ci and output_format != 'sarif' and not output:
-            try:
-                sarif_path = 'njordscan-results.sarif'
-                orchestrator.report_formatter.generate_sarif_report(results, sarif_path)
-                if verbose:
-                    console.print(f"SARIF report written to {sarif_path}", style="blue")
-            except Exception:
-                pass  # Best-effort in CI mode
-
-        console.print("Scan completed successfully.", style="green")
-
-    except KeyboardInterrupt:
-        console.print("\n❌ Scan interrupted by user", style="yellow")
-        sys.exit(1)
-    except ImportError as e:
-        console.print(f"❌ Missing dependency: {str(e)}", style="red")
-        console.print("💡 Try: pip install njordscan[all]", style="yellow")
-        sys.exit(1)
-    except FileNotFoundError as e:
-        console.print(f"❌ File not found: {str(e)}", style="red")
-        console.print("💡 Check if the target path exists and is accessible", style="yellow")
-        sys.exit(1)
-    except PermissionError as e:
-        console.print(f"❌ Permission denied: {str(e)}", style="red")
-        console.print("💡 Check file permissions or run with appropriate privileges", style="yellow")
-        sys.exit(1)
-    except ConnectionError as e:
-        console.print(f"❌ Network error: {str(e)}", style="red")
-        console.print("💡 Check your internet connection and target accessibility", style="yellow")
-        sys.exit(1)
-    except TimeoutError as e:
-        console.print(f"❌ Operation timed out: {str(e)}", style="red")
-        console.print("💡 Try increasing timeout with --timeout option", style="yellow")
-        sys.exit(1)
-    except Exception as e:
-        console.print(f"❌ Scan failed: {str(e)}", style="red")
+        result: ScanResult = asyncio.run(Orchestrator(config).run())
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        err_console.print(f"[red]✗ {exc}[/red]")
+        sys.exit(EXIT_ERROR)
+    except Exception as exc:  # noqa: BLE001 — surface unexpected errors cleanly, not as a traceback
+        err_console.print(f"[red]✗ Scan failed:[/red] {exc!r}")
         if verbose:
             console.print_exception()
-        else:
-            console.print("💡 Run with --verbose for detailed error information", style="yellow")
-        sys.exit(1)
+        sys.exit(EXIT_ERROR)
 
-@main.command()
-@click.option('--ide', type=click.Choice(['vscode', 'intellij', 'vim', 'lsp']), help='IDE to setup')
-@click.option('--ci', type=click.Choice(['github', 'gitlab', 'azure', 'jenkins']), help='CI/CD platform to setup')
-@click.option('--framework', type=click.Choice(['nextjs', 'react', 'vite']), help='Framework preset')
-@click.option('--level', type=click.Choice(['basic', 'standard', 'advanced', 'enterprise']), 
-              default='standard', help='Security level')
-def setup(ide, ci, framework, level):
-    """🧙‍♂️ Interactive setup wizard for first-time configuration."""
-    console.print("Setup wizard is not yet available. Use 'njordscan configure --init' to create a configuration file.", style="yellow")
+    # --- baseline handling ---
+    baseline_path = baseline or (Path(file_cfg.baseline) if file_cfg.baseline else None)
+    if baseline_path and not baseline_path.is_absolute():
+        baseline_path = target / baseline_path
 
-@main.command()
-@click.option('--interactive', is_flag=True, help='Interactive configuration editor')
-@click.option('--init', is_flag=True, help='Initialize configuration file')
-@click.option('--validate', is_flag=True, help='Validate current configuration')
-@click.option('--show', is_flag=True, help='Show current configuration')
-@click.option('--export', help='Export configuration to file')
-@click.option('--framework', type=click.Choice(['nextjs', 'react', 'vite']), help='Framework preset')
-def configure(interactive, init, validate, show, export, framework):
-    """⚙️ Configuration management and validation."""
-    if interactive:
-        console.print("Interactive configuration is not yet available.", style="yellow")
+    if update_baseline:
+        if not baseline_path:
+            err_console.print("[red]✗ --update-baseline needs --baseline PATH (or 'baseline:' in config).[/red]")
+            sys.exit(EXIT_ERROR)
+        n = write_baseline(baseline_path, result.findings)
+        console.print(f"[green]✓[/green] Baseline updated: {n} finding(s) recorded in {baseline_path}")
+        sys.exit(EXIT_OK)
+
+    hidden = 0
+    if baseline_path and baseline_path.exists():
+        new, known = Baseline.load(baseline_path).partition(result.findings)
+        hidden = len(known)
+        result.findings = new
+
+    if explain_with_ai:
+        _apply_ai_explanations(result, config)
+
+    _emit(result, fmt, output, verbose=verbose, quiet=quiet, show_fix=not brief)
+    if hidden and not quiet and fmt == "terminal":
+        console.print(f"[dim]({hidden} known finding(s) hidden by baseline.)[/dim]")
+
+    if do_fix:
+        _run_autofix(result, config, dry_run=dry_run)
+
+    if config.fail_on and result.exceeds(config.fail_on):
+        sys.exit(EXIT_FINDINGS)
+    sys.exit(EXIT_OK)
+
+
+def _run_autofix(result: ScanResult, config: Config, *, dry_run: bool) -> None:
+    from .fix import apply_fixes
+
+    report = apply_fixes(result, result.project, dry_run=dry_run)
+    if not report.applied:
+        console.print("[dim]No auto-fixable findings (safe fixes only).[/dim]")
         return
-    elif init:
-        config = Config()
-        config.save_to_file('.njordscan.json')
-        console.print("✅ Configuration file created: .njordscan.json", style="green")
-    elif validate:
-        try:
-            config = Config.load_from_file('.njordscan.json')
-            console.print("✅ Configuration is valid", style="green")
-        except Exception as e:
-            console.print(f"❌ Configuration error: {e}", style="red")
-    elif show:
-        try:
-            config = Config.load_from_file('.njordscan.json')
-            config.display()
-        except FileNotFoundError:
-            console.print("❌ No configuration file found. Run 'njordscan configure --init'", style="red")
-    elif export:
-        config = Config()
-        config.save_to_file(export)
-        console.print(f"✅ Configuration exported to: {export}", style="green")
-    else:
-        console.print("❌ Please specify an action. Use --help for options.", style="red")
+    verb = "Would apply" if dry_run else "Applied"
+    console.print(f"\n[bold green]🔧 {verb} {report.count} safe fix(es)[/bold green] "
+                  f"across {len(set(report.files_changed))} file(s):")
+    for fix in report.applied:
+        console.print(f"  [green]✓[/green] {fix.file}:{fix.line or ''} — {fix.description}")
+    if dry_run:
+        for name, diff in report.diffs.items():
+            if diff:
+                from rich.syntax import Syntax
+                console.print(Syntax(diff, "diff", theme="ansi_dark", background_color="default"))
+        console.print("[dim]Dry run — no files were modified. Re-run with --fix (no --dry-run) to apply.[/dim]")
 
-@main.command()
-@click.option('--interactive', is_flag=True, help='Interactive results browser')
-@click.option('--list', 'list_scans', is_flag=True, help='List recent scans')
-@click.option('--compare', nargs=2, help='Compare two scan results')
-@click.option('--export', help='Export results to file')
-@click.option('--format', 'export_format', type=click.Choice(['csv', 'json', 'html']), 
-              default='json', help='Export format')
-@click.option('--trends', is_flag=True, help='Show security trends')
-def results(interactive, list_scans, compare, export, export_format, trends):
-    """📊 Browse and analyze scan results."""
-    if interactive:
-        console.print("Interactive results browser is not yet available.", style="yellow")
-        return
-    elif list_scans:
-        # List recent scans
-        cache_manager = CacheManager()
-        recent_scans = cache_manager.list_recent_scans()
-        
-        if not recent_scans:
-            console.print("No recent scans found.", style="yellow")
-            return
-        
-        table = Table(title="Recent Scans")
-        table.add_column("Date", style="cyan")
-        table.add_column("Target", style="green")
-        table.add_column("Framework", style="blue")
-        table.add_column("Issues", style="red")
-        
-        for scan in recent_scans[:10]:  # Show last 10
-            table.add_row(
-                scan.get('date', 'Unknown'),
-                scan.get('target', 'Unknown'),
-                scan.get('framework', 'Unknown'),
-                str(scan.get('total_issues', 0))
-            )
-        
-        console.print(table)
-    else:
-        console.print("❌ Please specify an action. Use --help for options.", style="red")
 
-@main.command()
-@click.option('--interactive', is_flag=True, help='Interactive fix mode')
-@click.option('--issue', help='Fix specific issue by ID')
-@click.option('--dry-run', is_flag=True, help='Show what would be fixed without applying')
-@click.option('--safe-only', is_flag=True, help='Only apply safe fixes')
-@click.option('--all', 'fix_all', is_flag=True, help='Fix all auto-fixable issues')
-def fix(interactive, issue, dry_run, safe_only, fix_all):
-    """🛠️ Interactive fix suggestions and automated remediation."""
-    console.print("Fix functionality is not yet available.", style="yellow")
+def _split_csv(values: tuple) -> List[str]:
+    """Accept both repeated flags and comma-separated values (--only a,b)."""
+    out: List[str] = []
+    for v in values:
+        out.extend(part.strip() for part in str(v).split(",") if part.strip())
+    return out
 
-@main.command()
-@click.option('--show', is_flag=True, help='Show legal disclaimer')
-@click.option('--accept', is_flag=True, help='Accept legal terms')
-@click.option('--clear', is_flag=True, help='Clear acceptance cache')
-def legal(show, accept, clear):
-    """⚖️ Legal disclaimer and terms management."""
-    if show:
-        legal_manager.force_show_disclaimer()
-    elif accept:
-        if legal_manager.show_disclaimer():
-            console.print("\n[green]✓ Legal terms accepted successfully![/green]")
+
+def _resolve_file_config(target: Path, config_path: Optional[Path], no_config: bool, verbose: bool) -> FileConfig:
+    if no_config:
+        return FileConfig()
+    path = config_path or find_config(target)
+    if path and path.is_file():
+        if verbose:
+            console.print(f"[dim]Using config: {path}[/dim]")
+        return load_config_file(path)
+    return FileConfig()
+
+
+def _emit(result: ScanResult, fmt: str, output: Optional[Path], *,
+          verbose: bool, quiet: bool, show_fix: bool) -> None:
+    if fmt == "terminal":
+        if quiet:
+            _print_summary_line(result)
         else:
-            console.print("\n[red]✗ Legal terms not accepted.[/red]")
-    elif clear:
-        legal_manager.clear_acceptance()
-        console.print("\n[yellow]Legal acceptance cache cleared.[/yellow]")
-    else:
-        # Show current status
-        if legal_manager.check_acceptance():
-            console.print("\n[green]✓ Legal terms have been accepted.[/green]")
-            console.print("[dim]Use --show to view the full disclaimer.[/dim]")
-        else:
-            console.print("\n[yellow]⚠ Legal terms not yet accepted.[/yellow]")
-            console.print("[dim]Use --accept to accept the terms.[/dim]")
-
-@main.command()
-@click.option('--check', is_flag=True, help='Check for updates')
-@click.option('--force', is_flag=True, help='Force update (ignore cache)')
-@click.option('--source', type=click.Choice(['official', 'community', 'all']), 
-              default='official', help='Update source')
-@click.option('--verbose', '-v', is_flag=True, help='Verbose output')
-def update(check, force, source, verbose):
-    """🔄 Update vulnerability database and rules."""
-    if not DATA_UPDATER_AVAILABLE:
-        console.print("❌ Update functionality requires additional dependencies.", style="red")
-        console.print("Install with: pip install njordscan[all]", style="yellow")
+            render_terminal(result, console, verbose=verbose, show_fix=show_fix)
+        if verbose and result.errors:
+            for e in result.errors:
+                err_console.print(f"[yellow]· {e}[/yellow]")
         return
-    
+
+    rendered = render_to_string(result, fmt)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(rendered, encoding="utf-8")
+        console.print(f"[green]✓[/green] {fmt.upper()} report written to {output}")
+    else:
+        click.echo(rendered)
+
+
+def _print_summary_line(result: ScanResult) -> None:
+    c = result.counts
+    console.print(
+        f"NjordScan: {result.total} issue(s) — "
+        f"{c[Severity.CRITICAL]} critical, {c[Severity.HIGH]} high, "
+        f"{c[Severity.MEDIUM]} medium, {c[Severity.LOW]} low."
+    )
+
+
+def _apply_ai_explanations(result: ScanResult, config: Config) -> None:
+    """Best-effort AI enrichment. Never fails the scan; warns if unavailable."""
     try:
-        # Create a basic config for the update command
-        config = Config(
-            target='.',
-            mode='standard',
-            framework='auto',
-            report_format='terminal',
-            output_file=None,
-            min_severity='info',
-            verbose=False,
-            use_cache=True,
-            pentest_mode=False,
-            theme='default',
-            ai_enhanced=False,
-            behavioral_analysis=False,
-            threat_intel=False,
-            community_rules=False,
-            threads=None,
-            cache_strategy='intelligent',
-            ci_mode=False,
-            show_progress=False,
-            include_remediation=False,
-            executive_summary=False,
-            timeout=300,
-            memory_limit=None,
-            no_color=False,
-            skip_modules=[],
-            only_modules=[]
-        )
-        
-        data_manager = VulnerabilityDataManager(config)
-        
-        if check:
-            console.print("🔍 Checking for updates...", style="blue")
-            updates_available = asyncio.run(data_manager.check_for_updates())
-            
-            if any(updates_available.values()):
-                console.print("✅ Updates available for the following sources:", style="green")
-                for source, needs_update in updates_available.items():
-                    if needs_update:
-                        console.print(f"  • {source}", style="yellow")
-            else:
-                console.print("✅ All data sources are up to date", style="green")
-        else:
-            console.print("🔄 Updating vulnerability database...", style="blue")
-            console.print("📡 Fetching data from multiple sources:", style="blue")
-            console.print("  • NIST CVE Database", style="cyan")
-            console.print("  • MITRE ATT&CK Framework", style="cyan")
-            console.print("  • GitHub Security Advisories", style="cyan")
-            console.print("  • NPM Security Advisories", style="cyan")
-            console.print("  • Framework-specific security data", style="cyan")
-            
-            with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
-                task = progress.add_task("Updating...", total=None)
-                results = asyncio.run(data_manager.update_all_sources(force=force))
-            
-            # Process and display results
-            successful_updates = 0
-            failed_updates = 0
-            
-            console.print("\n📊 Update Results:", style="blue")
-            for source, result in results.items():
-                if result.get('success', False):
-                    if result.get('updated', False):
-                        records = result.get('records', 0)
-                        console.print(f"  ✅ {source}: {records} records updated", style="green")
-                        successful_updates += 1
-                    else:
-                        console.print(f"  ℹ️ {source}: No changes (up to date)", style="blue")
-                else:
-                    error = result.get('error', 'Unknown error')
-                    console.print(f"  ❌ {source}: {error}", style="red")
-                    failed_updates += 1
-            
-            # Summary
-            if successful_updates > 0:
-                console.print(f"\n✅ Update completed! {successful_updates} sources updated successfully", style="green")
-                if failed_updates > 0:
-                    console.print(f"⚠️ {failed_updates} sources had issues", style="yellow")
-            else:
-                console.print("\n❌ Update failed for all sources", style="red")
-                console.print("💡 Try running with --force to ignore cache", style="yellow")
-                
-    except Exception as e:
-        console.print(f"❌ Update error: {str(e)}", style="red")
-
-@main.command()
-@click.argument('action', type=click.Choice(['list', 'browse', 'install', 'remove', 'create', 'publish', 'validate', 'test']))
-@click.argument('plugin_name', required=False)
-@click.option('--template', type=click.Choice(['scanner', 'reporter', 'framework']), help='Plugin template')
-@click.option('--marketplace', is_flag=True, help='Use community marketplace')
-def plugins(action, plugin_name, template, marketplace):
-    """🔌 Plugin management and development."""
-    plugin_manager = PluginManager()
-    
-    try:
-        if action == 'list':
-            plugins_list = plugin_manager.list_plugins()
-            if not plugins_list:
-                console.print("No plugins installed.", style="yellow")
-                return
-            
-            table = Table(title="Installed Plugins")
-            table.add_column("Name", style="cyan")
-            table.add_column("Version", style="green")
-            table.add_column("Type", style="blue")
-            table.add_column("Status", style="yellow")
-            
-            for plugin in plugins_list:
-                table.add_row(
-                    plugin.get('name', 'Unknown'),
-                    plugin.get('version', 'Unknown'),
-                    plugin.get('type', 'Unknown'),
-                    plugin.get('status', 'Unknown')
-                )
-            
-            console.print(table)
-            
-        elif action == 'browse':
-            console.print("Available plugins:", style="bold")
-            console.print("  nextjs-advanced-security - Advanced Next.js security patterns")
-            console.print("  react-security-pro - Professional React security analysis")
-            console.print("  vite-security-plus - Enhanced Vite security scanning")
-                
-        elif action == 'install' and plugin_name:
-            console.print(f"🔄 Installing plugin: {plugin_name}", style="blue")
-            success = plugin_manager.install_plugin(plugin_name)
-            if success:
-                console.print("✅ Plugin installed successfully!", style="green")
-            else:
-                console.print("❌ Plugin installation failed", style="red")
-                
-        elif action == 'create' and plugin_name:
-            if template and ADVANCED_FEATURES:
-                # Create plugin template using the plugin creator
-                from .plugin_creator import create_plugin_template
-                try:
-                    create_plugin_template(plugin_name, template)
-                    console.print(f"✅ Plugin template created: {plugin_name}", style="green")
-                except Exception as e:
-                    console.print(f"❌ Failed to create plugin template: {e}", style="red")
-            else:
-                console.print("❌ Plugin creation requires template type", style="red")
-                
-        else:
-            console.print("❌ Invalid plugin action or missing arguments", style="red")
-            
-    except Exception as e:
-        console.print(f"❌ Plugin error: {str(e)}", style="red")
-
-@main.command()
-@click.argument('action', type=click.Choice(['register', 'browse', 'challenges', 'mentorship', 'share-rule', 'download-rules']))
-@click.option('--category', help='Rule category or challenge type')
-@click.option('--file', help='File to share or download to')
-def community(action, category, file):
-    """🌟 Community features and collaboration."""
-    console.print("Community features are not yet available.", style="yellow")
-
-@main.command()
-@click.option('--topic', type=click.Choice(['xss', 'sql-injection', 'csrf', 'ssrf', 'nextjs', 'react', 'vite', 'headers', 'authentication']))
-@click.option('--framework', type=click.Choice(['nextjs', 'react', 'vite']))
-@click.option('--interactive', is_flag=True, help='Interactive learning mode')
-def learn(topic, framework, interactive):
-    """🎓 Interactive security tutorials and learning."""
-    if interactive:
-        console.print("Interactive learning is not yet available.", style="yellow")
+        from .explain import explain_findings
+    except Exception as exc:  # noqa: BLE001
+        err_console.print(f"[yellow]AI explanations unavailable: {exc}[/yellow]")
         return
-    else:
-        console.print("NjordScan Learning Resources", style="bold cyan")
-        
-        # Enhanced topic explanations
-        if topic:
-            console.print(f"\n🎯 Learning about: {topic.upper()}", style="bold yellow")
-            topic_info = _get_topic_info(topic)
-            console.print(topic_info)
-        else:
-            console.print("\n🚀 Choose a topic to learn about:")
-            topics_table = Table(title="📖 Available Security Topics", show_header=True, header_style="bold green")
-            topics_table.add_column("Topic", style="cyan", width=20)
-            topics_table.add_column("Description", style="white", width=50)
-            topics_table.add_column("Difficulty", style="yellow", width=15)
-            
-            topics_data = [
-                ("XSS", "Cross-Site Scripting attacks and prevention", "Beginner"),
-                ("SQL Injection", "Database security and query protection", "Intermediate"),
-                ("CSRF", "Cross-Site Request Forgery protection", "Beginner"),
-                ("SSRF", "Server-Side Request Forgery prevention", "Advanced"),
-                ("Headers", "HTTP security headers and configuration", "Beginner"),
-                ("Authentication", "User authentication and session security", "Intermediate"),
-                ("Next.js", "Next.js specific security best practices", "Beginner"),
-                ("React", "React application security guidelines", "Beginner"),
-                ("Vite", "Vite build tool security considerations", "Beginner")
-            ]
-            
-            for topic_name, description, difficulty in topics_data:
-                topics_table.add_row(topic_name, description, difficulty)
-            
-            console.print(topics_table)
-        
-        console.print("\n🌐 Online Resources:")
-        console.print("• Documentation: https://njordscan.dev/docs")
-        console.print("• Tutorials: https://njordscan.dev/learn")
-        console.print("• Community: https://discord.gg/njordscan")
-        console.print("• Interactive Mode: Use --interactive flag for hands-on learning")
+    try:
+        explain_findings(result.findings, config)
+    except Exception as exc:  # noqa: BLE001
+        err_console.print(f"[yellow]AI explanation step skipped: {exc}[/yellow]")
 
-@main.command()
-@click.argument('vuln_id')
-def explain(vuln_id):
-    """💡 Get detailed explanation of a vulnerability."""
-    explain_vulnerability(vuln_id, console)
 
-@main.group()
-def cache():
-    """💾 Cache management and statistics."""
-    pass
+@cli.command()
+@click.argument("rule_id", required=False)
+def explain(rule_id: Optional[str]) -> None:
+    """💡 Explain a rule in depth (why it matters, how to fix it).
 
-@cache.command()
-def stats():
-    """📊 Show cache statistics."""
-    cache_manager = CacheManager()
-    stats = cache_manager.get_stats()
-    
-    table = Table(title="💾 Cache Statistics")
-    table.add_column("Metric", style="cyan")
-    table.add_column("Value", style="green")
-    
-    for key, value in stats.items():
-        if key != 'status':
-            table.add_row(key.replace('_', ' ').title(), str(value))
-    
+    Run without an argument to list every rule NjordScan knows about.
+    """
+    if not rule_id:
+        _list_rules()
+        return
+    rule = get_rule(rule_id)
+    if rule is None:
+        err_console.print(f"[red]Unknown rule:[/red] {rule_id}")
+        err_console.print("Run [cyan]njordscan explain[/cyan] to list all rules.")
+        sys.exit(EXIT_ERROR)
+
+    from rich.panel import Panel
+    from rich.text import Text
+    body = Text()
+    body.append("Why this matters\n", style="bold yellow")
+    body.append(rule.why + "\n\n")
+    body.append("How to fix it\n", style="bold green")
+    body.append(rule.fix + "\n")
+    if rule.secure_example:
+        body.append("\nSecure example:\n", style="bold")
+        body.append(rule.secure_example + "\n")
+    meta = "  ·  ".join(filter(None, [rule.cwe, rule.owasp, f"severity: {rule.severity.value}"]))
+    if meta:
+        body.append(f"\n{meta}\n", style="dim italic")
+    for url in rule.references:
+        body.append(f"• {url}\n", style="blue underline")
+    console.print(Panel(body, title=f"{rule.severity.emoji} {rule.title}  [{rule.id}]",
+                        title_align="left", border_style=rule.severity.color.split()[-1], padding=(1, 2)))
+
+
+def _list_rules() -> None:
+    from rich.table import Table
+    table = Table(title="NjordScan rules", header_style="bold cyan")
+    table.add_column("Rule ID")
+    table.add_column("Severity")
+    table.add_column("Title")
+    for rule in sorted(all_rules(), key=lambda r: (-r.severity.rank, r.id)):
+        table.add_row(rule.id, f"{rule.severity.emoji} {rule.severity.value}", rule.title)
     console.print(table)
-    
-    # Show cache status
-    status = stats.get('status', 'Unknown')
-    if status == 'enabled':
-        console.print("✅ Cache is enabled and working", style="green")
-    else:
-        console.print(f"⚠️ Cache status: {status}", style="yellow")
 
-@cache.command()
-def clear():
-    """🗑️ Clear all cached data."""
-    cache_manager = CacheManager()
+
+@cli.command()
+@click.argument("directory", type=click.Path(path_type=Path), default=".")
+@click.option("--force", is_flag=True, help="Overwrite an existing config file.")
+def init(directory: Path, force: bool) -> None:
+    """🧩 Create a starter .njordscan.yml in the given directory."""
+    from .core.configfile import STARTER
+
+    dest = directory / ".njordscan.yml"
+    if dest.exists() and not force:
+        err_console.print(f"[yellow]{dest} already exists.[/yellow] Use --force to overwrite.")
+        sys.exit(EXIT_ERROR)
+    dest.write_text(STARTER, encoding="utf-8")
+    console.print(f"[green]✓[/green] Wrote {dest}")
+    console.print("Edit it to fit your project, then run [cyan]njordscan scan .[/cyan]")
+
+
+@cli.command()
+@click.argument("target", type=click.Path(path_type=Path), default=".")
+@click.option("--quiet", is_flag=True, help="Less output.")
+def update(target: Path, quiet: bool) -> None:
+    """🔄 Refresh dependency advisories from OSV.dev (keeps the CVE data current)."""
+    from .update import POPULAR_NPM, refresh
+
+    names = list(POPULAR_NPM)
+    pkg = target / "package.json" if target.is_dir() else None
+    if pkg and pkg.exists():
+        try:
+            import json as _json
+            data = _json.loads(pkg.read_text(encoding="utf-8"))
+            for sect in ("dependencies", "devDependencies"):
+                names.extend((data.get(sect) or {}).keys())
+        except Exception:  # noqa: BLE001
+            pass
+
+    console.print(f"[cyan]Refreshing advisories[/cyan] for {len(set(names))} packages from OSV.dev…")
     try:
-        cache_manager.clear_cache()
-        console.print("✅ Cache cleared successfully!", style="green")
-    except Exception as e:
-        console.print(f"❌ Error clearing cache: {e}", style="red")
+        if quiet:
+            result = refresh(names)
+        else:
+            with console.status("[cyan]Querying OSV.dev…[/cyan]") as status:
+                result = refresh(names, progress=lambda n: status.update(f"[cyan]OSV.dev[/cyan] · {n}"))
+    except Exception as exc:  # noqa: BLE001
+        err_console.print(f"[red]✗ Update failed:[/red] {exc!r}")
+        sys.exit(EXIT_ERROR)
 
-@main.command()
-def version():
+    console.print(
+        f"[green]✓[/green] {result['total_advisories']} advisories for "
+        f"{result['packages_with_advisories']} packages → {result['path']}"
+    )
+    if result["errors"] and not quiet:
+        console.print(f"[yellow]{len(result['errors'])} package(s) could not be fetched "
+                      "(offline or rate-limited).[/yellow]")
+
+
+@cli.command()
+def doctor() -> None:
+    """🩺 Show what's installed and working (detectors, rules, advisories, AI)."""
+    import sys as _sys
+    from rich.table import Table
+
+    from .core.paths import user_advisories_path
+    from .detectors import load_detectors
+
+    t = Table(show_header=False, box=None, padding=(0, 2))
+    t.add_row("NjordScan", f"[cyan]v{__version__}[/cyan]")
+    t.add_row("Python", _sys.version.split()[0])
+    detectors = load_detectors()
+    t.add_row("Detectors", ", ".join(d.id for d in detectors) or "[red]none[/red]")
+    t.add_row("Rules", str(len(all_rules())))
+    try:
+        from .detectors.pattern_engine import _load_patterns
+        t.add_row("Patterns", str(len(_load_patterns())))
+    except Exception:  # noqa: BLE001
+        pass
+
+    # advisory freshness
+    seed = "shipped seed"
+    cache = user_advisories_path()
+    if cache.exists():
+        try:
+            import json as _json
+            meta = _json.loads(cache.read_text()).get("_meta", {})
+            seed += f" + user cache ({meta.get('packages_queried', '?')} pkgs from {meta.get('source', 'osv')})"
+        except Exception:  # noqa: BLE001
+            pass
+    else:
+        seed += " (run 'njordscan update' to refresh from OSV.dev)"
+    t.add_row("Advisories", seed)
+
+    # taint engine availability
+    try:
+        import tree_sitter  # noqa: F401
+        t.add_row("Taint engine", "[green]tree-sitter available[/green]")
+    except ImportError:
+        t.add_row("Taint engine", "[yellow]tree-sitter missing (taint disabled)[/yellow]")
+
+    # AI providers
+    ai_rows = []
+    try:
+        import httpx  # noqa: F401
+        ai_rows.append("httpx installed")
+    except ImportError:
+        ai_rows.append(r"httpx missing (pip install 'njordscan\[ai]')")  # escape [ai] for rich
+    import os as _os
+    ai_rows.append("ANTHROPIC_API_KEY set" if _os.getenv("ANTHROPIC_API_KEY") else "no Anthropic key")
+    ai_rows.append("OPENAI_API_KEY set" if _os.getenv("OPENAI_API_KEY") else "no OpenAI key")
+    t.add_row("AI explain", "; ".join(ai_rows))
+
+    console.print(t)
+
+
+@cli.command()
+def version() -> None:
     """📋 Show version information."""
-    from . import get_version_info
-    
-    info = get_version_info()
-    
-    table = Table(title=f"NjordScan v{info['version']}")
-    table.add_column("Component", style="cyan")
-    table.add_column("Value", style="green")
-    
-    table.add_row("Version", info['version'])
-    table.add_row("Status", info['status'])
-    table.add_row("Author", info['author'])
-    table.add_row("License", info['license'])
-    table.add_row("Homepage", info['url'])
-    table.add_row("Repository", info['repository'])
-    table.add_row("Documentation", info['documentation'])
-    
-    console.print(table)
-    
-    # Show feature availability
-    console.print("\n🚀 Features:", style="bold cyan")
-    for feature, enabled in FEATURES.items():
-        status = "✅ Enabled" if enabled else "❌ Disabled"
-        feature_name = feature.replace('_', ' ').title()
-        console.print(f"• {feature_name}: {status}")
+    console.print(f"NjordScan [bold cyan]v{__version__}[/bold cyan]")
+    console.print("Security scanning for Next.js, React & Vite — explained in plain English.")
 
-@main.command()
-def doctor():
-    """🩺 System diagnostics and health check."""
-    console.print("🩺 NjordScan System Diagnostics", style="bold cyan")
-    
-    # Check Python version
-    py_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    console.print(f"✅ Python Version: {py_version}")
-    
-    # Check dependencies
-    console.print("\n📦 Dependencies:")
-    try:
-        import click, rich, aiohttp, requests, yaml
-        console.print("✅ Core dependencies: OK")
-    except ImportError as e:
-        console.print(f"❌ Missing core dependency: {e}")
-    
-    # Check advanced features
-    console.print(f"\n🚀 Advanced Features: {'✅ Available' if ADVANCED_FEATURES else '❌ Not Available'}")
-    
-    # Check configuration
-    console.print("\n⚙️ Configuration:")
-    if Path('.njordscan.json').exists():
-        console.print("✅ Configuration file: Found")
-    else:
-        console.print("⚠️ Configuration file: Not found (using defaults)")
-    
-    # Check cache
-    cache_manager = CacheManager()
-    cache_stats = cache_manager.get_stats()
-    console.print(f"💾 Cache: {cache_stats.get('status', 'Unknown')}")
-    
-    console.print("\n✅ System check complete!")
 
-if __name__ == '__main__':
+def main(argv: Optional[List[str]] = None) -> None:
+    cli.main(args=argv, standalone_mode=True)
+
+
+if __name__ == "__main__":
     main()

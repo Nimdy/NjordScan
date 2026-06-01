@@ -1,10 +1,34 @@
-"""
-🛡️ Legacy Report Formatting for NjordScan v1.0.0
+"""Reporters: render a :class:`~njordscan.core.orchestrator.ScanResult`."""
 
-Basic report formatting - maintained for backward compatibility.
-For advanced reporting with dashboards and visualizations, use the 'reporting' module.
-"""
+from __future__ import annotations
 
-from .formatter import ReportFormatter
+from typing import Callable, Dict
 
-__all__ = ['ReportFormatter']
+from ..core.orchestrator import ScanResult
+from .html import render_html
+from .json_report import render_json
+from .sarif import render_sarif
+from .terminal import render_terminal
+
+# format name -> renderer returning a string (terminal renders to console directly)
+_FILE_RENDERERS: Dict[str, Callable[[ScanResult], str]] = {
+    "json": render_json,
+    "sarif": render_sarif,
+    "html": render_html,
+}
+
+
+def render_to_string(result: ScanResult, fmt: str) -> str:
+    if fmt not in _FILE_RENDERERS:
+        raise ValueError(f"Unknown file format: {fmt}")
+    return _FILE_RENDERERS[fmt](result)
+
+
+def available_formats() -> list[str]:
+    return ["terminal", *sorted(_FILE_RENDERERS)]
+
+
+__all__ = [
+    "render_terminal", "render_json", "render_sarif", "render_html",
+    "render_to_string", "available_formats",
+]

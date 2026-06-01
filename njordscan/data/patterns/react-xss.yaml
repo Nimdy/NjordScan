@@ -1,0 +1,153 @@
+# React / DOM XSS & client-side injection detection patterns.
+# Each rule_id has a 1:1 knowledge entry in njordscan/data/rules/react-xss.yaml.
+# Regex is Python 're'. Single-quoted YAML keeps backslashes literal.
+
+# --- javascript: URLs in JSX/HTML attributes -------------------------------
+- rule_id: react.javascript-url
+  pattern: '(?:href|src|xlink:href|formaction|action)\s*=\s*(?:["'']\s*javascript:|\{\s*["''`]\s*javascript:)'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'href/src points at a "javascript:" URL — clicking it runs that code in the user''s browser (XSS).'
+
+# --- href / src set directly from a user-looking variable ------------------
+# Only fires for identifiers whose NAME signals user data, to stay precise.
+- rule_id: react.href-user-value
+  pattern: 'href\s*=\s*\{\s*[\w.$\[\]'']*(?:user|userinput|untrusted|req\.query|req\.body|params\.|searchparams|location\.hash|location\.search|redirecturl|returnurl|nexturl|targeturl|externalurl|rawurl|userurl)[\w.$\[\]'']*\s*\}'
+  languages: [jsx, tsx]
+  confidence: medium
+  severity: medium
+  exclude_line: '(safeHref|sanitize|isValidUrl|allow|new URL)'
+  message: 'Link href comes straight from a user-controlled value — validate the URL scheme before using it (XSS / phishing).'
+
+# --- document.write / writeln with non-literal content ---------------------
+- rule_id: dom.document-write
+  pattern: 'document\.(?:write|writeln)\s*\(\s*(?!["''`)\s])'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'document.write() with non-literal content parses it as HTML — user data here means XSS. Avoid document.write.'
+
+# document.write('...' + x) / `...${x}` — literal that gets concatenated with data.
+- rule_id: dom.document-write
+  pattern: 'document\.(?:write|writeln)\s*\([^)]*(?:\+|\$\{)'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'document.write() with concatenated/interpolated data parses it as HTML — user data here means XSS. Avoid document.write.'
+
+# --- insertAdjacentHTML / outerHTML with non-literal content ---------------
+- rule_id: dom.insert-adjacent-html
+  pattern: '\.insertAdjacentHTML\s*\(\s*["''][^"'']+["'']\s*,\s*(?!["''`)\s])'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'insertAdjacentHTML() with non-literal HTML — user data here runs as code in the browser (XSS).'
+
+- rule_id: dom.insert-adjacent-html
+  pattern: '\.outerHTML\s*=\s*(?!["''`])(?![^=]*===)[A-Za-z_$`]'
+  languages: [js, jsx, ts, tsx]
+  confidence: medium
+  severity: high
+  exclude_line: '(==|!=|textContent|DOMPurify|sanitize)'
+  message: 'outerHTML assigned a non-literal value — parsed as HTML, so user data here is XSS.'
+
+# --- jQuery .html(...) / .append(...) with a non-literal value --------------
+- rule_id: dom.jquery-html
+  pattern: '\$\([^)]*\)(?:\.[A-Za-z]+\([^)]*\))*\.(?:html|append|prepend|after|before)\s*\(\s*(?!["''`)\s])[A-Za-z_$]'
+  languages: [js, jsx, ts, tsx]
+  confidence: medium
+  severity: high
+  requires_file: '(jquery|\$\()'
+  exclude_line: '(DOMPurify|sanitize|\.text\()'
+  message: 'jQuery .html()/.append() with a non-literal value inserts it as HTML — user data here is XSS. Use .text() or sanitize.'
+
+# --- location navigation built from location.hash / location.search --------
+- rule_id: dom.location-from-fragment
+  pattern: '(?:location(?:\.href)?\s*=|location\.(?:assign|replace)\s*\()[^;\n]*location\.(?:hash|search)'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'Navigation target built from location.hash/search (attacker-controlled) — DOM-XSS / open redirect. Validate it first.'
+
+- rule_id: dom.location-from-fragment
+  pattern: 'location\.(?:hash|search)\b[^;\n]*=>\s*(?:window\.)?location'
+  languages: [js, jsx, ts, tsx]
+  confidence: low
+  severity: high
+  message: 'location.hash/search flows into a navigation — attacker-controlled value used as a destination (DOM-XSS).'
+
+# --- React ref.current.innerHTML = ... -------------------------------------
+- rule_id: react.ref-inner-html
+  pattern: '\b[A-Za-z_$][\w$]*Ref\.current\.(?:inner|outer)HTML\s*='
+  languages: [jsx, tsx, js, ts]
+  frameworks: [react, nextjs]
+  confidence: high
+  severity: high
+  exclude_line: '(textContent|DOMPurify|sanitize)'
+  message: 'Writing innerHTML through a React ref bypasses React''s escaping — user data here is XSS. Use textContent or render {value}.'
+
+- rule_id: react.ref-inner-html
+  pattern: '\.current\.(?:inner|outer)HTML\s*=\s*(?!["''`])[A-Za-z_$]'
+  languages: [jsx, tsx, js, ts]
+  frameworks: [react, nextjs]
+  confidence: medium
+  severity: high
+  requires_file: 'useRef'
+  exclude_line: '(textContent|DOMPurify|sanitize|==)'
+  message: 'innerHTML set via a ref to a non-literal value bypasses React escaping (XSS). Use textContent or render {value}.'
+
+# --- unsanitized markdown -> dangerouslySetInnerHTML -----------------------
+- rule_id: react.unsanitized-markdown
+  pattern: '__html:\s*[A-Za-z_$][\w.$]*\b(?:marked|markdownToHtml|markdownToHTML|renderMarkdown|md\.render|markdownIt|converter\.makeHtml)\b'
+  languages: [jsx, tsx, js, ts]
+  confidence: high
+  severity: high
+  exclude_line: '(DOMPurify|sanitize)'
+  message: 'Markdown rendered to HTML and passed to dangerouslySetInnerHTML without sanitizing — <script> in the Markdown becomes XSS.'
+
+- rule_id: react.unsanitized-markdown
+  pattern: '__html:\s*(?:marked|markdownToHtml|markdownToHTML|renderMarkdown|markdownIt)\s*[.(]'
+  languages: [jsx, tsx, js, ts]
+  confidence: high
+  severity: high
+  exclude_line: '(DOMPurify|sanitize)'
+  message: 'Markdown rendered to HTML and passed to dangerouslySetInnerHTML without sanitizing — <script> in the Markdown becomes XSS.'
+
+# --- postMessage handler with no origin check ------------------------------
+# Multiline: flags an addEventListener('message', <handler>) whose first ~600
+# chars of body never reference `.origin`. The bounded negative lookahead keeps
+# it from spanning unrelated code, and arrow/function handler forms both match.
+- rule_id: dom.postmessage-no-origin-check
+  pattern: 'addEventListener\s*\(\s*["'']message["'']\s*,\s*(?:function\b[^(){}]*)?\([^)]*\)\s*(?::[^={};]*)?=?>?\s*\{(?:(?!\borigin\b)(?:.|\n)){0,600}?\}'
+  languages: [js, jsx, ts, tsx]
+  multiline: true
+  confidence: medium
+  severity: high
+  message: 'message-event handler never checks event.origin — any site can send it forged messages. Verify event.origin first.'
+
+# Also catch a named handler referenced by addEventListener whose definition
+# omits an origin check (function onMessage(e) { ... } with no .origin).
+- rule_id: dom.postmessage-no-origin-check
+  pattern: 'function\s+[A-Za-z_$][\w$]*\s*\([^)]*\)\s*\{(?:(?!\borigin\b)(?:.|\n)){0,500}?\.data\b(?:(?!\borigin\b)(?:.|\n)){0,400}?\}'
+  languages: [js, jsx, ts, tsx]
+  multiline: true
+  confidence: low
+  severity: high
+  requires_file: 'addEventListener\s*\(\s*["'']message["'']'
+  message: 'A message-event handler reads event.data without checking event.origin — any site can forge messages. Verify event.origin first.'
+
+# --- tokens / secrets in localStorage / sessionStorage ---------------------
+- rule_id: react.token-in-web-storage
+  pattern: '(?:localStorage|sessionStorage)\.setItem\s*\(\s*["''][^"'']*(?:token|jwt|auth|secret|password|passwd|api[_-]?key|access[_-]?key|session|credential|bearer|refresh[_-]?token)[^"'']*["'']'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: medium
+  message: 'Auth token/secret stored in web storage — any XSS or third-party script can read it. Use an HttpOnly cookie instead.'
+
+- rule_id: react.token-in-web-storage
+  pattern: '(?:localStorage|sessionStorage)\[\s*["''][^"'']*(?:token|jwt|auth|secret|api[_-]?key|session|bearer)[^"'']*["'']\s*\]\s*='
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: medium
+  message: 'Auth token/secret written to web storage — any XSS or third-party script can read it. Use an HttpOnly cookie instead.'

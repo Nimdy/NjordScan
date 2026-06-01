@@ -1,11 +1,8 @@
-#!/usr/bin/env python3
-"""
-🛡️ NjordScan v1.0.0 - Module Entry Point
+"""Allow ``python -m njordscan`` to invoke the CLI."""
 
-Allows running NjordScan as a module: python -m njordscan
-"""
+from __future__ import annotations
 
-from .main import main
+from .cli import main
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,45 @@
+# Git-hygiene rules — catching the "I committed my secrets" class of mistake.
+
+- id: hardening.env-not-gitignored
+  title: "Environment file is not ignored by git"
+  severity: high
+  cwe: CWE-538
+  owasp: "A01:2021-Broken Access Control"
+  why: >
+    This project has a .env file that is NOT listed in .gitignore, so the next
+    `git add .` will commit it. Env files almost always hold secrets (database
+    URLs, API keys), and once a secret is pushed it is in your git history
+    forever — scrapers find committed secrets within minutes. This is one of the
+    most common ways beginners leak credentials.
+  fix: >
+    Add `.env`, `.env.local`, and `.env.*.local` to your .gitignore now (run
+    `njordscan scan . --fix` to do it automatically). If the file was already
+    committed, remove it from history and rotate every secret it contained.
+  secure_example: |
+    # .gitignore
+    .env
+    .env.local
+    .env.*.local
+  references:
+    - https://nextjs.org/docs/app/building-your-application/configuring/environment-variables
+    - https://git-scm.com/docs/gitignore
+
+- id: hardening.env-committed
+  title: "Environment file appears to be tracked by git"
+  severity: critical
+  cwe: CWE-538
+  owasp: "A01:2021-Broken Access Control"
+  why: >
+    A .env file is tracked in this git repository. Any secret inside it is in the
+    repo (and its history) and is visible to anyone with access — and likely
+    already scraped if the repo is or ever was public. This is a credential leak.
+  fix: >
+    Remove the file from tracking (`git rm --cached .env`), add it to .gitignore,
+    commit, and ROTATE every secret it contained (assume all are compromised).
+    To purge it from history, use `git filter-repo` or the BFG tool.
+  secure_example: |
+    git rm --cached .env
+    echo ".env" >> .gitignore
+    git commit -m "stop tracking .env"
+  references:
+    - https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository
