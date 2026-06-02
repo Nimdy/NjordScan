@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from . import scanner, store
+from .._webguard import is_local_request, strict_for
 from ..core.history import compare
 
 HERE = Path(__file__).resolve().parent
@@ -25,6 +26,7 @@ _MAX_BODY = 64 * 1024
 _scanning: set = set()
 _lock = threading.Lock()
 _stop = threading.Event()
+_strict_local = True  # reject non-localhost Host; relaxed when bound to a non-local address
 
 
 def _do_scan(pid: str) -> None:
@@ -131,6 +133,8 @@ class _Handler(BaseHTTPRequestHandler):
             return {}
 
     def do_GET(self) -> None:  # noqa: N802
+        if not is_local_request(self, strict_local=_strict_local):
+            return self._send(403, b"forbidden", "text/plain")
         path, _, qs = self.path.partition("?")
         if path in ("/", "/index.html"):
             try:
@@ -149,6 +153,8 @@ class _Handler(BaseHTTPRequestHandler):
     do_HEAD = do_GET
 
     def do_POST(self) -> None:  # noqa: N802
+        if not is_local_request(self, strict_local=_strict_local):
+            return self._send(403, b"forbidden", "text/plain")
         path = self.path.split("?", 1)[0]
         body = self._body()
         if path == "/api/add":
@@ -169,6 +175,8 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 def run(host: str = "127.0.0.1", port: int = 8770, open_browser: bool = True) -> None:
+    global _strict_local
+    _strict_local = strict_for(host)  # enforce localhost-only Host unless user bound elsewhere
     store.monitor_dir().mkdir(parents=True, exist_ok=True)
     threading.Thread(target=_scheduler_loop, daemon=True).start()
     url = f"http://{host}:{port}"

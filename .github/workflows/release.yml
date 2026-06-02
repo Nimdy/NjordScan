@@ -1,9 +1,11 @@
 name: release
 
-# Publish to PyPI when a GitHub Release is published, using PyPI Trusted Publishing
-# (OIDC) — no API token or password is stored anywhere. Create a Release for the tag
-# (e.g. v2.0.0b1) and this builds the package and publishes it.
+# Publish to PyPI using PyPI Trusted Publishing (OIDC) — no API token or password is
+# stored anywhere. Triggers on either a pushed version tag (e.g. v2.0.0b2) or a
+# published GitHub Release; both build the package and publish it.
 on:
+  push:
+    tags: ["v*"]       # pushing a version tag publishes that version
   release:
     types: [published]
   workflow_dispatch:   # allow a manual run from the Actions tab

@@ -19,6 +19,12 @@ All notable changes to NjordScan are documented here. This project follows
   attack-path kill chain. Same engine as the CLI; dependency-free (stdlib server + one offline HTML
   page). Binds to localhost only, runs scans in-process (NjordScan only *reads* a target).
 
+### Security
+- **`gui` + `monitor` are CSRF/rebinding-hardened.** The local servers reject cross-origin
+  state-changing requests (a malicious page can't drive a scan or register a project at
+  `127.0.0.1`) and only answer requests with a localhost `Host` (DNS-rebinding guard). Same-origin
+  use and non-browser clients are unaffected; opt into network exposure with `--host 0.0.0.0`.
+
 ### Fixed (carried over from the post-2.0.0b1 hardening)
 - **SSRF false positives** — a same-origin/relative `fetch(`/api/...`)` is no longer flagged as
   SSRF (only a dynamic/attacker-controlled host is).

@@ -26,8 +26,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Dict
 
+from .._webguard import is_local_request, strict_for
+
 HERE = Path(__file__).resolve().parent
 _MAX_BODY = 64 * 1024
+_strict_local = True  # reject non-localhost Host; relaxed when bound to a non-local address
 
 
 def _git_clone(url: str, dest: Path) -> None:
@@ -98,6 +101,8 @@ class _Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
 
     def do_GET(self) -> None:  # noqa: N802
+        if not is_local_request(self, strict_local=_strict_local):
+            return self._send(403, b"forbidden", "text/plain")
         path = self.path.split("?", 1)[0]
         if path in ("/", "/index.html"):
             try:
@@ -112,6 +117,8 @@ class _Handler(BaseHTTPRequestHandler):
     do_HEAD = do_GET
 
     def do_POST(self) -> None:  # noqa: N802
+        if not is_local_request(self, strict_local=_strict_local):
+            return self._send(403, b"forbidden", "text/plain")
         if self.path.split("?", 1)[0] != "/api/scan":
             return self._send(404, b"not found", "text/plain")
         try:
@@ -128,6 +135,8 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 def run(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True) -> None:
+    global _strict_local
+    _strict_local = strict_for(host)  # enforce localhost-only Host unless user bound elsewhere
     httpd = ThreadingHTTPServer((host, port), _Handler)
     url = f"http://{host}:{port}"
     print(f"🛡️  njordscan gui — scan studio at {url}")
