@@ -260,7 +260,7 @@ _TRAVERSAL_PATTERNS = [
     re.compile(r"(?:\.\.[\\/]){2,}", re.IGNORECASE),
 ]
 
-# Scanner / offensive-tooling user agents.
+# Dedicated offensive / scanning tools — a strong signal (MEDIUM).
 _SCANNER_PATTERNS = [
     re.compile(r"\bnmap\b", re.IGNORECASE),
     re.compile(r"\bnikto\b", re.IGNORECASE),
@@ -276,10 +276,21 @@ _SCANNER_PATTERNS = [
     re.compile(r"\bhydra\b", re.IGNORECASE),
     re.compile(r"\bwfuzz\b", re.IGNORECASE),
     re.compile(r"\bffuf\b", re.IGNORECASE),
+    re.compile(r"\bzaproxy\b|\bOWASP ZAP\b", re.IGNORECASE),
+]
+
+# Generic automated HTTP clients (curl/wget/scripts). Worth noting but LOW signal —
+# they're how most legit automation AND opportunistic pokes both look, so they're
+# INFO (and de-duped per source) so they never bury the real CRITICAL/HIGH alerts.
+_GENERIC_CLIENT_PATTERNS = [
     re.compile(r"\bcurl/", re.IGNORECASE),
     re.compile(r"\bwget/", re.IGNORECASE),
     re.compile(r"python-requests", re.IGNORECASE),
-    re.compile(r"\bzaproxy\b|\bOWASP ZAP\b", re.IGNORECASE),
+    re.compile(r"\bgo-http-client\b", re.IGNORECASE),
+    re.compile(r"\bokhttp\b", re.IGNORECASE),
+    re.compile(r"\blibwww-perl\b", re.IGNORECASE),
+    re.compile(r"\bhttpie\b", re.IGNORECASE),
+    re.compile(r"\b(node-fetch|axios|java)/", re.IGNORECASE),
 ]
 
 # Hosts considered "ours" for the open-redirect heuristic (NOT external).
@@ -321,6 +332,22 @@ def _m_traversal(ev: Event) -> Optional[str]:
 
 def _m_scanner(ev: Event) -> Optional[str]:
     return _first_match(_SCANNER_PATTERNS, ev.ua)
+
+
+# Generic automated clients are deduped per (svc, ip): note each source once instead
+# of firing on every single request, so curl/wget traffic can't bury real alerts.
+_seen_clients: set = set()
+
+
+def _m_generic_client(ev: Event) -> Optional[str]:
+    m = _first_match(_GENERIC_CLIENT_PATTERNS, ev.ua)
+    if not m:
+        return None
+    key = (ev.svc, ev.ip)
+    if key in _seen_clients:
+        return None
+    _seen_clients.add(key)
+    return m
 
 
 def _unquote(s: str) -> str:
@@ -409,8 +436,16 @@ RULES: List[Rule] = [
         severity="MEDIUM",
         technique="T1595.002",  # Active Scanning: Vulnerability Scanning
         matcher=_m_scanner,
-        description="Offensive-tooling / scanner User-Agent (nmap, nikto, sqlmap, "
-        "njordscan, dirb, gobuster, nuclei, curl, wget, ...).",
+        description="Dedicated offensive/scanner User-Agent (nmap, nikto, sqlmap, "
+        "njordscan, dirb, gobuster, nuclei, ffuf, ZAP, ...).",
+    ),
+    Rule(
+        name="automated-client-ua",
+        severity="INFO",
+        technique="T1595.002",
+        matcher=_m_generic_client,
+        description="Generic automated HTTP client (curl/wget/python-requests/...). "
+        "Low signal — noted once per source so it never buries the real alerts.",
     ),
     Rule(
         name="verbose-error",
