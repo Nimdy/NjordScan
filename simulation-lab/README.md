@@ -132,6 +132,38 @@ make pivot         # the focused lateral-movement demo (red proves it, blue dete
 
 ---
 
+## 📊 Purple dashboard (web GUI)
+
+A dependency-free **web dashboard** visualises the whole range live — no Grafana, no ELK,
+no CDN: a single offline HTML page served by a Python **standard-library** server that reads
+the shared `/logs` volume and runs the *real* blue-team detector on each refresh.
+
+```bash
+make dashboard     # build + start it, then open:
+#                  →  http://localhost:8088
+make purple        # generate activity; the dashboard updates within ~2.5s
+```
+
+It shows, all auto-refreshing:
+
+- **🌐 Network topology** — the segmented range (labnet DMZ vs the `internal-net` crown-jewel
+  tier), with the "✗ no route → pivot via web RCE" path and live per-service activity.
+- **🟣 Purple scorecard** — an ATT&CK matrix of **predicted → attempted → detected**. NjordScan's
+  static scan fills *predicted*, the red-team run fills *attempted*, the blue-team detector fills
+  *detected* — and any **attempted-but-not-detected** technique is flagged as a **BLUE GAP**
+  (e.g. session-cookie theft, which never appears in an access log: a real blind spot, surfaced
+  automatically).
+- **🔴 Red team** — every technique with its ATT&CK id, LANDED/MISS, and evidence (from
+  `redteam.jsonl`).
+- **🔵 Blue team** — alerts by severity + a live stream, produced by importing the same
+  `blueteam/detect.py` the CLI uses (one source of truth).
+- **📜 Live access-log feed** — the exact traffic the red team generated and the blue team detected.
+
+It joins `labnet` read-only (`./logs:ro`); the host port is overridable with `DASH_HOST_PORT`.
+All rendered values are HTML-escaped, so the attack payloads in the logs are shown, never executed.
+
+---
+
 ## The targets (what each one proves)
 
 | # | Target | Proves | Captured result |
@@ -156,6 +188,8 @@ simulation-lab/
 ├── docker-compose.yml      # the lab: 2 target services + the scanner, on one network
 ├── run-lab.sh / Makefile   # one-command demo + per-step targets
 ├── njordscan/Dockerfile    # the scanner image (installs njordscan[dynamic] + git)
+├── dashboard/             # the purple web GUI (stdlib server + 1 offline HTML page)
+├── redteam/ · blueteam/   # the attacker playbook + the mini-SIEM detector
 ├── targets/
 │   ├── 01-vulnerable-nextjs/   (runnable · port 3001 · static + DAST)
 │   ├── 02-vulnerable-api/      (runnable · port 3002 · the live DAST target)
@@ -163,6 +197,7 @@ simulation-lab/
 │   ├── 04-keystone-repo/       (build-history.sh → throwaway git repo)
 │   ├── 05-clean-app/           (the zero-findings precision control)
 │   └── 06-internal-admin/      (segmented · internal-net only · the pivot target)
+├── logs/                   # access logs + redteam.jsonl + predict.json (the dashboard's data)
 └── reports/                # generated scan output (gitignored)
 ```
 
@@ -170,7 +205,8 @@ simulation-lab/
 
 ```bash
 make build        # build scanner + target images
-make up           # start the targets  (web → :3001, api → :3002, internal → segmented)
+make up           # start the targets + dashboard  (web → :3001, api → :3002, internal → segmented)
+make dashboard    # build + open the purple web GUI  (→ http://localhost:8088)
 make scan         # static scans of every target via the containerized scanner
 make dast         # LIVE DAST against the running services over the lab network
 make pivot        # lateral-movement demo: pivot through the web RCE to the internal tier

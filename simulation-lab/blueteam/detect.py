@@ -693,6 +693,38 @@ def run_once(detector: Detector, log_dir: str) -> None:
             print(f"[detect] cannot read {path}: {exc}", file=sys.stderr)
 
 
+def alert_to_dict(a: Alert) -> Dict[str, object]:
+    """Flatten an Alert (+ its triggering event) to a JSON-serialisable dict."""
+    ev = a.event
+    return {
+        "rule": a.rule,
+        "severity": a.severity,
+        "technique": a.technique,
+        "evidence": a.evidence,
+        "ts": ev.ts,
+        "svc": ev.svc,
+        "ip": ev.ip,
+        "method": ev.method,
+        "path": ev.path,
+        "query": ev.query,
+        "status": ev.status,
+    }
+
+
+def analyze_log_dir(log_dir: str) -> Tuple[Detector, List[Alert]]:
+    """Process every ``*.log`` in ``log_dir`` once and return (detector, alerts).
+
+    This is the exact same detection the CLI runs (``--once``), exposed so the
+    dashboard can call it live on each refresh. The per-call dedup state for the
+    noisy generic-client rule is reset so a full re-scan of the log isn't silenced
+    after the first poll."""
+    collected: List[Alert] = []
+    det = Detector(collected.append)
+    _seen_clients.clear()
+    run_once(det, log_dir)
+    return det, collected
+
+
 def run_follow(detector: Detector, log_dir: str, poll: float = 0.5) -> None:
     """tail -f style: open every *.log, seek to end, and stream new lines.
 

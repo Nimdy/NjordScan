@@ -112,7 +112,28 @@ services:
     environment:
       WEB_URL: "http://web:3001"
       API_URL: "http://api:3002"
+      LOG_DIR: "/logs"
+    volumes:
+      - ./logs:/logs        # writes redteam.jsonl for the dashboard
     profiles: ["purple"]   # run on demand: docker compose run --rm redteam
+
+  # ── DASHBOARD: a dependency-free web GUI over the whole range ─────────────────
+  # Joins labnet, reads the shared /logs (red-team results + access logs), runs the
+  # real blue-team detector live, and serves the purple dashboard at :8080.
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+    image: njordlab-dashboard:local
+    container_name: lab-dashboard
+    environment:
+      LOG_DIR: "/logs"
+      PORT: "8080"
+    ports: ["${DASH_HOST_PORT:-8088}:8080"]
+    networks: [labnet]
+    volumes:
+      - ./logs:/logs:ro
+    restart: unless-stopped
 
   # ── BLUE TEAM: a mini-SIEM tailing the targets' access logs ──────────────────
   blueteam:

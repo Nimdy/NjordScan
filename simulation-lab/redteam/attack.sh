@@ -30,6 +30,17 @@ set -u
 WEB_URL="${WEB_URL:-http://web:3001}"
 API_URL="${API_URL:-http://api:3002}"
 
+# Machine-readable result feed for the dashboard: one JSON object per technique
+# verdict, appended to <LOG_DIR>/redteam.jsonl. Best-effort; never affects the run.
+LOG_DIR="${LOG_DIR:-/logs}"
+RT_JSON="${LOG_DIR}/redteam.jsonl"
+: > "$RT_JSON" 2>/dev/null || RT_JSON=""   # truncate; disable if not writable
+
+# Current technique context (set by technique(), recorded by verdict()).
+CUR_NUM=""; CUR_TITLE=""; CUR_MITRE=""; CUR_MITRE_NAME=""
+
+json_escape() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr -d '\n\r\t'; }
+
 # curl flags: silent, follow no redirects (we want to SEE the 302), short timeouts.
 CURL=(curl --silent --show-error --max-time 15)
 
@@ -57,6 +68,7 @@ banner() {
 
 # technique <num> <title> <mitre-id> <mitre-name>
 technique() {
+  CUR_NUM="$1"; CUR_TITLE="$2"; CUR_MITRE="$3"; CUR_MITRE_NAME="$4"
   printf '\n%s\n' "${C_BOLD}${C_YELLOW}── Technique ${1}: ${2}${C_RESET}"
   printf '%s\n'   "${C_DIM}   MITRE ATT&CK: ${3} (${4})${C_RESET}"
 }
@@ -72,6 +84,14 @@ verdict() {
   else
     FAIL=$((FAIL + 1))
     printf '   %s[MISS]%s   %s\n' "${C_RED}${C_BOLD}" "${C_RESET}" "$2"
+  fi
+  # Record the result for the dashboard (best-effort; never breaks the playbook).
+  if [ -n "$RT_JSON" ]; then
+    printf '{"ts":"%s","num":%s,"title":"%s","mitre":"%s","mitre_name":"%s","verdict":"%s","message":"%s"}\n' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)" "${CUR_NUM:-0}" \
+      "$(json_escape "$CUR_TITLE")" "$(json_escape "$CUR_MITRE")" \
+      "$(json_escape "$CUR_MITRE_NAME")" "$1" "$(json_escape "$2")" \
+      >> "$RT_JSON" 2>/dev/null || true
   fi
 }
 
