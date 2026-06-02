@@ -1,0 +1,28 @@
+{
+  "name": "acme-dashboard",
+  "version": "1.4.2",
+  "private": true,
+  "description": "Internal analytics dashboard for the Acme team.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "lodash": "4.17.11",
+    "date-fns": "2.30.0",
+    "bcrypt": "5.1.1",
+    "analytics-color-utils": "1.0.4"
+  },
+  "devDependencies": {
+    "eslint": "8.57.0",
+    "eslint-config-next": "14.2.3"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  }
+}

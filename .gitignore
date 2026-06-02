@@ -83,3 +83,7 @@ docs/_build/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ─── Simulation lab generated output ───────────────────────────────────────
+simulation-lab/reports/*
+!simulation-lab/reports/.gitkeep
