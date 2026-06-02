@@ -158,7 +158,7 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s==null?"":s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const ICON = {web:"🛒", api:"🤖", internal:"🗄️", redteam:"💀", blueteam:"🛰️"};
+const ICON = {web:"🛒", api:"🤖", internal:"🗄️", redteam:"💀", blueteam:"🛰️", c2:"📡"};
 const mark = (v) => v===true ? '<span class="yes">✓</span>' : v===false ? '<span class="no">✗</span>' : '<span class="na">—</span>';
 const expanded = new Set();   // scorecard rows the user has opened (persists across refresh)
 let LAST = null;

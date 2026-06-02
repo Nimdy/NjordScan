@@ -62,8 +62,8 @@ demo: ## Build everything, run every scan, capture reports (the full show)
 build: ## Build the scanner + target images
 	docker compose build
 
-up: ## Start the target services (incl. segmented internal tier) + the dashboard
-	docker compose up -d web api internal dashboard
+up: ## Start the target services (incl. segmented internal tier) + the dashboard + C2
+	docker compose up -d web api internal dashboard c2
 	@echo "web → http://localhost:3001   api → http://localhost:3002   internal → segmented (no host port)"
 	@printf '\033[1;35m📊 dashboard → http://localhost:%s\033[0m\n' "$(DASH_PORT)"
 

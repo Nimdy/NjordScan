@@ -52,6 +52,8 @@ TOPOLOGY = {
          "blurb": "attacker box — no route to the internal tier, must pivot through the web RCE"},
         {"name": "blueteam", "label": "lab-blueteam", "role": "defender", "networks": ["labnet"],
          "blurb": "mini-SIEM — tails the access logs and raises MITRE-mapped alerts"},
+        {"name": "c2", "label": "lab-c2", "role": "attacker", "networks": ["labnet"],
+         "blurb": "attacker C2 — collects exfiltrated secrets; any contact with it is data leaving the org"},
     ],
 }
 
@@ -77,13 +79,15 @@ ACTIVITY_CATALOG = [
      "note": "not visible in an access log — a real blue-team blind spot"},
     {"key": "pivot", "name": "Lateral movement (pivot to internal)", "phase": "Lateral Movement", "red": ["T1210"],
      "blue_rules": ["internal-tier-access"]},
+    {"key": "exfil", "name": "Exfiltration to attacker C2", "phase": "Exfiltration", "red": ["T1041"],
+     "blue_rules": ["exfiltration-to-c2"]},
     {"key": "dow", "name": "Denial of wallet", "phase": "Impact", "red": ["T1499.003"],
      "blue_rules": ["denial-of-wallet-burst"]},
 ]
 
 # MITRE kill-chain ordering for the attack-flow view.
 PHASE_ORDER = ["Recon", "Initial Access", "Execution", "Discovery",
-               "Credential Access", "Lateral Movement", "Impact"]
+               "Credential Access", "Lateral Movement", "Exfiltration", "Impact"]
 
 
 def _now() -> str:

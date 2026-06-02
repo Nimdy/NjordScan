@@ -404,6 +404,21 @@ def _m_internal_tier(ev: Event) -> Optional[str]:
     return None
 
 
+def _m_exfil(ev: Event) -> Optional[str]:
+    """Contact with the attacker C2 collector = exfiltration.
+
+    The C2 host is attacker infrastructure (threat-intel known-bad); ANY request that
+    reaches it is data leaving the org. This is the live proof of the data-egress
+    NjordScan flagged statically.
+    """
+    if ev.svc != "c2":
+        return None
+    stolen = (ev.query or ev.body or "").strip()
+    if stolen:
+        return f"data exfiltrated to attacker C2 from {ev.ip or '-'}: {stolen[:120]}"
+    return f"contact with attacker C2 from {ev.ip or '-'} (exfiltration channel)"
+
+
 # ---------------------------------------------------------------------------
 # The rule registry (simple, per-event rules)
 # ---------------------------------------------------------------------------
@@ -480,6 +495,15 @@ RULES: List[Rule] = [
         description="Access to the segmented internal admin tier's /admin/* "
         "endpoints — only reachable by pivoting through the DMZ web tier "
         "(lateral movement landing on the customer datastore).",
+    ),
+    Rule(
+        name="exfiltration-to-c2",
+        severity="CRITICAL",
+        technique="T1041",  # Exfiltration Over C2 Channel
+        matcher=_m_exfil,
+        description="A request reached the attacker C2 collector — data leaving the "
+        "org to known-bad attacker infrastructure (the data egress NjordScan "
+        "predicted, proven live).",
     ),
 ]
 

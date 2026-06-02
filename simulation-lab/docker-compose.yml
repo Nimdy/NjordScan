@@ -117,6 +117,22 @@ services:
       - ./logs:/logs        # writes redteam.jsonl for the dashboard
     profiles: ["purple"]   # run on demand: docker compose run --rm redteam
 
+  # ── C2: the attacker's exfiltration collector ────────────────────────────────
+  # Closes the data-egress loop: the red team uses its foothold to send a stolen
+  # secret OUT to this box, and the blue team flags any contact with it as
+  # exfiltration. NjordScan predicted the leak statically; this proves it live.
+  c2:
+    build: ./c2
+    image: njordlab-c2:local
+    container_name: lab-c2
+    environment:
+      PORT: "9999"
+      LOG_DIR: "/logs"
+    networks: [labnet]
+    volumes:
+      - ./logs:/logs        # writes c2.log + c2-loot.txt
+    restart: unless-stopped
+
   # ── BYO TARGET: a logging reverse proxy in front of YOUR app ─────────────────
   # Point it at any target (TARGET_URL — a host app via host.docker.internal, a
   # container, or a live URL). It forwards every request and writes the blue-team
