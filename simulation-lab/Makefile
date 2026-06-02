@@ -1,5 +1,5 @@
 # NjordScan Simulation Lab
-.PHONY: demo build up down scan dast keystone clean logs arm disarm secrets redteam blueteam purple pivot dashboard predict
+.PHONY: demo build up down scan dast keystone clean logs arm disarm secrets redteam blueteam purple pivot dashboard predict byo
 
 DASH_PORT := $(or $(DASH_HOST_PORT),8088)
 
@@ -18,6 +18,21 @@ pivot: up ## Lateral movement: the attacker pivots through the web RCE to the SE
 	@printf '\n\033[1;34m== BLUE TEAM — the pivot landing on the internal datastore, seen in the logs ==\033[0m\n'
 	docker compose run --rm --build blueteam --once
 	@printf '\n\033[1;32mThe internal tier is unreachable from the attacker box — yet the web foothold reached the crown jewels, and the blue team saw it.\033[0m\n'
+
+byo: ## Purple loop against YOUR OWN target:  make byo TARGET_URL=http://host.docker.internal:3000
+	@[ -n "$(TARGET_URL)" ] || { printf '\033[1;31mSet TARGET_URL (an app you own/are authorized to test), e.g.:\033[0m\n  make byo TARGET_URL=http://host.docker.internal:3000\n  make byo TARGET_URL=https://staging.yourapp.com\n'; exit 1; }
+	-docker run --rm -v "$(CURDIR)/logs:/x" alpine sh -c 'rm -f /x/*.log /x/redteam.jsonl /x/predict.json' 2>/dev/null
+	TARGET_URL="$(TARGET_URL)" docker compose up -d --build byo-proxy dashboard
+	@sleep 2
+	@printf '\n\033[1;35m== 1. NjordScan PREDICTS — DAST scan of your target (via the proxy) ==\033[0m\n'
+	-docker compose run --rm --build njordscan scan /lab/byo-proxy/empty-target --url http://byo-proxy:8080 --allow-private
+	-docker compose run --rm njordscan scan /lab/byo-proxy/empty-target --url http://byo-proxy:8080 --allow-private --format json -o /lab/logs/predict.json
+	@printf '\n\033[1;31m== 2. RED TEAM — generic web attacks on YOUR app (through the proxy) ==\033[0m\n'
+	-docker compose run --rm --build --entrypoint /redteam/attack-byo.sh -e BASE_URL=http://byo-proxy:8080 redteam
+	@printf '\n\033[1;34m== 3. BLUE TEAM — what it detected in your app traffic ==\033[0m\n'
+	docker compose run --rm --build blueteam --once
+	@printf '\n\033[1;32mNjordScan predicted, the attacker probed YOUR app, and the blue team caught every attempt.\033[0m\n'
+	@printf '\033[1;35m📊 See it all on the dashboard → http://localhost:%s\033[0m\n' "$(DASH_PORT)"
 
 purple: up ## Full purple loop — NjordScan predicts, red team proves, blue team detects
 	@sleep 3

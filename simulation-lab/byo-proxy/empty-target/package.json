@@ -1,0 +1,5 @@
+{
+  "name": "byo-dast-target",
+  "private": true,
+  "_comment": "Empty placeholder project. `make byo` runs NjordScan DAST (--url) against your live target through the proxy; there is no source to scan here, so the static side is intentionally empty and only the dynamic findings populate."
+}

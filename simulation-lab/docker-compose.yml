@@ -117,6 +117,28 @@ services:
       - ./logs:/logs        # writes redteam.jsonl for the dashboard
     profiles: ["purple"]   # run on demand: docker compose run --rm redteam
 
+  # ── BYO TARGET: a logging reverse proxy in front of YOUR app ─────────────────
+  # Point it at any target (TARGET_URL — a host app via host.docker.internal, a
+  # container, or a live URL). It forwards every request and writes the blue-team
+  # log contract, so the blue team + dashboard work against ANY app with no changes
+  # to it. Only proxy targets you own or are authorized to test. Used by `make byo`.
+  byo-proxy:
+    build: ./byo-proxy
+    image: njordlab-byo-proxy:local
+    container_name: lab-byo-proxy
+    environment:
+      TARGET_URL: "${TARGET_URL:-}"
+      PORT: "8080"
+      LOG_DIR: "/logs"
+    ports: ["${BYO_HOST_PORT:-8090}:8080"]
+    networks: [labnet]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # so TARGET_URL can point at a host app
+    volumes:
+      - ./logs:/logs
+    profiles: ["byo"]
+    restart: unless-stopped
+
   # ── DASHBOARD: a dependency-free web GUI over the whole range ─────────────────
   # Joins labnet, reads the shared /logs (red-team results + access logs), runs the
   # real blue-team detector live, and serves the purple dashboard at :8080.

@@ -25,9 +25,10 @@ RUN apk add --no-cache curl bash \
 
 WORKDIR /redteam
 
-# The playbook. Copied last so edits don't bust the package-install layer.
-COPY attack.sh /redteam/attack.sh
-RUN chmod +x /redteam/attack.sh
+# The playbooks. Copied last so edits don't bust the package-install layer.
+# attack.sh = the lab's fixed targets; attack-byo.sh = generic, for your own target.
+COPY attack.sh attack-byo.sh /redteam/
+RUN chmod +x /redteam/attack.sh /redteam/attack-byo.sh
 
 # Default to the docker-network service names; override with -e at run time so
 # the same image also works against localhost:3001 / localhost:3002.

@@ -179,6 +179,35 @@ All rendered values are HTML-escaped, so the attack payloads in the logs are sho
 
 ---
 
+## 🎯 Bring your own target — run the purple loop on *your* app
+
+The lab isn't limited to its built-in targets. Point it at **your own app** and run the whole
+loop against it:
+
+```bash
+make byo TARGET_URL=http://host.docker.internal:3000   # a local app on your host
+make byo TARGET_URL=https://staging.yourapp.com        # a staging URL you control
+```
+
+> ⚠️ Only against apps you **own or are authorized to test.** This sends real attack payloads.
+
+How it works — two pieces make it generic:
+
+- **A logging reverse proxy** (`byo-proxy/`) sits in front of your target and writes the same
+  blue-team log contract for every request. That's the trick: the blue team and dashboard now
+  work against **any** app, with **zero changes to your app** (it doesn't need the lab's logging).
+- **A generic web attacker** (`redteam/attack-byo.sh`) sprays the standard classes — reflected
+  XSS, open redirect, SQLi, command injection, path traversal, verbose-error, insecure-cookie,
+  missing-headers — at common parameters of your app *through the proxy*, MITRE-mapped. A real
+  vulnerability is **confirmed** when your app actually responds to it; otherwise it's logged as a
+  probed attempt the blue team still catches.
+
+`make byo` then runs the full loop: **NjordScan DAST predicts** (over the proxy) → **the attacker
+probes your app** → **the blue team detects every attempt** in the proxy's logs → it all lights up
+on the dashboard. The proxy only *observes* — it never modifies your traffic.
+
+---
+
 ## The targets (what each one proves)
 
 | # | Target | Proves | Captured result |
@@ -205,7 +234,8 @@ simulation-lab/
 ├── run-lab.sh / Makefile   # one-command demo + per-step targets
 ├── njordscan/Dockerfile    # the scanner image (installs njordscan[dynamic] + git)
 ├── dashboard/             # the purple web GUI (stdlib server + 1 offline HTML page)
-├── redteam/ · blueteam/   # the attacker playbook + the mini-SIEM detector
+├── byo-proxy/             # logging reverse proxy — front ANY app so the blue team sees it
+├── redteam/ · blueteam/   # attacker playbooks (fixed + generic-BYO) + the mini-SIEM detector
 ├── targets/
 │   ├── 01-vulnerable-nextjs/   (runnable · port 3001 · static + DAST)
 │   ├── 02-vulnerable-api/      (runnable · port 3002 · the live DAST target)
@@ -223,6 +253,7 @@ simulation-lab/
 make build        # build scanner + target images
 make up           # start the targets + dashboard  (web → :3001, api → :3002, internal → segmented)
 make dashboard    # build + open the purple web GUI  (→ http://localhost:8088)
+make byo TARGET_URL=https://staging.yourapp.com   # run the purple loop on YOUR own app
 make scan         # static scans of every target via the containerized scanner
 make dast         # LIVE DAST against the running services over the lab network
 make pivot        # lateral-movement demo: pivot through the web RCE to the internal tier
