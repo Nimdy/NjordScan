@@ -1,10 +1,10 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:b1b0977c-722d-48e9-a095-7f3a27a6452f",
+  "serialNumber": "urn:uuid:12a0bf64-5c21-40d1-8363-508368c7e15c",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-06-01T23:26:08.130906+00:00",
+    "timestamp": "2026-06-02T01:33:07.704592+00:00",
     "tools": [
       {
         "vendor": "NjordScan",
@@ -63,7 +63,7 @@
   ],
   "vulnerabilities": [
     {
-      "bom-ref": "40b9fee3-b695-487e-a982-35a64a19f321",
+      "bom-ref": "b960a99e-bdf5-402e-929f-fbe5279e6f61",
       "id": "CVE-2020-8203",
       "source": {
         "name": "OSV/GHSA",
@@ -91,7 +91,7 @@
       }
     },
     {
-      "bom-ref": "4f6273f5-0cf7-4633-86d8-a9d94db04cb5",
+      "bom-ref": "ed11545c-a769-4890-b382-e6e6117f250d",
       "id": "CVE-2021-23337",
       "source": {
         "name": "OSV/GHSA",

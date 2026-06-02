@@ -101,3 +101,24 @@ make down         # stop everything
 
 > Note: DAST against the lab's private container IPs needs `--allow-private` (NjordScan
 > refuses private/loopback hosts by default, an anti-SSRF guard). `run-lab.sh` passes it.
+
+## Demo secrets: arm / disarm (so the repo stays pushable)
+
+The lab and examples contain "leaked" secrets for NjordScan to find. A *real-format*
+provider key (`AKIA…`, `sk_live_…`) is — by design — blocked by GitHub push protection,
+which can't tell a fake demo secret from a real leak. So the committed (**disarmed**)
+state uses neutralized values that NjordScan **still flags** (via its generic-secret
+heuristic, and the secret-pivot attack path still forms) but that no secret scanner
+treats as a real provider key — the repo pushes clean, no bypass.
+
+For the full provider-specific demo locally (so the report says *"AWS access key"* /
+*"Stripe key"* instead of *"generic secret"*):
+
+```bash
+make arm        # inject real-FORMAT fake keys (generated at runtime — DO NOT COMMIT)
+make secrets    # show armed/disarmed status
+make disarm     # restore the pushable placeholders before you commit
+```
+
+Armed files are intentionally **not** gitignored: if you accidentally `git add` one,
+GitHub push protection stops you — the safety net working as intended.

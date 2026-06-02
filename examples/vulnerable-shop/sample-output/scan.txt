@@ -3,11 +3,11 @@
 /home/megatron/Coding/NjordScan/examples/vulnerable-shop
 ╭────── Summary ───────╮
 │  Severity     Count  │
-│  🔴 Critical      4  │
+│  🔴 Critical      3  │
 │  🟠 High          8  │
 │  🟡 Medium        5  │
 │  🔵 Low           2  │
-│  Total           19  │
+│  Total           18  │
 ╰──────────────────────╯
 
 🎯 Attack paths  ·  how these issues chain into a real breach
@@ -25,12 +25,12 @@ chain.
 │  queries on the server.                                                                          │
 │                                                                                                  │
 │    2. [Credential Access] A real secret is sitting right there                                   │
-│       .env.local:2                                                                               │
-│       AWS access key committed to the repository (.env.local:2) puts a live credential within    │
-│  reach of that primitive.                                                                        │
+│       .env.local:3                                                                               │
+│       Hard-coded secret or credential (.env.local:3) puts a live credential within reach of      │
+│  that primitive.                                                                                 │
 │                                                                                                  │
 │    3. [Lateral Movement] Pivot beyond the app with stolen keys                                   │
-│       .env.local:2                                                                               │
+│       .env.local:3                                                                               │
 │       With the secret in hand, the attacker authenticates to your cloud / database /             │
 │  third-party services — the blast radius now extends past this app.                              │
 │                                                                                                  │
@@ -111,36 +111,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  1. 🔴 [CRITICAL] AWS access key committed to the repository ───────────────────────────────────╮
-│                                                                                                  │
-│  .env.local:2                                                                                    │
-│  CWE-798  ·  A07:2021-Identification and Authentication Failures  ·  ATT&CK T1552.001  ·         │
-│  confidence: high                                                                                │
-│                                                                                                  │
-│  🎯 Reachable                                                                                    │
-│                                                                                                  │
-│  Looks like a AWS Access Key ID.                                                                 │
-│                                                                                                  │
-│  Found here:                                                                                     │
-│    AWS_…****=AKIA…****                                                                           │
-│                                                                                                  │
-│  💡 Why this matters                                                                             │
-│  An AWS access key pair grants programmatic access to your cloud account. Committed AWS keys     │
-│  are scraped automatically and can be used to spin up servers (huge bills) or read your data     │
-│  within minutes of being pushed.                                                                 │
-│                                                                                                  │
-│  🛠  How to fix it                                                                                │
-│  Deactivate and delete this key in the AWS IAM console immediately, then issue a new one and     │
-│  store it in your host's secret manager / environment — never in code.                           │
-│    // load from process.env at runtime; configure via AWS IAM roles where possible               │
-│                                                                                                  │
-│  📚 Learn more                                                                                   │
-│     • https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html                       │
-│                                                                                                  │
-│                                                                                                  │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-╭─  2. 🔴 [CRITICAL] User input flows into a database query ───────────────────────────────────────╮
+╭─  1. 🔴 [CRITICAL] User input flows into a database query ───────────────────────────────────────╮
 │                                                                                                  │
 │  app/api/products/route.ts:7                                                                     │
 │  CWE-89  ·  A03:2021-Injection  ·  ATT&CK T1190  ·  confidence: high                             │
@@ -189,7 +160,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  3. 🔴 [CRITICAL] SQL query built by glueing strings together ──────────────────────────────────╮
+╭─  2. 🔴 [CRITICAL] SQL query built by glueing strings together ──────────────────────────────────╮
 │                                                                                                  │
 │  lib/db.ts:7                                                                                     │
 │  CWE-89  ·  A03:2021-Injection  ·  ATT&CK T1190  ·  confidence: high                             │
@@ -227,7 +198,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  4. 🔴 [CRITICAL] Dangerous install lifecycle script in package.json ───────────────────────────╮
+╭─  3. 🔴 [CRITICAL] Dangerous install lifecycle script in package.json ───────────────────────────╮
 │                                                                                                  │
 │  package.json:8                                                                                  │
 │  CWE-506  ·  A08:2021-Software and Data Integrity Failures  ·  ATT&CK T1195.002  ·  confidence:  │
@@ -257,7 +228,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  5. 🟠 [HIGH] Hard-coded secret or credential ──────────────────────────────────────────────────╮
+╭─  4. 🟠 [HIGH] Hard-coded secret or credential ──────────────────────────────────────────────────╮
 │                                                                                                  │
 │  .env.local:3                                                                                    │
 │  CWE-798  ·  A07:2021-Identification and Authentication Failures  ·  ATT&CK T1552.001  ·         │
@@ -288,7 +259,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  6. 🟠 [HIGH] Secret exposed to the browser via NEXT_PUBLIC_ / VITE_ ───────────────────────────╮
+╭─  5. 🟠 [HIGH] Secret exposed to the browser via NEXT_PUBLIC_ / VITE_ ───────────────────────────╮
 │                                                                                                  │
 │  .env.local:5                                                                                    │
 │  CWE-200  ·  A01:2021-Broken Access Control  ·  ATT&CK T1552  ·  confidence: medium              │
@@ -317,7 +288,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  7. 🟠 [HIGH] AI route calls the model with no sign-in / auth check in the file ────────────────╮
+╭─  6. 🟠 [HIGH] AI route calls the model with no sign-in / auth check in the file ────────────────╮
 │                                                                                                  │
 │  app/api/chat/route.ts:1                                                                         │
 │  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1190, T1496  ·  confidence: medium             │
@@ -364,7 +335,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  8. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
+╭─  7. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
 │                                                                                                  │
 │  app/api/chat/route.ts:14                                                                        │
 │  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                       │
@@ -394,7 +365,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  9. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
+╭─  8. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
 │                                                                                                  │
 │  app/api/products/route.ts:10                                                                    │
 │  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: high                         │
@@ -431,7 +402,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  10. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ────────────────────────────────────╮
+╭─  9. 🟠 [HIGH] User input assigned to innerHTML / outerHTML ─────────────────────────────────────╮
 │                                                                                                  │
 │  lib/render.ts:3                                                                                 │
 │  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                       │
@@ -461,7 +432,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  11. 🟠 [HIGH] Dependency with a known security vulnerability ──────────────────────────────────╮
+╭─  10. 🟠 [HIGH] Dependency with a known security vulnerability ──────────────────────────────────╮
 │                                                                                                  │
 │  package.json:14                                                                                 │
 │  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·  confidence:   │
@@ -493,7 +464,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  12. 🟠 [HIGH] Untrusted data rendered with dangerouslySetInnerHTML ────────────────────────────╮
+╭─  11. 🟠 [HIGH] Untrusted data rendered with dangerouslySetInnerHTML ────────────────────────────╮
 │                                                                                                  │
 │  components/ProductReview.tsx:3                                                                  │
 │  CWE-79  ·  A03:2021-Injection  ·  ATT&CK T1059.007  ·  confidence: medium                       │
@@ -529,7 +500,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  13. 🟡 [MEDIUM] AI route calls the model with no rate limit in the file ───────────────────────╮
+╭─  12. 🟡 [MEDIUM] AI route calls the model with no rate limit in the file ───────────────────────╮
 │                                                                                                  │
 │  app/api/chat/route.ts:1                                                                         │
 │  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1190, T1496  ·  confidence: low                │
@@ -573,7 +544,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  14. 🟡 [MEDIUM] Missing security response headers ─────────────────────────────────────────────╮
+╭─  13. 🟡 [MEDIUM] Missing security response headers ─────────────────────────────────────────────╮
 │                                                                                                  │
 │  next.config.js:1                                                                                │
 │  CWE-693  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190, T1185  ·  confidence: low      │
@@ -608,7 +579,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  15. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
+╭─  14. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
 │                                                                                                  │
 │  next.config.js:2                                                                                │
 │  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high             │
@@ -637,7 +608,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  16. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
+╭─  15. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
 │                                                                                                  │
 │  next.config.js:3                                                                                │
 │  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high             │
@@ -666,7 +637,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  17. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
+╭─  16. 🟡 [MEDIUM] Insecure Next.js configuration ────────────────────────────────────────────────╮
 │                                                                                                  │
 │  next.config.js:4                                                                                │
 │  CWE-16  ·  A05:2021-Security Misconfiguration  ·  ATT&CK T1190  ·  confidence: high             │
@@ -695,7 +666,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  18. 🔵 [LOW] Model call sets no max output token limit ────────────────────────────────────────╮
+╭─  17. 🔵 [LOW] Model call sets no max output token limit ────────────────────────────────────────╮
 │                                                                                                  │
 │  app/api/chat/route.ts:7                                                                         │
 │  CWE-770  ·  A04:2021-Insecure Design  ·  ATT&CK T1496  ·  confidence: medium                    │
@@ -741,7 +712,7 @@ chain.
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-╭─  19. 🔵 [LOW] Dependency with a known security vulnerability ───────────────────────────────────╮
+╭─  18. 🔵 [LOW] Dependency with a known security vulnerability ───────────────────────────────────╮
 │                                                                                                  │
 │  package.json:14                                                                                 │
 │  CWE-1395  ·  A06:2021-Vulnerable and Outdated Components  ·  ATT&CK T1195.001  ·  confidence:   │

@@ -1,5 +1,14 @@
 # NjordScan Simulation Lab
-.PHONY: demo build up down scan dast keystone clean logs
+.PHONY: demo build up down scan dast keystone clean logs arm disarm secrets
+
+arm: ## Inject real-FORMAT fake provider keys for the full demo (DO NOT COMMIT)
+	python3 ../scripts/lab-secrets.py arm
+
+disarm: ## Restore the pushable placeholder secrets (run before committing)
+	python3 ../scripts/lab-secrets.py disarm
+
+secrets: ## Show whether the demo secrets are armed or disarmed
+	python3 ../scripts/lab-secrets.py status
 
 demo: ## Build everything, run every scan, capture reports (the full show)
 	./run-lab.sh

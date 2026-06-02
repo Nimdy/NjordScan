@@ -48,8 +48,8 @@
     <h1>🛡 NjordScan report</h1>
     <div class="sub">Security scan — explained in plain English</div>
   </header>
-  <div class="meta">/home/megatron/Coding/NjordScan/examples/vulnerable-shop · nextjs · 7 files · 0.15s · 19 issue(s)</div>
-  <div class="chips"><span class="chip" style="background:#dc2626">4 critical</span><span class="chip" style="background:#ea580c">8 high</span><span class="chip" style="background:#ca8a04">5 medium</span><span class="chip" style="background:#0891b2">2 low</span></div>
+  <div class="meta">/home/megatron/Coding/NjordScan/examples/vulnerable-shop · nextjs · 7 files · 0.15s · 18 issue(s)</div>
+  <div class="chips"><span class="chip" style="background:#dc2626">3 critical</span><span class="chip" style="background:#ea580c">8 high</span><span class="chip" style="background:#ca8a04">5 medium</span><span class="chip" style="background:#0891b2">2 low</span></div>
   <section class="paths"><h2>🎯 Attack paths — how these issues chain into a breach</h2><p class="psub">The routes an attacker can actually walk. Fix the ★ step in each — it collapses the whole chain.</p>
     <div class="path" style="border-left-color:#dc2626">
       <div class="phead">
@@ -58,7 +58,8 @@
         <span class="ptitle">Cloud/account pivot: server access → harvested secret</span>
       </div>
       <p class="impact">Impact: Compromise of external systems the leaked credential unlocks</p>
-      <ol class="steps"><li><span class="star">★</span> <b>[Execution]</b> Server-side code/query execution <span class="muted">app/api/products/route.ts:7</span><div class="narr">User input flows into a database query (app/api/products/route.ts:7) can run code or queries on the server.</div></li><li><b>[Credential Access]</b> A real secret is sitting right there <span class="muted">.env.local:2</span><div class="narr">AWS access key committed to the repository (.env.local:2) puts a live credential within reach of that primitive.</div></li><li><b>[Lateral Movement]</b> Pivot beyond the app with stolen keys <span class="muted">.env.local:2</span><div class="narr">With the secret in hand, the attacker authenticates to your cloud / database / third-party services — the blast radius now extends past this app.</div></li></ol>
+      <ol class="steps"><li><span class="star">★</span> <b>[Execution]</b> Server-side code/query execution <span class="muted">app/api/products/route.ts:7</span><div class="narr">User input flows into a database query (app/api/products/route.ts:7) can run code or queries on the server.</div></li><li><b>[Credential Access]</b> A real secret is sitting right there <span class="muted">.env.local:3</span><div class="narr">Hard-coded secret or credential (.env.local:3) puts a live credential within reach of that primitive.</div></li><li><b>[Lateral Movement]</b> Pivot beyond the app with stolen keys <span class="muted">.env.local:3</span><div class="narr">With the secret in hand, the attacker authenticates to your cloud / database / third-party services — the blast radius now extends past this app.</div></li></ol>
+      
       <p class="advice">🛠 Break the chain at step 1 — parameterise the query / stop running attacker-controlled input (app/api/products/route.ts:7). Fixing that one thing stops this whole path.</p>
       <p class="muted">Why this scores 100: critical finding (sqli.tainted-query); server-side reachable from an entrypoint; chain reaches a concrete impact (data/system compromise); exposes a credential — blast radius beyond this app; 2 distinct weaknesses align into one chain; every step is high-confidence.</p>
     </div>
@@ -71,6 +72,7 @@
       </div>
       <p class="impact">Impact: Code execution on your build server, CI, or developers&#x27; machines</p>
       <ol class="steps"><li><span class="star">★</span> <b>[Initial Access]</b> Malicious code arrives via a dependency <span class="muted">package.json:8</span><div class="narr">Dangerous install lifecycle script in package.json (package.json:8) — Lifecycle script &#x27;postinstall&#x27;: Pipes remote content directly into a shell/interpreter.</div></li><li><b>[Execution]</b> It runs at install time, before your app starts <span class="muted">package.json:8</span><div class="narr">npm runs lifecycle scripts on `npm install` / CI — this executes on your build server or developer machine with no app code involved.</div></li></ol>
+      
       <p class="advice">🛠 Break the chain at step 1 — remove or pin this dependency and audit the script (package.json:8). Fixing that one thing stops this whole path.</p>
       <p class="muted">Why this scores 86: critical finding (supply-chain.dangerous-install-script); server-side reachable from an entrypoint; chain reaches a concrete impact (data/system compromise).</p>
     </div>
@@ -83,6 +85,7 @@
       </div>
       <p class="impact">Impact: Server-side code/query execution</p>
       <ol class="steps"><li><b>[Initial Access]</b> Attacker controls untrusted input <span class="muted">app/api/products/route.ts:5</span><div class="narr">An attacker supplies a value via `req.body` (app/api/products/route.ts:5) reaching app/api/products/route.ts. Nothing about this input is trusted.</div></li><li><span class="star">★</span> <b>[Execution]</b> Untrusted input reaches a dangerous sink <span class="muted">app/api/products/route.ts:10</span><div class="narr">That value flows unsanitised into `paint() -&gt; el.innerHTML [in lib/render.ts]` (app/api/products/route.ts:10) — the attacker now controls what the server runs.</div></li></ol>
+      
       <p class="advice">🛠 Break the chain at step 2 — validate or parameterise the value at the sink (app/api/products/route.ts:10). Fixing that one thing stops this whole path.</p>
       <p class="muted">Why this scores 74: high finding (xss.inner-html); server-side reachable from an entrypoint; chain reaches a concrete impact (data/system compromise).</p>
     </div>
@@ -95,30 +98,11 @@
       </div>
       <p class="impact">Impact: Compromise via a publicly-known dependency exploit</p>
       <ol class="steps"><li><span class="star">★</span> <b>[Initial Access]</b> Exposed dependency with a public exploit <span class="muted">package.json:14</span><div class="narr">You ship `lodash` affected by CVE-2021-23337, reachable from code you actually call.</div></li><li><b>[Execution]</b> Attacker triggers the known vulnerability <span class="muted">package.json:14</span><div class="narr">Public exploit code exists; the attacker runs it against your deployment.</div></li></ol>
+      
       <p class="advice">🛠 Break the chain at step 1 — upgrade lodash to 4.17.21 (package.json:14). Fixing that one thing stops this whole path.</p>
       <p class="muted">Why this scores 58: high finding (deps.known-vulnerability); chain reaches a concrete impact (data/system compromise).</p>
     </div></section>
   
-    <details class="finding" style="border-left-color:#dc2626">
-      <summary>
-        <span class="sev" style="background:#dc2626">CRITICAL</span>
-        <span class="ftitle">AWS access key committed to the repository</span>
-        <span class="floc">.env.local:2</span>
-      </summary>
-      <div class="body">
-        <p class="tags">CWE-798 · A07:2021-Identification and Authentication Failures · confidence: high</p>
-        <p class="msg">Looks like a AWS Access Key ID.</p>
-        <div class="block"><h4>Found here</h4><pre><code>AWS_…****=AKIA…****</code></pre></div>
-        
-        <div class="block"><h4>💡 Why this matters</h4><p>An AWS access key pair grants programmatic access to your cloud account. Committed AWS keys are scraped automatically and can be used to spin up servers (huge bills) or read your data within minutes of being pushed.</p></div>
-        <div class="block"><h4>🛠 How to fix it</h4><p>Deactivate and delete this key in the AWS IAM console immediately, then issue a new one and store it in your host&#x27;s secret manager / environment — never in code.</p>
-          <pre class="fix"><code>// load from process.env at runtime; configure via AWS IAM roles where possible</code></pre>
-        </div>
-        
-        <div class="block"><h4>📚 Learn more</h4><ul><li><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html" rel="noopener noreferrer" target="_blank">https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html</a></li></ul></div>
-      </div>
-    </details>
-
     <details class="finding" style="border-left-color:#dc2626">
       <summary>
         <span class="sev" style="background:#dc2626">CRITICAL</span>
