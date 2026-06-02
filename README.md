@@ -3,7 +3,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/Nimdy/NjordScan/ci.yml?branch=main&label=CI)](https://github.com/Nimdy/NjordScan/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/Nimdy/NjordScan/blob/main/LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
-[![PyPI](https://img.shields.io/pypi/v/njordscan?label=PyPI)](https://pypi.org/project/njordscan/)
+[![PyPI](https://img.shields.io/pypi/v/njordscan?label=PyPI&cacheSeconds=1800)](https://pypi.org/project/njordscan/)
 [![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)](https://github.com/Nimdy/NjordScan#readme)
 
 **A security scanner for Next.js, React, and Vite apps — that explains every finding in plain English.**
