@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use NjordScan in your work, please cite it using this metadata."
+title: NjordScan
+abstract: >-
+  A free, open-source security scanner for Next.js, React, and Vite apps that
+  explains every finding in plain English. Built for developers who ship fast
+  and aren't security experts.
+type: software
+license: MIT
+repository-code: "https://github.com/Nimdy/NjordScan"
+url: "https://github.com/Nimdy/NjordScan"
+version: 2.0.0b1
+keywords:
+  - security
+  - scanner
+  - nextjs
+  - react
+  - vite
+  - sast
+  - xss
+  - secrets
+  - owasp
+# [maintainer — fill in or refine]: replace the placeholder name below with your
+# real name, or keep the GitHub handle "Nimdy" as the alias. cff-version 1.2.0
+# requires at least a family-names or name field per author.
+authors:
+  - family-names: "[maintainer — fill in]"
+    given-names: "[maintainer — fill in]"
+    alias: Nimdy

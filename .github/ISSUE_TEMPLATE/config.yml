@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & help (Discussions)
+    url: https://github.com/Nimdy/NjordScan/discussions
+    about: "Not sure if it's a bug? Need help installing or reading a finding? Ask here — it's the best place for questions."
+  - name: 🔐 Report a security vulnerability (in NjordScan itself)
+    url: https://github.com/Nimdy/NjordScan/security/advisories/new
+    about: "Found a vulnerability in the njordscan tool? Please report it privately here, not in a public issue."
