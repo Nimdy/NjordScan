@@ -11,7 +11,7 @@
 NjordScan is built for developers who ship fast and aren't security experts. It finds the
 issues that actually bite web apps — exposed secrets, XSS, dangerous dependencies, risky
 config — and for **every** finding it tells you *why it matters* and *exactly how to fix it*,
-with a corrected code example you can copy. **120+ rules** across the Next.js / React / Vite /
+with a corrected code example you can copy. **130+ rules** across the Next.js / React / Vite /
 web / **AI-app** attack surface, each with a plain-English explanation — plus optional **live
 (DAST) scanning** and an **MCP server** so your AI coding assistant can scan as you build.
 
@@ -24,22 +24,21 @@ web / **AI-app** attack surface, each with a plain-English explanation — plus 
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
+pip install --pre njordscan      # 2.0 is a beta, so --pre is required
 
-# install the 2.0 beta straight from source (works today):
-pip install 'git+https://github.com/Nimdy/NjordScan.git@v2'
-
-njordscan scan .               # scan the current project
+njordscan scan .                 # scan the current project
 ```
 
 That's it. No account, no setup wizard, no "accept terms" prompt, and **nothing leaves your
 machine** unless you explicitly ask for it. The core install is small and pure-Python — no
 numpy, no system libraries, no build tools.
 
-> **Installing from PyPI:** once 2.0 is published, use `pip install --pre njordscan` — the
-> `--pre` is required while 2.0 is in beta (a plain `pip install njordscan` would skip it).
-> **Live DAST** (`--url`) and **AI features** each add one small optional dependency; pull them
-> in with `pip install 'njordscan[dynamic,ai]'` (or `pip install '.[dynamic,ai]'` from a source
-> checkout). Plain static scanning needs none of this.
+> **Install notes.** A plain `pip install njordscan` (without `--pre`) won't find it while 2.0 is
+> in beta. Installing into a *system* Python errors with `externally-managed-environment` (PEP 668),
+> so use the **venv** above or **pipx**: `pipx install --pip-args=--pre njordscan`. **Live DAST**
+> (`--url`) and **AI features** add one small optional dependency each —
+> `pip install --pre 'njordscan[dynamic,ai]'`. Bleeding edge from git:
+> `pip install 'git+https://github.com/Nimdy/NjordScan.git@main'`.
 
 ```bash
 njordscan scan .                       # human-friendly, educational report (default)
@@ -248,7 +247,7 @@ run up your model bill (a "denial-of-wallet" attack). Each is explained in plain
 Point NjordScan at a running app to catch what only shows up at runtime:
 
 ```bash
-pip install 'njordscan[dynamic]'
+pip install --pre 'njordscan[dynamic]'
 njordscan scan . --url https://staging.myapp.com
 ```
 
@@ -409,7 +408,7 @@ OPENAI_API_KEY=...    njordscan scan . --explain-with-ai --ai-provider openai
 
 Defaults to **Ollama** (local) when no provider is named. For hosted providers, secrets are
 **redacted from code before it's sent** (`--no-redact` to override). `--no-external` hard-blocks
-any network call. Requires `pip install 'njordscan[ai]'`.
+any network call. Requires `pip install --pre 'njordscan[ai]'`.
 
 ## Autofix
 
@@ -453,7 +452,7 @@ baseline: .njordscan-baseline.json
 GitHub Action:
 
 ```yaml
-- uses: nimdy/njordscan@v2
+- uses: Nimdy/NjordScan@v2.0.0b1
   with:
     path: .
     fail-on: high
@@ -465,7 +464,7 @@ pre-commit:
 
 ```yaml
 repos:
-  - repo: https://github.com/nimdy/njordscan
+  - repo: https://github.com/Nimdy/NjordScan
     rev: v2.0.0b1
     hooks: [{ id: njordscan }]
 ```
@@ -515,7 +514,7 @@ Full guides live in **[docs/](docs/)**:
   [CI/CD & PRs](docs/ci-cd.md)
 - [Dynamic scanning (DAST)](docs/dynamic-scanning.md) · [AI features](docs/ai-features.md) ·
   [AI assistants (MCP)](docs/ai-assistant-mcp.md)
-- [Troubleshooting & FAQ](docs/troubleshooting.md) · **[Rules catalog (120+)](docs/RULES.md)**
+- [Troubleshooting & FAQ](docs/troubleshooting.md) · **[Rules catalog (130)](docs/RULES.md)**
 
 ## Design principles
 
@@ -530,7 +529,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, the project map, and how t
 
 ```bash
 pip install -e '.[dev]'
-pytest -q          # 171 tests
+pytest -q          # 187 tests
 ```
 
 ## License

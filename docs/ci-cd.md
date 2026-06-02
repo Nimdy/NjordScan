@@ -89,7 +89,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: NjordScan security scan
-        uses: nimdy/njordscan@v2
+        uses: Nimdy/NjordScan@v2.0.0b1
         with:
           path: "."
           fail-on: high
@@ -134,8 +134,8 @@ upload regardless, so you get both the red ❌ *and* the detailed annotations ex
   SARIF and shows new findings as inline comments on the changed lines. To scan *only* the lines
   a PR touched (and skip pre-existing issues entirely), see [`--diff`](#pr-only-findings-with---diff)
   below.
-- **Pinning.** `nimdy/njordscan@v2` tracks the v2 line. To pin to an exact release, use a tag or
-  commit SHA instead (e.g. `nimdy/njordscan@v2.0.0`).
+- **Pinning.** Pin to a release tag for reproducible CI — e.g. `Nimdy/NjordScan@v2.0.0b1` — or to a
+  commit SHA for the strongest guarantee. Avoid pinning to `@main` (it moves).
 
 ---
 
@@ -213,7 +213,7 @@ In your repo's `.pre-commit-config.yaml`:
 
 ```yaml
 repos:
-  - repo: https://github.com/nimdy/njordscan
+  - repo: https://github.com/Nimdy/NjordScan
     rev: v2.0.0b1
     hooks:
       - id: njordscan
@@ -239,7 +239,7 @@ summary. To change the strictness, override the args in your `.pre-commit-config
 
 ```yaml
 repos:
-  - repo: https://github.com/nimdy/njordscan
+  - repo: https://github.com/Nimdy/NjordScan
     rev: v2.0.0b1
     hooks:
       - id: njordscan

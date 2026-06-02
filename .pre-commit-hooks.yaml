@@ -1,7 +1,7 @@
 # Use NjordScan as a pre-commit hook. In your repo's .pre-commit-config.yaml:
 #
 #   repos:
-#     - repo: https://github.com/nimdy/njordscan
+#     - repo: https://github.com/Nimdy/NjordScan
 #       rev: v2.0.0b1
 #       hooks:
 #         - id: njordscan
