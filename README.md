@@ -18,13 +18,22 @@ web / **AI-app** attack surface, each with a plain-English explanation — plus 
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install njordscan          # core install — small, no heavy deps, no build tools needed
+
+# install the 2.0 beta straight from source (works today):
+pip install 'git+https://github.com/Nimdy/NjordScan.git@v2'
 
 njordscan scan .               # scan the current project
 ```
 
 That's it. No account, no setup wizard, no "accept terms" prompt, and **nothing leaves your
-machine** unless you explicitly ask for it.
+machine** unless you explicitly ask for it. The core install is small and pure-Python — no
+numpy, no system libraries, no build tools.
+
+> **Installing from PyPI:** once 2.0 is published, use `pip install --pre njordscan` — the
+> `--pre` is required while 2.0 is in beta (a plain `pip install njordscan` would skip it).
+> **Live DAST** (`--url`) and **AI features** each add one small optional dependency; pull them
+> in with `pip install 'njordscan[dynamic,ai]'` (or `pip install '.[dynamic,ai]'` from a source
+> checkout). Plain static scanning needs none of this.
 
 ```bash
 njordscan scan .                       # human-friendly, educational report (default)
@@ -486,6 +495,12 @@ Key `scan` flags: `--fix` / `--ai-fix` / `--dry-run`, `--reachable-only`, `--fai
 AI-app security, supply-chain, and dependency **VEX**, each explained with a fix. The full captured
 report and sample SBOM/Navigator artifacts are committed there.
 
+**[simulation-lab/](simulation-lab/)** goes further — a self-contained Dockerized **purple-team
+range**. One command (`make purple`) runs the full loop: NjordScan *predicts* the attack paths in
+a live target, a red-team container *proves* them by exploiting the running service over the
+network (real RCE, denial-of-wallet), and a blue-team mini-SIEM *detects* the same traffic in the
+access logs. It's both the proof and the test bed — and a usable training range in its own right.
+
 ## Documentation
 
 Full guides live in **[docs/](docs/)**:
@@ -509,7 +524,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, the project map, and how t
 
 ```bash
 pip install -e '.[dev]'
-pytest -q          # 55 tests
+pytest -q          # 171 tests
 ```
 
 ## License
