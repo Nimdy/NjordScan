@@ -24,6 +24,7 @@ from .config import Config
 from .finding import Finding
 from .project import Project
 from .severity import Severity
+from .surface import is_dev_only_path
 
 
 @dataclass
@@ -78,6 +79,7 @@ class Orchestrator:
                 findings.extend(result)
 
         findings = [enrich(f) for f in findings]
+        self._deprioritize_dev_only(findings)
         findings = self._apply_rule_controls(findings)
         findings = self._dedupe(findings)
         findings = [
@@ -118,6 +120,25 @@ class Orchestrator:
                 continue
             chosen.append(d)
         return chosen
+
+    def _deprioritize_dev_only(self, findings: List[Finding]) -> None:
+        """Cap findings in non-deployed files (local scripts, build tooling, tests)
+        to LOW and annotate them. They're real, but they aren't your shipped attack
+        surface — a command-exec in a one-off `scripts/get-token.ts` shouldn't read as
+        a Critical next to your route handlers, or fail `--fail-on high`. Never hidden:
+        the finding stays, downgraded, with the reason shown."""
+        for f in findings:
+            if f.effective_severity.rank <= Severity.LOW.rank:
+                continue
+            if not is_dev_only_path(f.file):
+                continue
+            top = f.file.replace("\\", "/").strip("/").split("/", 1)[0] or "dev"
+            f.metadata["deprioritized"] = "dev-only file (not your deployed app surface)"
+            f.metadata["original_severity"] = f.effective_severity.value
+            note = (f"[de-prioritized: `{top}/` is dev/build/test tooling, "
+                    f"not your deployed app surface]")
+            f.message = f"{f.message}  {note}".strip() if f.message else note
+            f.severity = Severity.LOW
 
     async def _run_one(self, detector: Detector, project: Project) -> List[Finding]:
         if not detector.applies(project):
