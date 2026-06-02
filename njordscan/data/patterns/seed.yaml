@@ -1,0 +1,25 @@
+# Seed pattern rules — validates the pattern engine. The full rule library is
+# authored across the category files in this directory. Every rule_id here must
+# exist in njordscan/knowledge/rules.py.
+
+- rule_id: react.unsafe-target-blank
+  pattern: 'target\s*=\s*["'']_blank["'']'
+  languages: [jsx, tsx]
+  # rel="noopener" OR rel="noreferrer" is sufficient; it often sits on an adjacent line
+  # of a multi-line JSX element, so check a small window around the match too.
+  exclude_line: 'rel\s*=\s*["''][^"'']*(noopener|noreferrer)'
+  exclude_window: 'rel\s*=\s*["''][^"'']*(noopener|noreferrer)'
+  exclude_window_lines: 3
+  confidence: medium
+  message: 'Link opens in a new tab without rel="noopener"/"noreferrer" — the new page can hijack this one via window.opener.'
+
+- rule_id: crypto.weak-hash
+  pattern: 'createHash\(\s*["''](md5|sha1)["'']'
+  confidence: high
+  message: "Weak hash (MD5/SHA-1) — unsuitable for passwords or integrity."
+
+- rule_id: crypto.insecure-random
+  pattern: 'Math\.random\(\)'
+  requires_line: '(token|secret|password|otp|nonce|api[_-]?key|session|uuid|id)\b'
+  confidence: medium
+  message: "Math.random() is not cryptographically secure — do not use it for tokens or secrets."

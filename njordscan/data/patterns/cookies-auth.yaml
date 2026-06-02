@@ -1,0 +1,196 @@
+# Detection patterns for the cookies-auth category. Every rule_id below has a
+# matching knowledge entry in njordscan/data/rules/cookies-auth.yaml.
+# Regexes are Python 're'; single-quoted YAML keeps backslashes literal.
+
+# --- cookie flags -----------------------------------------------------------
+# A session-style cookie set via cookies().set / res.cookie / setCookie, where
+# the options object on the SAME line does not mention httpOnly. We require a
+# session/auth/token name to avoid flagging harmless preference cookies, and
+# require an options object ({ ... }) so we don't flag two-arg cookie reads.
+
+- rule_id: cookie.missing-httponly
+  pattern: '(?:cookies\(\)\.set|res\.cookie|reply\.setCookie|setCookie|response\.cookies\.set)\s*\(\s*[^)]*\{[^}]*\}'
+  languages: [js, jsx, ts, tsx]
+  requires_line: '["''`](?:session|sess|sid|auth|token|jwt|access[_-]?token|refresh[_-]?token|connect\.sid)["''`]'
+  exclude_line: 'httpOnly\s*:\s*true|httponly\s*:\s*true'
+  confidence: medium
+  severity: high
+  message: 'Session cookie set without httpOnly: true — page JavaScript can read it, so any XSS bug can steal the session.'
+
+- rule_id: cookie.missing-secure
+  pattern: '(?:cookies\(\)\.set|res\.cookie|reply\.setCookie|setCookie|response\.cookies\.set)\s*\(\s*[^)]*\{[^}]*httpOnly\s*:\s*true[^}]*\}'
+  languages: [js, jsx, ts, tsx]
+  requires_line: '["''`](?:session|sess|sid|auth|token|jwt|access[_-]?token|refresh[_-]?token|connect\.sid)["''`]'
+  exclude_line: 'secure\s*:\s*(?:true|process\.env|[A-Za-z_$])'
+  confidence: medium
+  severity: medium
+  message: 'Session cookie set without secure: true — it can travel over plain HTTP where it is readable on the network.'
+
+- rule_id: cookie.missing-samesite
+  pattern: '(?:cookies\(\)\.set|res\.cookie|reply\.setCookie|setCookie|response\.cookies\.set)\s*\(\s*[^)]*\{[^}]*httpOnly\s*:\s*true[^}]*\}'
+  languages: [js, jsx, ts, tsx]
+  requires_line: '["''`](?:session|sess|sid|auth|token|jwt|access[_-]?token|refresh[_-]?token|connect\.sid)["''`]'
+  exclude_line: 'sameSite\s*:|samesite\s*:'
+  confidence: low
+  severity: medium
+  message: 'Session cookie set without an explicit sameSite policy — set sameSite: "lax" to block most CSRF.'
+
+- rule_id: cookie.samesite-none-insecure
+  pattern: 'sameSite\s*:\s*["'']none["'']'
+  languages: [js, jsx, ts, tsx]
+  requires_line: '(?:cookie|set\s*\(|setCookie)'
+  exclude_line: 'secure\s*:\s*(?:true|process\.env|[A-Za-z_$])'
+  confidence: medium
+  severity: high
+  message: 'sameSite: "none" cookie without secure: true — browsers require Secure here and it would otherwise travel over plain HTTP.'
+
+# --- session signing secrets ------------------------------------------------
+# express-session / cookie-session / cookie-parser secret that is a string
+# literal (not process.env), plus the classic 'keyboard cat' default anywhere.
+
+- rule_id: session.hardcoded-secret
+  pattern: 'secret\s*:\s*["''`][^"''`]+["''`]'
+  languages: [js, jsx, ts, tsx]
+  requires_line: '(?:session|cookieSession|cookie-session|cookieParser|cookie-parser|signed)'
+  exclude_line: 'process\.env|secret\s*:\s*["''`]\s*["''`]'
+  confidence: medium
+  severity: high
+  message: 'Session signing secret is a hard-coded string — anyone who reads it can forge a valid session for any user.'
+
+- rule_id: session.hardcoded-secret
+  pattern: '["''`]keyboard\s*cat["''`]'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: "Using the famous 'keyboard cat' example secret — it's public, so anyone can forge your signed cookies."
+
+- rule_id: session.hardcoded-secret
+  pattern: '(?:cookieParser|cookie-parser)\s*\(\s*["''`][^"''`]+["''`]'
+  languages: [js, jsx, ts, tsx]
+  exclude_line: 'process\.env'
+  confidence: medium
+  severity: high
+  message: 'cookie-parser signing secret is a hard-coded string — move it to an environment variable.'
+
+# --- token in browser storage -----------------------------------------------
+
+- rule_id: auth.jwt-in-localstorage
+  pattern: '(?:localStorage|sessionStorage)\.setItem\s*\(\s*["''`][^"''`]*(?:token|jwt|auth|session|access|refresh|bearer|credential)[^"''`]*["''`]'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'Auth token stored in localStorage/sessionStorage — any XSS can read it. Use an httpOnly cookie instead.'
+
+- rule_id: auth.jwt-in-localstorage
+  pattern: '(?:localStorage|sessionStorage)\[\s*["''`][^"''`]*(?:token|jwt|auth|session|access[_-]?token|refresh[_-]?token)[^"''`]*["''`]\s*\]\s*='
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'Auth token written to localStorage/sessionStorage — any XSS can read it. Use an httpOnly cookie instead.'
+
+# --- hard-coded credentials -------------------------------------------------
+# A literal password comparison: password/pass/pwd === '...'. Require a short-ish
+# literal so we don't flag things like comparing to a hashed value.
+
+- rule_id: auth.hardcoded-credentials
+  pattern: '(?:password|passwd|pwd|pass|adminPass|admin_password)\s*(?:===|==)\s*["''`][^"''`]{1,40}["''`]'
+  languages: [js, jsx, ts, tsx]
+  exclude_line: 'process\.env|bcrypt|argon2|scrypt|compare|hash'
+  confidence: high
+  severity: critical
+  message: 'Password compared against a hard-coded literal — a permanent backdoor visible to anyone with repo access.'
+
+- rule_id: auth.hardcoded-credentials
+  pattern: '["''`][^"''`]{1,40}["''`]\s*(?:===|==)\s*(?:password|passwd|pwd|req\.body\.password|credentials\.password)'
+  languages: [js, jsx, ts, tsx]
+  exclude_line: 'process\.env|bcrypt|argon2|scrypt|compare|hash'
+  confidence: high
+  severity: critical
+  message: 'Password compared against a hard-coded literal — a permanent backdoor visible to anyone with repo access.'
+
+# --- hard-coded Authorization headers --------------------------------------
+
+- rule_id: auth.hardcoded-basic-auth
+  pattern: '["''`]\s*Basic\s+[A-Za-z0-9+/]{12,}={0,2}\s*["''`]'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'Hard-coded HTTP Basic credentials — base64 is not encryption; this leaks a real username/password.'
+
+- rule_id: auth.hardcoded-basic-auth
+  pattern: '["''`]\s*Bearer\s+[A-Za-z0-9._\-]{16,}\s*["''`]'
+  languages: [js, jsx, ts, tsx]
+  exclude_line: 'process\.env|\$\{|`\s*Bearer\s*\$'
+  confidence: medium
+  severity: high
+  message: 'Hard-coded Bearer token in an Authorization header — move it to an environment variable and rotate it.'
+
+# --- middleware / guard auth bypass -----------------------------------------
+# A function whose name signals it is an auth guard, that immediately returns a
+# truthy/next() value, or an obvious commented-out / forced bypass.
+
+# `const isAuthenticated = (req) => true`, `isLoggedIn: () => true`,
+# `requireAuth = async () => true`, `canActivate = req => true` — an auth guard whose
+# body is literally `true`. Requires the `true` to END the expression (followed by
+# ; , ) } or EOL) so `() => true && realCheck()` is NOT mis-flagged.
+- rule_id: auth.middleware-bypass
+  pattern: '(?:isAuthenticated|isAuthorized|requireAuth|checkAuth|authGuard|canActivate|isLoggedIn|verifyAuth|ensureAuth|isAdmin)\b\s*[:=]\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*true\b\s*(?:[;,)}]|$)'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: critical
+  message: 'Auth guard hard-wired to return true — every protected route becomes public.'
+
+- rule_id: auth.middleware-bypass
+  pattern: 'return\s+true\s*;?\s*//\s*(?:bypass|skip|disable|TODO).{0,40}auth'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: critical
+  message: 'Auth check bypassed (return true) — remove this before shipping; it opens every protected route.'
+
+- rule_id: auth.middleware-bypass
+  pattern: '//\s*app\.use\s*\(\s*(?:requireAuth|authMiddleware|isAuthenticated|passport\.authenticate|ensureLoggedIn)'
+  languages: [js, jsx, ts, tsx]
+  confidence: medium
+  severity: high
+  message: 'Auth middleware is commented out — protected routes are no longer protected.'
+
+# --- CORS allow-any + credentials -------------------------------------------
+
+- rule_id: cors.wildcard-credentials
+  pattern: 'origin\s*:\s*(?:true|["'']\*["''])\s*,\s*credentials\s*:\s*true'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'CORS allows any origin together with credentials — any website can read your logged-in users data.'
+
+- rule_id: cors.wildcard-credentials
+  pattern: 'credentials\s*:\s*true\s*,\s*origin\s*:\s*(?:true|["'']\*["''])'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'CORS allows any origin together with credentials — any website can read your logged-in users data.'
+
+- rule_id: cors.wildcard-credentials
+  pattern: 'Access-Control-Allow-Credentials["''`]?\s*[,)]?\s*["''`]?true'
+  languages: [js, jsx, ts, tsx]
+  requires_file: 'Access-Control-Allow-Origin'
+  requires_line: 'Allow-Credentials'
+  confidence: low
+  severity: high
+  message: 'Access-Control-Allow-Credentials: true alongside a wildcard origin — any website can read your users data.'
+
+# --- CSRF protection disabled -----------------------------------------------
+
+- rule_id: csrf.disabled
+  pattern: '(?:csrf|csrfProtection|csrfCheck|xsrf|enableCsrf)\s*:\s*false'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'CSRF protection turned off — cookie-authenticated mutations can be forged from any site your users visit.'
+
+- rule_id: csrf.disabled
+  pattern: 'ignoreCSRF\s*:\s*true|skipCSRF\s*:\s*true|disableCsrf\s*\(\s*\)'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  severity: high
+  message: 'CSRF protection turned off — cookie-authenticated mutations can be forged from any site your users visit.'

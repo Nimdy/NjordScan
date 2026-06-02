@@ -1,0 +1,338 @@
+# MITRE ATT&CK mapping for NjordScan rules. rule_id -> technique ids; technique catalog.
+# Generated; see scripts/ and the attack-map workflow.
+techniques:
+  T1059:
+    name: Command and Scripting Interpreter
+    tactic: Execution
+  T1059.007:
+    name: 'Command and Scripting Interpreter: JavaScript'
+    tactic: Execution
+  T1078:
+    name: Valid Accounts
+    tactic: Defense Evasion
+  T1083:
+    name: File and Directory Discovery
+    tactic: Discovery
+  T1185:
+    name: Browser Session Hijacking
+    tactic: Collection
+  T1190:
+    name: Exploit Public-Facing Application
+    tactic: Initial Access
+  T1195.001:
+    name: 'Supply Chain Compromise: Compromise Software Dependencies and Development Tools'
+    tactic: Initial Access
+  T1195.002:
+    name: 'Supply Chain Compromise: Compromise Software Supply Chain'
+    tactic: Initial Access
+  T1204.001:
+    name: 'User Execution: Malicious Link'
+    tactic: Execution
+  T1496:
+    name: Resource Hijacking
+    tactic: Impact
+  T1499:
+    name: Endpoint Denial of Service
+    tactic: Impact
+  T1539:
+    name: Steal Web Session Cookie
+    tactic: Credential Access
+  T1552:
+    name: Unsecured Credentials
+    tactic: Credential Access
+  T1552.001:
+    name: 'Unsecured Credentials: Credentials In Files'
+    tactic: Credential Access
+  T1557:
+    name: Adversary-in-the-Middle
+    tactic: Credential Access
+  T1567:
+    name: Exfiltration Over Web Service
+    tactic: Exfiltration
+  T1592:
+    name: Gather Victim Host Information
+    tactic: Reconnaissance
+  T1600:
+    name: Weaken Encryption
+    tactic: Defense Evasion
+  T1606.001:
+    name: 'Forge Web Credentials: Web Cookies'
+    tactic: Credential Access
+rules:
+  ai-endpoint.unauthenticated-live:
+  - T1190
+  - T1496
+  ai.dangerously-allow-browser:
+  - T1552
+  ai.endpoint-no-auth:
+  - T1190
+  - T1496
+  ai.key-clientside:
+  - T1552
+  ai.llm-output-rendered-as-html:
+  - T1059.007
+  ai.llm-output-to-sink:
+  - T1059
+  ai.no-rate-limit:
+  - T1190
+  - T1496
+  ai.pii-or-secret-to-llm:
+  - T1552
+  ai.prompt-injection:
+  - T1059
+  - T1190
+  ai.system-prompt-clientside:
+  - T1592
+  ai.unbounded-output:
+  - T1496
+  auth.hardcoded-basic-auth:
+  - T1552.001
+  auth.hardcoded-credentials:
+  - T1552.001
+  auth.jwt-in-localstorage:
+  - T1539
+  auth.middleware-bypass:
+  - T1190
+  - T1078
+  config.disabled-tls-verification:
+  - T1557
+  config.missing-security-headers:
+  - T1190
+  - T1185
+  cookie.insecure-flags-live:
+  - T1539
+  cookie.missing-httponly:
+  - T1539
+  cookie.missing-samesite:
+  - T1539
+  cookie.missing-secure:
+  - T1539
+  cookie.samesite-none-insecure:
+  - T1539
+  cors.origin-reflection:
+  - T1190
+  cors.permissive-middleware:
+  - T1190
+  cors.wildcard-credentials:
+  - T1190
+  - T1185
+  cors.wildcard-with-credentials:
+  - T1190
+  - T1185
+  crypto.bcrypt-low-rounds:
+  - T1600
+  crypto.deprecated-cipher:
+  - T1600
+  crypto.hardcoded-cookie-secret:
+  - T1552.001
+  - T1606.001
+  crypto.hardcoded-iv:
+  - T1600
+  crypto.hardcoded-key:
+  - T1552.001
+  crypto.insecure-random:
+  - T1600
+  crypto.insecure-transport-auth:
+  - T1557
+  crypto.weak-cipher:
+  - T1600
+  crypto.weak-hash:
+  - T1600
+  csp.disabled-in-helmet:
+  - T1190
+  csp.frame-ancestors-wildcard:
+  - T1185
+  csp.unsafe-eval:
+  - T1059.007
+  csp.unsafe-inline:
+  - T1059.007
+  csrf.disabled:
+  - T1190
+  - T1185
+  csrf.disabled-protection:
+  - T1190
+  - T1185
+  csrf.samesite-none-cookie:
+  - T1539
+  dataflow.sensitive-to-log:
+  - T1552.001
+  dataflow.sensitive-to-response:
+  - T1552
+  dataflow.sensitive-to-browser-storage:
+  - T1552
+  dataflow.sensitive-to-thirdparty:
+  - T1567
+  dast.open-redirect:
+  - T1204.001
+  dast.reflected-xss:
+  - T1059.007
+  dast.verbose-error:
+  - T1592
+  deps.known-vulnerability:
+  - T1195.001
+  deps.typosquat:
+  - T1195.002
+  dom.document-write:
+  - T1059.007
+  dom.insert-adjacent-html:
+  - T1059.007
+  dom.jquery-html:
+  - T1059.007
+  dom.location-from-fragment:
+  - T1059.007
+  dom.postmessage-no-origin-check:
+  - T1185
+  hardening.debug-enabled-in-prod:
+  - T1592
+  hardening.dev-only-branch-shipping-secret-bypass:
+  - T1078
+  - T1190
+  hardening.env-committed:
+  - T1552.001
+  hardening.env-not-gitignored:
+  - T1552.001
+  hardening.insecure-deserialization:
+  - T1059
+  hardening.redos-regex:
+  - T1499
+  hardening.source-map-shipped-to-prod:
+  - T1592
+  hardening.unhandled-todo-security:
+  - T1592
+  headers.missing-csp:
+  - T1190
+  headers.missing-hsts:
+  - T1557
+  headers.missing-referrer-policy:
+  - T1592
+  headers.missing-x-content-type-options:
+  - T1059.007
+  headers.missing-x-frame-options:
+  - T1185
+  headers.server-version-disclosure:
+  - T1592
+  info-leak.console-logs-request-body:
+  - T1552.001
+  info-leak.console-logs-secret:
+  - T1552.001
+  info-leak.error-message-to-client:
+  - T1592
+  info-leak.error-stack-to-client:
+  - T1592
+  info-leak.process-env-to-client:
+  - T1552
+  injection.command:
+  - T1059
+  injection.eval:
+  - T1059.007
+  injection.prototype-pollution-bracket:
+  - T1059
+  injection.prototype-pollution-merge:
+  - T1059
+  injection.template-ssti:
+  - T1059
+  jwt.alg-none:
+  - T1606.001
+  jwt.hardcoded-secret:
+  - T1552.001
+  - T1606.001
+  jwt.missing-algorithms:
+  - T1606.001
+  nextjs.api-env-exposure:
+  - T1552
+  nextjs.api-wildcard-cors:
+  - T1190
+  - T1185
+  nextjs.dangerous-config:
+  - T1190
+  nextjs.error-stack-leak:
+  - T1592
+  nextjs.image-dangerously-allow-svg:
+  - T1059.007
+  nextjs.middleware-open-redirect:
+  - T1204.001
+  nextjs.powered-by-header:
+  - T1592
+  nextjs.props-secret-leak:
+  - T1552
+  nextjs.source-maps-exposed:
+  - T1592
+  nextjs.unsafe-allowed-dev-origins:
+  - T1190
+  nosqli.untrusted-query-filter:
+  - T1190
+  nosqli.where-operator:
+  - T1190
+  - T1059.007
+  open-redirect:
+  - T1204.001
+  path-traversal.fs-read:
+  - T1083
+  path-traversal.send-file:
+  - T1083
+  react.href-user-value:
+  - T1059.007
+  - T1204.001
+  react.javascript-url:
+  - T1059.007
+  react.ref-inner-html:
+  - T1059.007
+  react.token-in-web-storage:
+  - T1539
+  react.unsafe-target-blank:
+  - T1204.001
+  react.unsanitized-markdown:
+  - T1059.007
+  secret.aws-access-key:
+  - T1552.001
+  secret.generic:
+  - T1552.001
+  secret.private-key:
+  - T1552.001
+  secret.public-env-exposure:
+  - T1552
+  session.hardcoded-secret:
+  - T1552.001
+  sqli.string-concatenation:
+  - T1190
+  sqli.tainted-query:
+  - T1190
+  sqli.template-literal:
+  - T1190
+  ssrf.fetch:
+  - T1190
+  supply-chain.dangerous-install-script:
+  - T1195.002
+  supply-chain.dependency-install-script:
+  - T1195.002
+  supply-chain.dependency-script-changed:
+  - T1195.002
+  supply-chain.integrity-changed:
+  - T1195.002
+  supply-chain.missing-integrity:
+  - T1195.001
+  supply-chain.missing-lockfile:
+  - T1195.001
+  vite.define-inlines-secret:
+  - T1552.001
+  vite.dev-server-cors-wildcard:
+  - T1190
+  - T1185
+  vite.dev-server-host-exposed:
+  - T1190
+  vite.fs-allow-too-broad:
+  - T1083
+  vite.fs-strict-disabled:
+  - T1083
+  vite.import-meta-env-secret:
+  - T1552
+  vite.prod-sourcemap:
+  - T1592
+  vite.proxy-target-insecure:
+  - T1557
+  vite.vite-prefixed-secret:
+  - T1552
+  xss.dangerously-set-inner-html:
+  - T1059.007
+  xss.inner-html:
+  - T1059.007

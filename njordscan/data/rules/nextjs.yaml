@@ -1,0 +1,235 @@
+# Next.js-specific security rules.
+# Educational knowledge entries for the patterns in data/patterns/nextjs.yaml.
+# These are SCOPED to Next.js behaviours that surprise non-security developers —
+# distinct from the generic next.config issues covered by nextjs.dangerous-config.
+
+- id: nextjs.api-env-exposure
+  title: API route sends process.env (or its config object) back to the browser
+  severity: high
+  cwe: CWE-200
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    Code inside an API route (`pages/api/*`) or a Route Handler (`app/**/route.ts`)
+    runs on the SERVER, so it can see every secret in process.env — database
+    passwords, Stripe keys, JWT signing secrets, everything. The moment you put
+    `process.env` (or an object built from it) into the JSON you send back, you
+    hand all of those secrets to whoever calls the endpoint. Anyone can open the
+    URL in a browser and read them; there is no login wall on the response body.
+    This is one of the most common ways a hobby project leaks its entire
+    credential set in a single fetch.
+  fix: |
+    Never serialise process.env to the client. Return only the specific,
+    non-secret values the page actually needs, and pick them out by name. If the
+    value is meant to be public, expose it the official way with a NEXT_PUBLIC_
+    prefix and read it in the component instead of round-tripping it through an
+    API route.
+  secure_example: |
+    // app/api/config/route.ts
+    export async function GET() {
+      // hand-pick safe values only — never the whole env
+      return Response.json({ region: process.env.AWS_REGION });
+    }
+  references:
+    - https://nextjs.org/docs/app/building-your-application/configuring/environment-variables
+    - https://cwe.mitre.org/data/definitions/200.html
+
+- id: nextjs.props-secret-leak
+  title: getServerSideProps / getStaticProps leaks a server secret into page props
+  severity: high
+  cwe: CWE-200
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    getServerSideProps and getStaticProps run on the server, but whatever you put
+    in the `props` object is serialised and SHIPPED TO THE BROWSER — it ends up in
+    the page's HTML and in the client-side JS bundle, visible to anyone who opens
+    "View Source" or the Network tab. Reading a private value like
+    `process.env.STRIPE_SECRET_KEY` on the server and then placing it into props
+    publishes that secret to every visitor. The env var has no NEXT_PUBLIC_
+    prefix precisely because it was never meant to leave the server.
+  fix: |
+    Keep secrets on the server. Use them inside getServerSideProps to do the work
+    (call the API, query the DB) and return only the RESULT to props — never the
+    key itself. If a value is genuinely safe to be public, give it a NEXT_PUBLIC_
+    prefix and read it directly in the component.
+  secure_example: |
+    export async function getServerSideProps() {
+      const data = await fetchWithSecret(process.env.STRIPE_SECRET_KEY); // used, not exposed
+      return { props: { data } }; // only the safe result crosses to the browser
+    }
+  references:
+    - https://nextjs.org/docs/pages/building-your-application/data-fetching/get-server-side-props
+    - https://cwe.mitre.org/data/definitions/200.html
+
+- id: nextjs.api-wildcard-cors
+  title: API route allows any website to read its responses (Access-Control-Allow-Origin *)
+  severity: high
+  cwe: CWE-942
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    Setting `Access-Control-Allow-Origin: *` tells the browser that ANY website
+    is allowed to make requests to this endpoint and read the response. For a
+    public, no-login API that is fine — but if this route returns user data or
+    relies on cookies/session, a malicious site your user visits can quietly call
+    your API in their browser and steal whatever it returns. The wildcard removes
+    the browser's main cross-site protection.
+  fix: |
+    Echo back only origins you trust instead of "*". Keep a small allowlist of
+    your own domains and set Access-Control-Allow-Origin to the request's origin
+    only when it is in that list. Never combine "*" with
+    Access-Control-Allow-Credentials: true — browsers reject it, and it would be
+    dangerous anyway.
+  secure_example: |
+    const ALLOWED = new Set(['https://app.example.com']);
+    const origin = req.headers.origin;
+    if (ALLOWED.has(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+    - https://cwe.mitre.org/data/definitions/942.html
+
+- id: nextjs.middleware-open-redirect
+  title: Middleware redirects/rewrites to a destination taken from the request
+  severity: medium
+  cwe: CWE-601
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    Next.js middleware runs on every matching request and can send the user
+    somewhere else with NextResponse.redirect() or rewrite(). If the destination
+    is built from something the user controls — a `?next=` query parameter, a
+    header, a cookie — an attacker can craft a link that starts on your trusted
+    domain but bounces the visitor to a look-alike phishing site. Because the link
+    really is on your domain, users (and email filters) trust it.
+  fix: |
+    Only redirect to paths you control. Treat any user-supplied destination as a
+    string to validate, not a URL to trust: require it to start with a single "/"
+    (not "//" or "https://"), or check it against an allowlist before redirecting.
+  secure_example: |
+    const next = req.nextUrl.searchParams.get('next') ?? '/';
+    const safe = next.startsWith('/') && !next.startsWith('//') ? next : '/';
+    return NextResponse.redirect(new URL(safe, req.url));
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+    - https://nextjs.org/docs/app/building-your-application/routing/middleware
+
+- id: nextjs.error-stack-leak
+  title: API route / Route Handler sends an error stack trace to the client
+  severity: medium
+  cwe: CWE-209
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    A stack trace (err.stack, or the whole Error object) is a map of your app's
+    insides: file paths, function names, line numbers, library versions, and
+    sometimes the exact SQL or the secret that was being used when it crashed.
+    Returning it in an API response hands attackers a free reconnaissance report
+    and can leak sensitive values directly. It is also a tell that error handling
+    was never thought through, which often means other bugs are reachable too.
+  fix: |
+    Send the client a short, generic message and a stable error id. Log the full
+    error (stack included) on the SERVER only, where you can actually read it.
+    Never put err.stack — or the raw error — into the HTTP response body.
+  secure_example: |
+    try { /* ... */ } catch (err) {
+      console.error(err);                       // full detail stays on the server
+      res.status(500).json({ error: 'Something went wrong' }); // generic for the client
+    }
+  references:
+    - https://cwe.mitre.org/data/definitions/209.html
+    - https://owasp.org/www-community/Improper_Error_Handling
+
+- id: nextjs.powered-by-header
+  title: X-Powered-By header not disabled (poweredByHeader left on)
+  severity: low
+  cwe: CWE-200
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    By default Next.js adds an `X-Powered-By: Next.js` header to every response.
+    On its own this is harmless, but it advertises exactly what you are running.
+    Attackers and automated scanners use that to immediately try exploits known
+    to affect that framework, skipping the guesswork. Removing the banner is free
+    defence-in-depth: it makes your app a slightly quieter target.
+  fix: |
+    Turn the header off in next.config.js by setting `poweredByHeader: false`.
+    This is a one-line change with no downside.
+  secure_example: |
+    // next.config.js
+    module.exports = { poweredByHeader: false };
+  references:
+    - https://nextjs.org/docs/app/api-reference/next-config-js/poweredByHeader
+    - https://cwe.mitre.org/data/definitions/200.html
+
+- id: nextjs.source-maps-exposed
+  title: Production browser source maps are published (productionBrowserSourceMaps)
+  severity: low
+  cwe: CWE-540
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    Source maps re-create your original, un-minified source code from the shipped
+    bundle. Setting `productionBrowserSourceMaps: true` uploads those maps
+    alongside your public site, so anyone can download them and read your real
+    code — including comments, internal endpoint names, and the occasional
+    hard-coded value you forgot was there. It makes finding weaknesses in your app
+    much easier for an attacker.
+  fix: |
+    Leave production browser source maps off (the default). If you need maps for
+    error monitoring, upload them privately to your error tracker (e.g. Sentry)
+    instead of serving them to the public.
+  secure_example: |
+    // next.config.js — omit the flag, or set it false
+    module.exports = { productionBrowserSourceMaps: false };
+  references:
+    - https://nextjs.org/docs/app/api-reference/next-config-js/productionBrowserSourceMaps
+    - https://cwe.mitre.org/data/definitions/540.html
+
+- id: nextjs.unsafe-allowed-dev-origins
+  title: Server Actions accept requests from any origin (allowedOrigins includes "*")
+  severity: high
+  cwe: CWE-352
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    Next.js protects Server Actions by checking that the request came from your
+    own site, which stops other websites from triggering them in a logged-in
+    user's browser (a cross-site request forgery, or CSRF). Adding "*" to
+    `experimental.serverActions.allowedOrigins` switches that check off for every
+    origin — so any malicious page a logged-in user visits can fire your Server
+    Actions as them, changing data or making purchases without their knowledge.
+  fix: |
+    List only the exact origins that should be allowed to call your Server Actions
+    (for example a known proxy or a staging host). Never use "*". If you only run
+    on your own domain, you usually don't need allowedOrigins at all.
+  secure_example: |
+    // next.config.js
+    module.exports = {
+      experimental: { serverActions: { allowedOrigins: ['app.example.com'] } },
+    };
+  references:
+    - https://nextjs.org/docs/app/api-reference/next-config-js/serverActions
+    - https://cwe.mitre.org/data/definitions/352.html
+
+- id: nextjs.image-dangerously-allow-svg
+  title: Next.js Image is configured to serve untrusted SVGs (dangerouslyAllowSVG)
+  severity: medium
+  cwe: CWE-79
+  owasp: "A03:2021-Injection"
+  why: |
+    SVG files are not just pictures — they can contain <script> and event
+    handlers, so a browser may run JavaScript when it displays one. The Next.js
+    image optimizer refuses to serve SVGs by default for exactly this reason.
+    Turning on `images.dangerouslyAllowSVG: true` re-enables them, and if any of
+    those SVGs come from users or a remote host you don't fully control, an
+    attacker can upload one that runs code in your visitors' browsers
+    (cross-site scripting) — stealing logins and session cookies.
+  fix: |
+    Leave dangerouslyAllowSVG off unless you absolutely must serve SVGs. If you
+    do, also set a strict `contentSecurityPolicy` for images
+    (e.g. "default-src 'self'; script-src 'none'; sandbox") and only allow SVGs
+    from hosts you fully trust — never user uploads.
+  secure_example: |
+    // next.config.js — prefer leaving SVG optimization off
+    module.exports = {
+      images: {
+        dangerouslyAllowSVG: false,
+        // if you truly must: contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;"
+      },
+    };
+  references:
+    - https://nextjs.org/docs/app/api-reference/components/image#dangerouslyallowsvg
+    - https://owasp.org/www-community/attacks/xss/

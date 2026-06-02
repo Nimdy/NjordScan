@@ -1,0 +1,121 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:12a0bf64-5c21-40d1-8363-508368c7e15c",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-06-02T01:33:07.704592+00:00",
+    "tools": [
+      {
+        "vendor": "NjordScan",
+        "name": "njordscan",
+        "version": "2.0.0b1"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "vulnerable-shop",
+      "version": "1.0.0",
+      "bom-ref": "root-application"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "lodash",
+      "version": "4.17.15",
+      "purl": "pkg:npm/lodash@4.17.15",
+      "bom-ref": "pkg:npm/lodash@4.17.15",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "next",
+      "version": "12.1.0",
+      "purl": "pkg:npm/next@12.1.0",
+      "bom-ref": "pkg:npm/next@12.1.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "openai",
+      "version": "4.20.0",
+      "purl": "pkg:npm/openai@4.20.0",
+      "bom-ref": "pkg:npm/openai@4.20.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "version": "18.2.0",
+      "purl": "pkg:npm/react@18.2.0",
+      "bom-ref": "pkg:npm/react@18.2.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "react-dom",
+      "version": "18.2.0",
+      "purl": "pkg:npm/react-dom@18.2.0",
+      "bom-ref": "pkg:npm/react-dom@18.2.0",
+      "scope": "required"
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "b960a99e-bdf5-402e-929f-fbe5279e6f61",
+      "id": "CVE-2020-8203",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "high"
+        }
+      ],
+      "cwes": [
+        1321
+      ],
+      "description": "Prototype pollution in lodash via zipObjectDeep / set-like paths allowing modification of Object.prototype.",
+      "recommendation": "Upgrade to 4.17.20 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.15"
+        }
+      ],
+      "analysis": {
+        "state": "not_affected",
+        "justification": "code_not_reachable",
+        "detail": "\u2705 Lower priority: you import `lodash` but never call the vulnerable `set, setWith, zipObjectDeep`."
+      }
+    },
+    {
+      "bom-ref": "ed11545c-a769-4890-b382-e6e6117f250d",
+      "id": "CVE-2021-23337",
+      "source": {
+        "name": "OSV/GHSA",
+        "url": "https://osv.dev"
+      },
+      "ratings": [
+        {
+          "severity": "high"
+        }
+      ],
+      "cwes": [
+        94
+      ],
+      "description": "Command injection in lodash via the template function: untrusted templates/options can execute arbitrary code.",
+      "recommendation": "Upgrade to 4.17.21 or later.",
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.15"
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "detail": "\ud83c\udfaf Reachable: your code calls the vulnerable `template` from `lodash`."
+      }
+    }
+  ]
+}

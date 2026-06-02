@@ -1,0 +1,100 @@
+# Detection patterns for the cors-headers-csrf category.
+# Every rule_id below has a 1:1 knowledge entry in
+# njordscan/data/rules/cors-headers-csrf.yaml.
+# Regexes are Python 're', case-insensitive by default. Single-quoted YAML keeps
+# backslashes literal so we don't double-escape.
+
+# --- CORS --------------------------------------------------------------------
+
+# Wildcard ACAO together with credentials anywhere in the same file = forbidden
+# combo. Anchor the finding on the wildcard line, but only fire if the file ALSO
+# turns credentials on.
+- rule_id: cors.wildcard-with-credentials
+  pattern: 'Access-Control-Allow-Origin["'']?\s*[:,]\s*["'']\*["'']'
+  requires_file: 'Access-Control-Allow-Credentials["'']?\s*[:,]\s*["'']?true'
+  confidence: high
+  severity: high
+  message: "CORS allows every site (Access-Control-Allow-Origin: *) AND sends credentials — any website can call this API as your logged-in users."
+
+# Echoing the request Origin straight back into ACAO with no allowlist check.
+# We require the value to be an origin-ish variable (req.headers.origin etc.) and
+# void the match when an allowlist gate is visible on the same line.
+- rule_id: cors.origin-reflection
+  pattern: 'Access-Control-Allow-Origin["'']?\s*[:,]\s*[`"'']?\s*\$?\{?\s*(req|request|ctx|event|headers)[\w.\[\]'']*\borigin\b'
+  exclude_line: '(allow|whitelist|allowed|ALLOWED|origins?)\s*[.(\[]|includes\(|\.has\(|indexOf\('
+  confidence: medium
+  severity: high
+  message: "CORS reflects the caller's Origin back without checking an allowlist — this approves every website, including malicious ones."
+
+# Reflection via a function that returns the origin argument (cors origin callback)
+- rule_id: cors.origin-reflection
+  pattern: 'callback\(\s*null\s*,\s*(origin|req\.headers\.origin)\s*\)'
+  exclude_line: '(allow|whitelist|allowed|includes\(|\.has\(|indexOf\()'
+  requires_file: 'cors'
+  confidence: medium
+  severity: high
+  message: "CORS origin callback returns the caller's Origin unconditionally — every website is approved."
+
+# cors() with no options, or origin:true / origin:'*'  → allow everything.
+- rule_id: cors.permissive-middleware
+  pattern: 'cors\(\s*\{[^}]*\borigin\s*:\s*(true|["'']\*["''])'
+  confidence: high
+  severity: medium
+  message: "cors() is configured to allow every origin (origin: true / '*') — any website can call this API from a browser."
+
+# --- CSP ---------------------------------------------------------------------
+
+# unsafe-inline inside a Content-Security-Policy. Require a CSP context in the
+# file so we don't fire on unrelated prose.
+- rule_id: csp.unsafe-inline
+  pattern: "['\"]unsafe-inline['\"]"
+  requires_file: '(Content-Security-Policy|contentSecurityPolicy|script-src|style-src|default-src)'
+  confidence: high
+  severity: medium
+  message: "Content-Security-Policy includes 'unsafe-inline' — this re-enables inline scripts and undoes much of CSP's XSS protection."
+
+- rule_id: csp.unsafe-eval
+  pattern: "['\"]unsafe-eval['\"]"
+  requires_file: '(Content-Security-Policy|contentSecurityPolicy|script-src|default-src)'
+  confidence: high
+  severity: medium
+  message: "Content-Security-Policy includes 'unsafe-eval' — this re-enables eval()/new Function(), a primary tool for XSS attackers."
+
+# Helmet CSP explicitly disabled.
+- rule_id: csp.disabled-in-helmet
+  pattern: 'contentSecurityPolicy\s*:\s*false'
+  requires_file: 'helmet'
+  confidence: high
+  severity: medium
+  message: "Helmet's Content-Security-Policy is turned off (contentSecurityPolicy: false) — the browser will run any script injected into your pages."
+
+# frame-ancestors wildcard inside a CSP = no clickjacking protection.
+- rule_id: csp.frame-ancestors-wildcard
+  pattern: 'frame-ancestors\s+\*'
+  confidence: high
+  severity: medium
+  message: "CSP sets frame-ancestors * — any website can iframe your pages and clickjack your logged-in users."
+
+# --- CSRF --------------------------------------------------------------------
+
+# CSRF protection explicitly switched off.
+- rule_id: csrf.disabled-protection
+  pattern: '\b(csrf|csrfProtection|csrfPrevention|enableCSRF)\s*:\s*false'
+  confidence: high
+  severity: high
+  message: "CSRF protection is explicitly disabled — other websites can make your logged-in users perform actions without their consent."
+
+- rule_id: csrf.disabled-protection
+  pattern: '\bskipCSRFCheck\b'
+  confidence: medium
+  severity: high
+  message: "CSRF check is being skipped — other websites can make your logged-in users perform actions without their consent."
+
+# Session/auth cookie with SameSite=None.
+- rule_id: csrf.samesite-none-cookie
+  pattern: 'sameSite\s*:\s*["'']none["'']'
+  requires_file: '(cookie|session|setCookie|Set-Cookie|res\.cookie)'
+  exclude_line: 'sameSite\s*:\s*["''](lax|strict)["'']'
+  confidence: medium
+  severity: medium
+  message: "A cookie is set with sameSite: 'none', so the browser sends it on cross-site requests — this re-opens CSRF for session/auth cookies."

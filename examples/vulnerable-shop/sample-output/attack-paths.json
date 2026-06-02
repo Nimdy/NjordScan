@@ -1,0 +1,237 @@
+[
+  {
+    "id": "path-1",
+    "kind": "secret-pivot",
+    "title": "Cloud/account pivot: server access \u2192 harvested secret",
+    "impact": "Compromise of external systems the leaked credential unlocks",
+    "score": 100,
+    "band": "critical",
+    "kev": false,
+    "ai_verified": false,
+    "verification": [],
+    "advice": "Break the chain at step 1 \u2014 parameterise the query / stop running attacker-controlled input (app/api/products/route.ts:7). Fixing that one thing stops this whole path.",
+    "score_factors": [
+      "critical finding (sqli.tainted-query)",
+      "server-side reachable from an entrypoint",
+      "chain reaches a concrete impact (data/system compromise)",
+      "exposes a credential \u2014 blast radius beyond this app",
+      "2 distinct weaknesses align into one chain",
+      "every step is high-confidence"
+    ],
+    "techniques": [
+      "T1190",
+      "T1552.001"
+    ],
+    "steps": [
+      {
+        "order": 1,
+        "tactic": "Execution",
+        "title": "Server-side code/query execution",
+        "narrative": "User input flows into a database query (app/api/products/route.ts:7) can run code or queries on the server.",
+        "file": "app/api/products/route.ts",
+        "line": 7,
+        "location": "app/api/products/route.ts:7",
+        "rule_ids": [
+          "sqli.tainted-query"
+        ],
+        "fingerprints": [
+          "6540a704cb17c2a2"
+        ],
+        "breakpoint": true
+      },
+      {
+        "order": 2,
+        "tactic": "Credential Access",
+        "title": "A real secret is sitting right there",
+        "narrative": "Hard-coded secret or credential (.env.local:3) puts a live credential within reach of that primitive.",
+        "file": ".env.local",
+        "line": 3,
+        "location": ".env.local:3",
+        "rule_ids": [
+          "secret.generic"
+        ],
+        "fingerprints": [
+          "0335cffff8aa144e"
+        ],
+        "breakpoint": false
+      },
+      {
+        "order": 3,
+        "tactic": "Lateral Movement",
+        "title": "Pivot beyond the app with stolen keys",
+        "narrative": "With the secret in hand, the attacker authenticates to your cloud / database / third-party services \u2014 the blast radius now extends past this app.",
+        "file": ".env.local",
+        "line": 3,
+        "location": ".env.local:3",
+        "rule_ids": [
+          "secret.generic"
+        ],
+        "fingerprints": [
+          "0335cffff8aa144e"
+        ],
+        "breakpoint": false
+      }
+    ]
+  },
+  {
+    "id": "path-2",
+    "kind": "supply",
+    "title": "Build/CI compromise via a malicious dependency",
+    "impact": "Code execution on your build server, CI, or developers' machines",
+    "score": 86,
+    "band": "critical",
+    "kev": false,
+    "ai_verified": false,
+    "verification": [],
+    "advice": "Break the chain at step 1 \u2014 remove or pin this dependency and audit the script (package.json:8). Fixing that one thing stops this whole path.",
+    "score_factors": [
+      "critical finding (supply-chain.dangerous-install-script)",
+      "server-side reachable from an entrypoint",
+      "chain reaches a concrete impact (data/system compromise)"
+    ],
+    "techniques": [
+      "T1195.002"
+    ],
+    "steps": [
+      {
+        "order": 1,
+        "tactic": "Initial Access",
+        "title": "Malicious code arrives via a dependency",
+        "narrative": "Dangerous install lifecycle script in package.json (package.json:8) \u2014 Lifecycle script 'postinstall': Pipes remote content directly into a shell/interpreter.",
+        "file": "package.json",
+        "line": 8,
+        "location": "package.json:8",
+        "rule_ids": [
+          "supply-chain.dangerous-install-script"
+        ],
+        "fingerprints": [
+          "bf5ebc2547cd5b64"
+        ],
+        "breakpoint": true
+      },
+      {
+        "order": 2,
+        "tactic": "Execution",
+        "title": "It runs at install time, before your app starts",
+        "narrative": "npm runs lifecycle scripts on `npm install` / CI \u2014 this executes on your build server or developer machine with no app code involved.",
+        "file": "package.json",
+        "line": 8,
+        "location": "package.json:8",
+        "rule_ids": [
+          "supply-chain.dangerous-install-script"
+        ],
+        "fingerprints": [
+          "bf5ebc2547cd5b64"
+        ],
+        "breakpoint": false
+      }
+    ]
+  },
+  {
+    "id": "path-3",
+    "kind": "taint",
+    "title": "Injection via untrusted input \u2192 paint() -> el.innerHTML [in lib/render.ts]",
+    "impact": "Server-side code/query execution",
+    "score": 74,
+    "band": "high",
+    "kev": false,
+    "ai_verified": false,
+    "verification": [],
+    "advice": "Break the chain at step 2 \u2014 validate or parameterise the value at the sink (app/api/products/route.ts:10). Fixing that one thing stops this whole path.",
+    "score_factors": [
+      "high finding (xss.inner-html)",
+      "server-side reachable from an entrypoint",
+      "chain reaches a concrete impact (data/system compromise)"
+    ],
+    "techniques": [
+      "T1059.007"
+    ],
+    "steps": [
+      {
+        "order": 1,
+        "tactic": "Initial Access",
+        "title": "Attacker controls untrusted input",
+        "narrative": "An attacker supplies a value via `req.body` (app/api/products/route.ts:5) reaching app/api/products/route.ts. Nothing about this input is trusted.",
+        "file": "app/api/products/route.ts",
+        "line": 5,
+        "location": "app/api/products/route.ts:5",
+        "rule_ids": [
+          "xss.inner-html"
+        ],
+        "fingerprints": [
+          "d6a0a66d231bf04f"
+        ],
+        "breakpoint": false
+      },
+      {
+        "order": 2,
+        "tactic": "Execution",
+        "title": "Untrusted input reaches a dangerous sink",
+        "narrative": "That value flows unsanitised into `paint() -> el.innerHTML [in lib/render.ts]` (app/api/products/route.ts:10) \u2014 the attacker now controls what the server runs.",
+        "file": "app/api/products/route.ts",
+        "line": 10,
+        "location": "app/api/products/route.ts:10",
+        "rule_ids": [
+          "xss.inner-html"
+        ],
+        "fingerprints": [
+          "d6a0a66d231bf04f"
+        ],
+        "breakpoint": true
+      }
+    ]
+  },
+  {
+    "id": "path-4",
+    "kind": "kev-dep",
+    "title": "Exploitation of lodash via CVE-2021-23337",
+    "impact": "Compromise via a publicly-known dependency exploit",
+    "score": 58,
+    "band": "medium",
+    "kev": false,
+    "ai_verified": false,
+    "verification": [],
+    "advice": "Break the chain at step 1 \u2014 upgrade lodash to 4.17.21 (package.json:14). Fixing that one thing stops this whole path.",
+    "score_factors": [
+      "high finding (deps.known-vulnerability)",
+      "chain reaches a concrete impact (data/system compromise)"
+    ],
+    "techniques": [
+      "T1195.001"
+    ],
+    "steps": [
+      {
+        "order": 1,
+        "tactic": "Initial Access",
+        "title": "Exposed dependency with a public exploit",
+        "narrative": "You ship `lodash` affected by CVE-2021-23337, reachable from code you actually call.",
+        "file": "package.json",
+        "line": 14,
+        "location": "package.json:14",
+        "rule_ids": [
+          "deps.known-vulnerability"
+        ],
+        "fingerprints": [
+          "aa26f0f5c3f8825b"
+        ],
+        "breakpoint": true
+      },
+      {
+        "order": 2,
+        "tactic": "Execution",
+        "title": "Attacker triggers the known vulnerability",
+        "narrative": "Public exploit code exists; the attacker runs it against your deployment.",
+        "file": "package.json",
+        "line": 14,
+        "location": "package.json:14",
+        "rule_ids": [
+          "deps.known-vulnerability"
+        ],
+        "fingerprints": [
+          "aa26f0f5c3f8825b"
+        ],
+        "breakpoint": false
+      }
+    ]
+  }
+]

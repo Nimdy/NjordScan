@@ -1,0 +1,15 @@
+{
+  "name": "quicknotes-api",
+  "version": "1.4.2",
+  "private": true,
+  "description": "QuickNotes backend — a small JSON API for notes, search and an AI assistant.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {}
+}

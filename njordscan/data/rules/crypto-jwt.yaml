@@ -1,0 +1,246 @@
+# Cryptography & JWT rule library.
+# Every id here is referenced 1:1 by njordscan/data/patterns/crypto-jwt.yaml.
+# Voice: explain the consequence in plain English BEFORE naming the jargon.
+
+- id: jwt.hardcoded-secret
+  title: JWT signed or verified with a hard-coded secret
+  severity: high
+  cwe: CWE-798
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    A JSON Web Token (JWT) is a signed string your app hands to a logged-in user
+    so it can trust them on the next request — the signature is what proves the
+    token wasn't tampered with. That signature is only as strong as the secret
+    you sign it with. When the secret is written directly in your code (a plain
+    string like "secret" or "mysupersecretkey"), anyone who can see your
+    repository — or who finds the value in your shipped JavaScript bundle — can
+    forge their own valid tokens. With a forged token an attacker can log in as
+    ANY user, including an admin, without ever knowing a password.
+  fix: |
+    Move the secret out of the code into an environment variable, and make it a
+    long, random value (32+ bytes). Read it from process.env at runtime. If this
+    secret has ever been committed, treat it as leaked: generate a new one (which
+    invalidates all existing tokens) and rotate it.
+  secure_example: |
+    import jwt from 'jsonwebtoken';
+    // JWT_SECRET set in your host's env / .env.local (gitignored), 32+ random bytes
+    const token = jwt.sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
+    - https://cwe.mitre.org/data/definitions/798.html
+
+- id: jwt.alg-none
+  title: JWT verification accepts the "none" algorithm
+  severity: critical
+  cwe: CWE-347
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    A JWT says, in its own header, which algorithm was used to sign it. The
+    special algorithm "none" means "this token is not signed at all." If your
+    verification step accepts "none", an attacker can take any token, strip the
+    signature, set the algorithm to "none", and your app will treat it as valid.
+    That lets them rewrite the contents — for example change the user id to an
+    admin's — and be trusted instantly. This is the classic JWT "alg=none"
+    authentication bypass: a complete login bypass with no password needed.
+  fix: |
+    Never include 'none' in the list of algorithms you accept. Pass an explicit
+    allowlist of the exact signing algorithm you use (for example ['HS256'] or
+    ['RS256']) to your verify call, so a token claiming any other algorithm is
+    rejected.
+  secure_example: |
+    // only accept the algorithm you actually sign with:
+    const payload = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
+    - https://cwe.mitre.org/data/definitions/347.html
+
+- id: jwt.missing-algorithms
+  title: JWT verified without an algorithms allowlist
+  severity: high
+  cwe: CWE-347
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    When you verify a JWT you should tell the library exactly which signing
+    algorithm to expect. If you don't, the library trusts the algorithm named
+    inside the token itself — which the attacker controls. The danger is
+    "algorithm confusion": apps that verify with a public RSA key (RS256) can be
+    tricked into accepting a token the attacker signed with that same public key
+    treated as an HMAC password (HS256). Because the public key is, by design,
+    public, the attacker can forge tokens and impersonate any user. Leaving the
+    allowlist off also leaves the door open to the "none" algorithm bypass.
+  fix: |
+    Always pass the { algorithms: [...] } option to your verify call, listing
+    only the single algorithm you actually sign with. This pins verification so a
+    token claiming a different algorithm is rejected before its signature is even
+    checked.
+  secure_example: |
+    const payload = jwt.verify(token, PUBLIC_KEY, { algorithms: ['RS256'] });
+  references:
+    - https://portswigger.net/web-security/jwt/algorithm-confusion
+    - https://cwe.mitre.org/data/definitions/347.html
+
+- id: crypto.deprecated-cipher
+  title: Deprecated createCipher / createDecipher used (no IV)
+  severity: high
+  cwe: CWE-327
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    Node's crypto.createCipher() and crypto.createDecipher() are deprecated and
+    unsafe. They derive the encryption key from your password with a weak,
+    one-iteration method and — critically — they use NO initialization vector
+    (IV). An IV is a random value that makes the same plaintext encrypt to a
+    different ciphertext each time. Without it, encrypting the same data twice
+    produces identical output, which leaks patterns and lets an attacker learn
+    things about the data (or detect when two encrypted values are equal). The
+    "iv" variant, createCipheriv(), exists precisely to fix this.
+  fix: |
+    Switch to crypto.createCipheriv() / crypto.createDecipheriv() with a strong
+    algorithm (aes-256-gcm), a properly derived key, and a fresh random IV per
+    message. Store/transmit the IV alongside the ciphertext (it is not secret).
+  secure_example: |
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const enc = Buffer.concat([cipher.update(data), cipher.final()]);
+    const tag = cipher.getAuthTag(); // store iv + tag + enc together
+  references:
+    - https://nodejs.org/api/crypto.html#cryptocreatecipheralgorithm-password-options
+    - https://cwe.mitre.org/data/definitions/327.html
+
+- id: crypto.weak-cipher
+  title: Weak or legacy cipher (DES, RC4, 3DES, or AES-ECB)
+  severity: high
+  cwe: CWE-327
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    Some encryption algorithms are simply broken or too weak to use anymore. DES
+    and RC4 can be cracked with ordinary hardware; 3DES is slow and considered
+    legacy. The ECB *mode* (as in aes-256-ecb) is dangerous even with a strong
+    cipher: it encrypts each block independently, so identical chunks of input
+    produce identical chunks of output. That preserves visible patterns in the
+    data — the famous "ECB penguin" image stays recognisable after encryption.
+    Relying on any of these gives you a false sense of safety; the data is not
+    actually protected.
+  fix: |
+    Use AES with an authenticated mode: aes-256-gcm (preferred) or aes-256-cbc
+    with a separate integrity check. Never use DES, RC4, or any *-ecb mode.
+  secure_example: |
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, crypto.randomBytes(12));
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+    - https://cwe.mitre.org/data/definitions/327.html
+
+- id: crypto.hardcoded-key
+  title: Hard-coded encryption key in source code
+  severity: high
+  cwe: CWE-321
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    The whole point of encryption is that only someone with the secret key can
+    read the data. When that key is written as a literal in your code — a string
+    or a byte buffer passed straight into createCipheriv / createSecretKey — it
+    lives in your repository and your git history forever, visible to everyone
+    with access (and frequently to the public, in shipped bundles). Anyone who
+    has the key can decrypt every value you ever encrypted with it. A hard-coded
+    key turns "encrypted" data back into plaintext for the attacker.
+  fix: |
+    Generate a random key once, store it in a secrets manager or an environment
+    variable, and read it at runtime. Never commit key material. If this key was
+    ever committed, rotate it and re-encrypt the affected data.
+  secure_example: |
+    const key = Buffer.from(process.env.ENCRYPTION_KEY, 'base64'); // 32 random bytes, from env
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, crypto.randomBytes(12));
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+    - https://cwe.mitre.org/data/definitions/321.html
+
+- id: crypto.hardcoded-iv
+  title: Hard-coded or static IV / salt
+  severity: medium
+  cwe: CWE-329
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    An initialization vector (IV) for encryption — and a salt for password
+    hashing or key derivation — must be RANDOM and different every single time.
+    Their job is to make the same input produce different output, so attackers
+    can't spot repeats or precompute results. A fixed IV (passed as a literal
+    string or a constant Buffer.from('1234567890123456')) defeats that: identical
+    plaintexts encrypt identically, and with GCM/CTR modes a reused IV can even
+    leak the key stream and let an attacker recover the plaintext. A fixed salt
+    lets one precomputed table crack many hashes at once.
+  fix: |
+    Generate a fresh random IV/salt for every operation with crypto.randomBytes()
+    and store it next to the ciphertext/hash (it does not need to be secret).
+  secure_example: |
+    const iv = crypto.randomBytes(12);   // fresh per message, stored with the ciphertext
+    const salt = crypto.randomBytes(16); // fresh per password
+  references:
+    - https://cwe.mitre.org/data/definitions/329.html
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+
+- id: crypto.insecure-transport-auth
+  title: Auth / token / OAuth endpoint requested over plain http://
+  severity: high
+  cwe: CWE-319
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    A request to a login, token, or OAuth URL that starts with http:// (not
+    https://) travels across the network unencrypted. Anyone in between — someone
+    on the same coffee-shop Wi-Fi, a malicious router, your ISP — can read it as
+    plain text. For an auth endpoint that means they can capture passwords,
+    one-time codes, OAuth secrets, or the access tokens that are sent back, and
+    then log in as your user. HTTPS encrypts the connection so eavesdroppers see
+    only scrambled bytes.
+  fix: |
+    Always use https:// for any URL that carries credentials or tokens. Update
+    the literal URL, and prefer loading base URLs from configuration so a stray
+    http:// can't sneak back in.
+  secure_example: |
+    const res = await fetch('https://auth.example.com/oauth/token', { method: 'POST', body });
+  references:
+    - https://cwe.mitre.org/data/definitions/319.html
+    - https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html
+
+- id: crypto.hardcoded-cookie-secret
+  title: Cookie / session signing secret hard-coded
+  severity: high
+  cwe: CWE-798
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    Session middleware (express-session, cookie-session, cookie-signature,
+    iron-session, fastify cookie/secret) signs or encrypts the cookie it gives a
+    logged-in user so the user can't tamper with it. That protection rests
+    entirely on the signing secret. When the secret is a literal string in your
+    code, anyone who reads the repo can forge or modify a valid session cookie —
+    flipping their own session to another user's, or to an admin — and take over
+    accounts without a password.
+  fix: |
+    Read the secret from an environment variable and make it a long random value.
+    Rotate it if it was ever committed (which logs everyone out). Provide an array
+    of secrets if your library supports key rotation.
+  secure_example: |
+    app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: false }));
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    - https://cwe.mitre.org/data/definitions/798.html
+
+- id: crypto.bcrypt-low-rounds
+  title: bcrypt cost factor too low (< 10 rounds)
+  severity: medium
+  cwe: CWE-916
+  owasp: "A02:2021-Cryptographic Failures"
+  why: |
+    bcrypt deliberately makes password hashing SLOW so that if your database
+    leaks, an attacker can only try a limited number of guesses per second. How
+    slow is controlled by the "cost" / "rounds" number — each step up doubles the
+    work. Setting it too low (under 10) makes hashing cheap again, so a stolen
+    password database can be cracked far faster. The whole point of bcrypt is the
+    cost factor; a low one throws that protection away.
+  fix: |
+    Use a cost factor of at least 10 (12 is a common, comfortable default on
+    modern hardware). Pick the highest value your login latency budget allows and
+    revisit it as hardware gets faster.
+  secure_example: |
+    const hash = await bcrypt.hash(password, 12); // cost factor 12
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+    - https://cwe.mitre.org/data/definitions/916.html

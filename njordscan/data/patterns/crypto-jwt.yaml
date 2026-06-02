@@ -1,0 +1,98 @@
+# Cryptography & JWT detection patterns.
+# Each rule_id below has a 1:1 knowledge entry in data/rules/crypto-jwt.yaml.
+# Patterns are tuned for precision: a clean app must produce ZERO findings.
+
+# --- jwt.sign / jwt.verify with a hard-coded string secret --------------------
+# Fires on jwt.sign(payload, 'literal-string', ...) or jwt.verify(token, 'literal', ...)
+# The 2nd argument is a quoted string literal (the secret). We require the
+# 1st argument to look like a variable (not also a string) to stay precise.
+- rule_id: jwt.hardcoded-secret
+  pattern: 'jwt\.(sign|verify)\s*\(\s*(?:[A-Za-z_$][\w$.]*|\{[^}]*\})\s*,\s*["''][^"'']{3,}["'']'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  message: 'JWT signed/verified with a hard-coded secret — anyone who reads the code can forge valid login tokens. Move it to process.env.'
+
+# --- jwt.verify accepting the "none" algorithm --------------------------------
+- rule_id: jwt.alg-none
+  pattern: 'algorithms\s*:\s*\[[^\]]*["''](?:none|None|NONE)["'']'
+  languages: [js, jsx, ts, tsx]
+  requires_file: 'jwt|jsonwebtoken|jose'
+  confidence: high
+  message: 'JWT verification accepts the "none" algorithm — an attacker can strip the signature and forge any token. Remove "none" and pin a real algorithm.'
+
+# --- jwt.verify with NO algorithms allowlist (alg confusion / none bypass) -----
+# Fires only when an explicit { algorithms: [...] } option is absent on the call.
+# requires_file ties it to the jwt library; exclude_line voids it if the option
+# is present on the same line.
+- rule_id: jwt.missing-algorithms
+  pattern: 'jwt\.verify\s*\('
+  languages: [js, jsx, ts, tsx]
+  requires_file: 'jsonwebtoken|jwt\.verify'
+  exclude_line: 'algorithms\s*:'
+  confidence: medium
+  message: 'jwt.verify() called without an { algorithms: [...] } allowlist — vulnerable to algorithm-confusion and "none" forgery. Pin the exact algorithm you sign with.'
+
+# --- deprecated createCipher / createDecipher (no IV) -------------------------
+# Match createCipher(...) but NOT createCipheriv(...). The negative lookahead
+# stops the "iv" variant (the safe one) from matching.
+- rule_id: crypto.deprecated-cipher
+  pattern: 'create(?:De)?[cC]ipher(?!iv)\s*\('
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  message: 'Deprecated createCipher/createDecipher uses no IV and a weak key derivation. Switch to createCipheriv with aes-256-gcm and a random IV.'
+
+# --- weak / legacy ciphers: DES, RC4, 3DES, and any *-ecb mode -----------------
+- rule_id: crypto.weak-cipher
+  pattern: '["''](?:des(?:-ede3?)?(?:-cbc|-ecb)?|rc4(?:-40)?|aes-(?:128|192|256)-ecb|aes(?:128|192|256)?-ecb)["'']'
+  languages: [js, jsx, ts, tsx]
+  requires_line: 'cipher|crypto|createCipher|createDecipher|algorithm'
+  confidence: high
+  message: 'Weak or legacy cipher (DES/RC4/3DES or AES-ECB mode) — broken or pattern-leaking. Use aes-256-gcm instead.'
+
+# --- hard-coded encryption key passed to a cipher / key constructor -----------
+# A string OR Buffer.from('literal') used as the KEY argument to createCipheriv /
+# createDecipheriv / createSecretKey. requires the call site keyword nearby.
+- rule_id: crypto.hardcoded-key
+  pattern: 'create(?:Cipheriv|Decipheriv|SecretKey)\s*\([^)]*?(?:["''][A-Za-z0-9+/=]{8,}["'']|Buffer\.from\(\s*["''][^"'']{8,}["''])'
+  languages: [js, jsx, ts, tsx]
+  exclude_line: 'process\.env'
+  confidence: medium
+  message: 'Encryption key written directly in the code — anyone with the source can decrypt your data. Load the key from process.env / a secrets manager.'
+
+# --- hard-coded / static IV or salt -------------------------------------------
+# An iv/salt variable assigned a string literal or Buffer.from('literal').
+- rule_id: crypto.hardcoded-iv
+  pattern: '\b(?:iv|salt)\s*[:=]\s*(?:["''][^"'']{6,}["'']|Buffer\.from\(\s*["''][^"'']{6,}["''])'
+  languages: [js, jsx, ts, tsx]
+  requires_file: 'crypto|cipher|createHash|pbkdf2|scrypt'
+  exclude_line: 'randomBytes|randomFill|process\.env|getRandomValues'
+  confidence: medium
+  message: 'IV/salt is a fixed literal — it must be random per operation or encryption/hashing leaks patterns. Use crypto.randomBytes().'
+
+# --- auth / token / oauth endpoint over plain http:// -------------------------
+- rule_id: crypto.insecure-transport-auth
+  pattern: 'http://[^\s"'']*(?:login|signin|sign-in|logout|auth|authorize|oauth|token|sso|session|register|password|account)[^\s"'']*'
+  languages: [js, jsx, ts, tsx]
+  exclude_line: 'localhost|127\.0\.0\.1|0\.0\.0\.0|\bexample\.(?:com|org)\b|w3\.org|xmlns|schemas\.'
+  confidence: high
+  message: 'Auth/token endpoint requested over plain http:// — credentials and tokens travel unencrypted and can be sniffed. Use https://.'
+
+# --- hard-coded cookie / session signing secret ------------------------------
+# express-session secret / cookie-session keys / cookie-signature / iron-session
+# password given as a string literal.
+- rule_id: crypto.hardcoded-cookie-secret
+  pattern: '\b(?:secret|cookieSecret|signed?Secret|sessionSecret|keys?)\s*:\s*["''][^"'']{6,}["'']'
+  languages: [js, jsx, ts, tsx]
+  requires_file: 'session|cookie|iron-session|csurf|fastify'
+  requires_line: 'secret|keys?'
+  exclude_line: 'process\.env|secretOrKey|getSecret'
+  confidence: medium
+  message: 'Cookie/session signing secret hard-coded — anyone reading the code can forge a session cookie and hijack accounts. Read it from process.env.'
+
+# --- bcrypt cost factor too low (< 10) ----------------------------------------
+# bcrypt.hash(pw, 8) / bcrypt.hashSync(pw, 9) / genSalt(8) with a single digit.
+- rule_id: crypto.bcrypt-low-rounds
+  pattern: 'bcrypt(?:js)?\.(?:hash|hashSync)\s*\([^)]*?,\s*[1-9]\s*[),]|bcrypt(?:js)?\.(?:genSalt|genSaltSync)\s*\(\s*[1-9]\s*[),]'
+  languages: [js, jsx, ts, tsx]
+  confidence: high
+  message: 'bcrypt cost factor below 10 — password hashing is too fast, so a leaked database cracks quickly. Use at least 10 (12 recommended).'

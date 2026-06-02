@@ -1,0 +1,77 @@
+name: "🚩 False positive (I think this is wrong)"
+description: "NjordScan flagged something that isn't actually a security issue."
+title: "[False positive]: "
+labels: ["false-positive"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most important report you can send us. **Zero false positives on clean code**
+        is the whole point — a clean scan should mean "you're good," so every wrong flag is a bug
+        we want to fix.
+
+        If you're sure the finding is fine for *your* code right now, you can silence that one line
+        with a trailing `// njordscan-ignore` comment or disable the rule in `.njordscan.yml` — but
+        please still file this so we can tighten the rule for everyone.
+
+        **Please redact any real secrets from the snippet below before posting** (replace keys with
+        `xxxx`). A committed key in a public issue is a real leak.
+  - type: input
+    id: rule-id
+    attributes:
+      label: Rule ID
+      description: |
+        The id from the finding, like `xss.dangerously-set-inner-html` or `ai.endpoint-no-auth`.
+        It's shown with the finding, and `njordscan explain <rule-id>` will echo it back.
+      placeholder: "secrets.aws-access-key"
+    validations:
+      required: true
+  - type: textarea
+    id: snippet
+    attributes:
+      label: The flagged code (redact secrets!)
+      description: |
+        Paste the line(s) NjordScan flagged, plus a little context. Replace any real secret with
+        `xxxx` first.
+      render: javascript
+      placeholder: |
+        // app/api/health/route.ts:12
+        const token = req.headers.get("x-internal-token"); // flagged as a hardcoded secret
+    validations:
+      required: true
+  - type: textarea
+    id: why-wrong
+    attributes:
+      label: Why do you think it's wrong?
+      description: What is this code actually doing, and why isn't it the issue NjordScan claims?
+      placeholder: "This is reading a value from a header, not hardcoding one — there's no secret in the source."
+    validations:
+      required: true
+  - type: dropdown
+    id: project-type
+    attributes:
+      label: Project type
+      description: What kind of project is this?
+      options:
+        - Next.js
+        - React (Vite or other)
+        - Vite (non-React)
+        - AI / LLM app
+        - Other / mixed
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Version
+      description: "Output of `njordscan --version` (so we know which ruleset you're on)."
+      placeholder: "njordscan 2.0.0b1"
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: A link to a public repo or a minimal repro makes this much faster to fix.
+    validations:
+      required: false

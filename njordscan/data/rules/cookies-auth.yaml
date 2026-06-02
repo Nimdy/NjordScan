@@ -1,0 +1,269 @@
+# Cookies, sessions & auth hygiene.
+# Knowledge entries for the cookies-auth category. Each id is referenced 1:1 by
+# njordscan/data/patterns/cookies-auth.yaml. Voice: name the consequence first,
+# explain every term, assume the reader has never heard of "httpOnly" or "CSRF".
+
+- id: cookie.missing-httponly
+  title: Session cookie set without the httpOnly flag
+  severity: high
+  cwe: CWE-1004
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    A cookie is a small piece of data the browser stores and sends back on
+    every request — it's how your app remembers who is logged in. The
+    `httpOnly` flag tells the browser "JavaScript on the page is not allowed to
+    read this cookie." Without it, any JavaScript that runs on your site can
+    read the cookie's value with `document.cookie`. So if an attacker ever lands
+    a single cross-site-scripting (XSS) bug on one page, they can steal your
+    users' session cookies and log in as them. Marking auth/session cookies
+    httpOnly removes that entire path — the script can't see the cookie at all.
+  fix: |
+    Add `httpOnly: true` whenever you set a cookie that identifies a logged-in
+    user (a session id, a JWT, a refresh token). The browser will keep sending
+    it automatically, but page scripts can no longer read it.
+  secure_example: |
+    // Next.js (app router)
+    cookies().set('session', token, { httpOnly: true, secure: true, sameSite: 'lax' });
+    // Express
+    res.cookie('session', token, { httpOnly: true, secure: true, sameSite: 'lax' });
+  references:
+    - https://owasp.org/www-community/HttpOnly
+    - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+
+- id: cookie.missing-secure
+  title: Session cookie set without the Secure flag
+  severity: medium
+  cwe: CWE-614
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    The `secure` flag tells the browser "only send this cookie over an
+    encrypted HTTPS connection, never plain HTTP." Without it, the cookie can be
+    sent over an unencrypted connection — and anyone sharing the network (a
+    coffee-shop Wi-Fi, a compromised router) can read it off the wire and use it
+    to impersonate the user. Session and auth cookies should always be Secure so
+    they are never transmitted in the clear.
+  fix: |
+    Add `secure: true` to every cookie that carries login/session data. In local
+    development over http://localhost the browser still accepts Secure cookies,
+    so you can leave it on everywhere (or gate it on NODE_ENV === 'production').
+  secure_example: |
+    cookies().set('session', token, { httpOnly: true, secure: true, sameSite: 'lax' });
+  references:
+    - https://owasp.org/www-community/controls/SecureFlag
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies
+
+- id: cookie.missing-samesite
+  title: Session cookie set without an explicit SameSite policy
+  severity: medium
+  cwe: CWE-1275
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    `SameSite` controls whether the browser sends your cookie when a request to
+    your site is triggered by a *different* site. If another website can make
+    the browser send your logged-in user's session cookie, it can perform
+    actions as that user without their knowledge — this is cross-site request
+    forgery (CSRF). Setting `sameSite: 'lax'` (or `'strict'`) tells the browser
+    not to attach the cookie to cross-site requests, which blocks most CSRF
+    attacks for free. Leaving it unset is risky to rely on, so set it explicitly.
+  fix: |
+    Set `sameSite: 'lax'` for most session cookies (it still works for normal
+    top-level navigations like clicking a link), or `'strict'` for the most
+    sensitive ones. Use `'none'` only when you genuinely need cross-site cookies,
+    and pair it with `secure: true`.
+  secure_example: |
+    cookies().set('session', token, { httpOnly: true, secure: true, sameSite: 'lax' });
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
+    - https://owasp.org/www-community/attacks/csrf
+
+- id: cookie.samesite-none-insecure
+  title: SameSite=None cookie sent without the Secure flag
+  severity: high
+  cwe: CWE-614
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    `sameSite: 'none'` tells the browser to send this cookie on cross-site
+    requests — exactly the situation where it is most exposed. Modern browsers
+    REQUIRE such a cookie to also be `secure` (HTTPS-only) and will silently
+    refuse to store it otherwise, so a None cookie without Secure is both broken
+    and unsafe: it would travel over plain HTTP where anyone on the network can
+    read it. If you opt into cross-site cookies you must also opt into HTTPS-only.
+  fix: |
+    Whenever you use `sameSite: 'none'`, also set `secure: true`. If you didn't
+    actually need cross-site cookies, switch to `sameSite: 'lax'` instead.
+  secure_example: |
+    cookies().set('session', token, { httpOnly: true, secure: true, sameSite: 'none' });
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite#none
+    - https://web.dev/articles/samesite-cookies-explained
+
+- id: session.hardcoded-secret
+  title: Session signing secret hard-coded (or a well-known default)
+  severity: high
+  cwe: CWE-798
+  owasp: "A07:2021-Identification and Authentication Failures"
+  why: |
+    `express-session`, `cookie-session`, `cookie-parser`, and similar libraries
+    sign your session cookies with a secret key so the server can detect if a
+    user tampered with their cookie. If that secret is written directly in your
+    source code — and especially if it's a famous placeholder like
+    'keyboard cat' from the docs — anyone who can read the code (or guesses the
+    common default) can forge a valid signed cookie and log in as ANY user,
+    including an admin. The secret is the only thing standing between an attacker
+    and a forged session, so it must be unguessable and kept out of the codebase.
+  fix: |
+    Move the secret into an environment variable, generate a long random value
+    (e.g. `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`),
+    and rotate it now since the committed one must be treated as compromised.
+  secure_example: |
+    app.use(session({ secret: process.env.SESSION_SECRET, /* httpOnly etc. */ }));
+  references:
+    - https://github.com/expressjs/session#secret
+    - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+
+- id: auth.jwt-in-localstorage
+  title: Auth token stored in localStorage / sessionStorage
+  severity: high
+  cwe: CWE-922
+  owasp: "A07:2021-Identification and Authentication Failures"
+  why: |
+    `localStorage` and `sessionStorage` are readable by any JavaScript running
+    on your page. When you keep a login token (a JWT, an access/refresh token)
+    there, a single cross-site-scripting (XSS) bug anywhere on the site lets an
+    attacker read the token and impersonate the user from their own machine —
+    and unlike a stolen cookie, the token keeps working until it expires. Browser
+    storage also doesn't get the protections cookies have (httpOnly, Secure,
+    SameSite). The safer home for a session token is an httpOnly cookie that
+    scripts cannot read.
+  fix: |
+    Store the session/refresh token in an httpOnly, Secure, SameSite cookie set
+    by the server, and let the browser attach it automatically. If you must keep
+    something in the browser, keep only non-sensitive data there.
+  secure_example: |
+    // server sets the token; the browser stores it where JS can't read it
+    res.cookie('token', jwt, { httpOnly: true, secure: true, sameSite: 'lax' });
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#local-storage
+    - https://owasp.org/www-community/attacks/xss/
+
+- id: auth.hardcoded-credentials
+  title: Hard-coded admin / login credentials in code
+  severity: critical
+  cwe: CWE-798
+  owasp: "A07:2021-Identification and Authentication Failures"
+  why: |
+    A username/password (or admin check) written directly into your code is a
+    permanent backdoor: it's visible to everyone who can read the repository,
+    it stays in git history even after you delete the line, and you usually
+    can't change it without a redeploy. Attackers specifically scan code for
+    patterns like `password === 'admin'` or `password == 'password'` because a
+    hard-coded credential often unlocks the highest-privilege account in the app.
+  fix: |
+    Never compare against a literal password. Look the user up in your data
+    store and verify a salted password hash (bcrypt/argon2). Keep any
+    service/admin credentials in environment variables or a secrets manager, and
+    rotate anything that was committed.
+  secure_example: |
+    const user = await db.user.findUnique({ where: { email } });
+    const ok = user && await bcrypt.compare(password, user.passwordHash);
+  references:
+    - https://cwe.mitre.org/data/definitions/798.html
+    - https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+
+- id: auth.hardcoded-basic-auth
+  title: Hard-coded HTTP Basic / Bearer credentials in an Authorization header
+  severity: high
+  cwe: CWE-798
+  owasp: "A07:2021-Identification and Authentication Failures"
+  why: |
+    An `Authorization: Basic <base64>` header carries a username and password
+    that are merely base64-encoded — that is NOT encryption, anyone can decode
+    it in one line. Hard-coding such a header (or a literal `Bearer <token>`)
+    bakes a real credential into your source, where it leaks to everyone with
+    repo access and lives forever in git history. These static API/admin
+    credentials are a favourite target for automated secret scanners.
+  fix: |
+    Build the header at runtime from a secret read out of the environment, and
+    rotate the exposed credential. Better still, use short-lived tokens issued
+    by your auth provider instead of static ones.
+  secure_example: |
+    const auth = 'Basic ' + Buffer.from(`${process.env.API_USER}:${process.env.API_PASS}`).toString('base64');
+  references:
+    - https://cwe.mitre.org/data/definitions/798.html
+    - https://datatracker.ietf.org/doc/html/rfc7617
+
+- id: auth.middleware-bypass
+  title: Auth check disabled or bypassed in middleware / guard
+  severity: critical
+  cwe: CWE-287
+  owasp: "A07:2021-Identification and Authentication Failures"
+  why: |
+    Middleware, route guards, and `getServerSideProps`-style checks are the
+    gates that decide who is allowed in. A line like `return true` at the top of
+    an auth guard, `return NextResponse.next()` before any check, or an
+    `if (true)` / `// TODO re-enable auth` short-circuit opens the gate for
+    everyone — every protected page and API becomes public. These bypasses are
+    usually left in during local development and then accidentally shipped,
+    handing attackers admin pages and private data with no login at all.
+  fix: |
+    Remove the short-circuit and let the real check run. If you need to skip auth
+    locally, gate it behind an explicit env flag that can never be true in
+    production, and add a test that protected routes reject anonymous requests.
+  secure_example: |
+    export function middleware(req) {
+      const session = req.cookies.get('session');
+      if (!session) return NextResponse.redirect(new URL('/login', req.url));
+      return NextResponse.next();
+    }
+  references:
+    - https://cwe.mitre.org/data/definitions/287.html
+    - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+
+- id: cors.wildcard-credentials
+  title: CORS allows any origin together with credentials
+  severity: high
+  cwe: CWE-942
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    CORS headers tell the browser which OTHER websites are allowed to read
+    responses from your API. Setting `Access-Control-Allow-Origin: *` (any site)
+    while also allowing credentials (`Access-Control-Allow-Credentials: true`,
+    or `cors({ origin: true, credentials: true })`) means any website on the
+    internet can make authenticated requests to your API using your user's
+    cookies and read the responses — effectively stealing logged-in users' data
+    from any malicious page they visit. The browser actually forbids the literal
+    `*` + credentials combo, so apps often reflect the caller's origin instead,
+    which is just as dangerous.
+  fix: |
+    When you allow credentials, allow only a specific list of trusted origins —
+    never `*` and never blindly reflect the request's Origin header.
+  secure_example: |
+    app.use(cors({ origin: ['https://app.example.com'], credentials: true }));
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#requests_with_credentials
+    - https://cwe.mitre.org/data/definitions/942.html
+
+- id: csrf.disabled
+  title: CSRF protection explicitly disabled
+  severity: high
+  cwe: CWE-352
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    Cross-site request forgery (CSRF) is when another website tricks your
+    logged-in user's browser into sending a state-changing request to your app
+    (e.g. "transfer money", "change email") using the cookies the browser
+    attaches automatically. CSRF protection — an unguessable token your form must
+    include, checked on the server — stops this. Turning it off (`csrf: false`,
+    `csrfProtection: false`, `app.use(csrf())` removed/commented) re-opens every
+    cookie-authenticated mutation to forgery from any site your users visit.
+  fix: |
+    Keep CSRF protection enabled for cookie-based sessions, or rely on
+    `SameSite` cookies plus a custom-header / double-submit token check. Only
+    disable it for APIs that authenticate with a Bearer token and never use
+    cookies.
+  secure_example: |
+    import csrf from 'csurf';
+    app.use(csrf({ cookie: { httpOnly: true, secure: true, sameSite: 'lax' } }));
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+    - https://owasp.org/www-community/attacks/csrf

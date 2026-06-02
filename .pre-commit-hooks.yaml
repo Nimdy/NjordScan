@@ -1,0 +1,17 @@
+# Use NjordScan as a pre-commit hook. In your repo's .pre-commit-config.yaml:
+#
+#   repos:
+#     - repo: https://github.com/nimdy/njordscan
+#       rev: v2.0.0b1
+#       hooks:
+#         - id: njordscan
+#
+# Then: pre-commit install && pre-commit run --all-files
+- id: njordscan
+  name: NjordScan security scan
+  description: Scan Next.js/React/Vite code for security issues, explained in plain English.
+  entry: njordscan scan
+  args: ["--fail-on", "high", "--quiet"]
+  language: python
+  pass_filenames: false
+  always_run: true

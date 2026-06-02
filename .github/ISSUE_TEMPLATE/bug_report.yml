@@ -1,0 +1,80 @@
+name: "🐛 Bug report"
+description: "NjordScan crashed, wouldn't install, or did something clearly wrong."
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! This is for problems with the **njordscan tool itself** —
+        a crash, an install/setup problem, or behavior that's plainly broken.
+
+        - Think NjordScan flagged something that isn't a real issue? Use the
+          **"False positive"** template instead — that's the right place for "I think this is wrong."
+        - Found a security vulnerability *in NjordScan*? Please report it privately via the
+          **Security** tab (Report a vulnerability), not here.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What went wrong, and what did you expect to happen instead?
+      placeholder: "I ran a scan and it crashed with a traceback. I expected a report."
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: The exact command you ran
+      description: Copy the full command, including any flags.
+      render: shell
+      placeholder: "njordscan scan . --fail-on high"
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output / error
+      description: |
+        Paste the terminal output or traceback. Re-run with `-v` for more detail if you can.
+        Please redact any secrets or private paths first.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: |
+        How can we make this happen? A tiny snippet or a link to a public repo helps a lot.
+        If it only happens on one file, the smallest version of that file is gold.
+      placeholder: |
+        1. Create a project with ...
+        2. Run `njordscan scan .`
+        3. See the crash
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Run these and paste the output:
+        ```
+        njordscan --version
+        python --version
+        ```
+        Then add your OS (e.g. macOS 14, Ubuntu 24.04, Windows 11).
+      value: |
+        - njordscan --version:
+        - python --version:
+        - OS:
+        - How installed (pip / source / pipx):
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Framework (Next.js / React / Vite), package manager, or anything else that might matter.
+    validations:
+      required: false

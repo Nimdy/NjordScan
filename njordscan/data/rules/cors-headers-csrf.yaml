@@ -1,0 +1,253 @@
+# CORS, security-header (CSP) and CSRF rules.
+# Scope note: the existing rule `config.missing-security-headers` covers the
+# general "you set no headers at all" case. The rules here are about headers
+# that ARE present but configured in a way that hands attackers an opening.
+
+- id: cors.wildcard-with-credentials
+  title: "CORS allows any site AND sends credentials (Access-Control-Allow-Origin: * with Allow-Credentials: true)"
+  severity: high
+  cwe: CWE-942
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    CORS is the browser rule that decides which OTHER websites are allowed to
+    read responses from your API. `Access-Control-Allow-Origin: *` means "any
+    website on the internet may call this API and read the reply".
+    `Access-Control-Allow-Credentials: true` means "and the browser should send
+    the user's cookies along too".
+
+    Together these two are a forbidden combination: any malicious site a logged-in
+    user visits can quietly make requests to your API AS that user (their session
+    cookie rides along) and read the private response — their account data, their
+    messages, whatever the endpoint returns. Browsers actually refuse the literal
+    `*` + credentials pair, which usually pushes developers into the even more
+    dangerous habit of reflecting the caller's Origin instead (see
+    cors.origin-reflection).
+  fix: |
+    Decide which sites are actually allowed and list them explicitly. Never pair
+    a wildcard with credentials. If you only have a public, read-only API and you
+    genuinely want it open to everyone, then do NOT send credentials (drop
+    Allow-Credentials and don't rely on cookies).
+  secure_example: |
+    const ALLOWED = new Set(['https://app.example.com']);
+    const origin = req.headers.origin;
+    if (origin && ALLOWED.has(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Vary', 'Origin');
+    }
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#credentialed_requests_and_wildcards
+    - https://portswigger.net/web-security/cors
+
+- id: cors.origin-reflection
+  title: "CORS reflects the request Origin back without an allowlist"
+  severity: high
+  cwe: CWE-942
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    To allow cookies on cross-site requests you can't use the `*` wildcard, so a
+    common shortcut is to copy whatever `Origin` the caller sent straight back
+    into `Access-Control-Allow-Origin`. That is effectively a wildcard that ALSO
+    works with credentials: every site that calls your API gets approved, because
+    you echo their own origin back to them.
+
+    A malicious page a logged-in user visits can then call your API as that user
+    and read the private response. The fact that the value isn't a literal `*`
+    fools you into thinking it's restrictive — it isn't.
+  fix: |
+    Keep an allowlist of origins you actually trust and only echo the Origin back
+    if it is on the list. Add `Vary: Origin` so caches don't serve one site's
+    allowed response to another.
+  secure_example: |
+    const ALLOWED = new Set(['https://app.example.com', 'https://admin.example.com']);
+    const origin = req.headers.origin;
+    if (origin && ALLOWED.has(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Vary', 'Origin');
+    }
+  references:
+    - https://portswigger.net/web-security/cors
+    - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#cross-origin-resource-sharing
+
+- id: cors.permissive-middleware
+  title: "cors() middleware configured to allow every origin"
+  severity: medium
+  cwe: CWE-942
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    The popular `cors` middleware (and Express/Hono/Nest equivalents) defaults to
+    allowing ALL origins when you call `cors()` with no options, or pass
+    `origin: true` / `origin: '*'`. That means any website can call your API from
+    a browser and read the response. For a public, read-only API that may be
+    fine — but it is almost never what you want for an authenticated API, and it
+    is easy to ship by accident because the permissive form is the shortest to
+    type.
+  fix: |
+    Pass an explicit `origin` option naming the sites you trust, or a function
+    that checks the incoming origin against an allowlist. Only keep the open
+    configuration if the endpoint is genuinely public and uses no cookies.
+  secure_example: |
+    app.use(cors({
+      origin: ['https://app.example.com'],
+      credentials: true,
+    }));
+  references:
+    - https://github.com/expressjs/cors#configuration-options
+    - https://owasp.org/www-community/attacks/CSRF
+
+- id: csp.unsafe-inline
+  title: "Content-Security-Policy weakened with 'unsafe-inline'"
+  severity: medium
+  cwe: CWE-1021
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    A Content-Security-Policy (CSP) is a header that tells the browser which
+    scripts and styles it is allowed to run — it is one of your strongest
+    defenses against cross-site scripting (XSS). Adding `'unsafe-inline'` to
+    `script-src` tells the browser to run inline `<script>...</script>` and
+    `onclick="..."` handlers again. That re-enables exactly the injection
+    technique CSP is supposed to block, so an attacker who finds an XSS hole can
+    execute their script as if you had no CSP at all.
+  fix: |
+    Remove `'unsafe-inline'` from `script-src`. Move inline scripts into separate
+    files, and if you must allow specific inline snippets use a per-request nonce
+    (`'nonce-...'`) or a hash instead.
+  secure_example: |
+    // generate a fresh nonce per request and put it on your <script nonce={n}> tags
+    res.setHeader(
+      'Content-Security-Policy',
+      `script-src 'self' 'nonce-${nonce}'; object-src 'none'; base-uri 'self'`
+    );
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+    - https://web.dev/articles/strict-csp
+
+- id: csp.unsafe-eval
+  title: "Content-Security-Policy weakened with 'unsafe-eval'"
+  severity: medium
+  cwe: CWE-1021
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    Adding `'unsafe-eval'` to your Content-Security-Policy lets the page turn
+    strings into live code again via `eval()`, `new Function()`, and
+    `setTimeout('code')`. Those are exactly the primitives an attacker needs to
+    run their own JavaScript if they manage to inject a string anywhere, so this
+    setting cancels much of the protection CSP gives you against cross-site
+    scripting (XSS).
+  fix: |
+    Remove `'unsafe-eval'`. If a dependency genuinely needs it (some older
+    templating or WASM tools do), prefer upgrading or replacing that dependency
+    rather than weakening the policy for the whole site.
+  secure_example: |
+    res.setHeader(
+      'Content-Security-Policy',
+      "script-src 'self'; object-src 'none'; base-uri 'self'"
+    );
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src
+    - https://web.dev/articles/strict-csp
+
+- id: csp.disabled-in-helmet
+  title: "Helmet's Content-Security-Policy turned off (contentSecurityPolicy: false)"
+  severity: medium
+  cwe: CWE-693
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    Helmet sets a bundle of protective HTTP headers for you, including a
+    Content-Security-Policy that limits the damage of a cross-site scripting
+    (XSS) bug. Passing `contentSecurityPolicy: false` (or calling
+    `helmet({ contentSecurityPolicy: false })`) switches that protection off, so
+    the browser will run any script that gets injected into your pages. People
+    often disable it to silence a console warning during development and forget to
+    turn it back on.
+  fix: |
+    Leave Helmet's CSP enabled and configure its directives instead of disabling
+    it. Start from Helmet's defaults and add the specific sources your app needs.
+  secure_example: |
+    app.use(helmet({
+      contentSecurityPolicy: {
+        directives: {
+          'script-src': ["'self'"],
+          'object-src': ["'none'"],
+          'base-uri': ["'self'"],
+        },
+      },
+    }));
+  references:
+    - https://helmetjs.github.io/
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+
+- id: csp.frame-ancestors-wildcard
+  title: "Clickjacking protection disabled (frame-ancestors *)"
+  severity: medium
+  cwe: CWE-1021
+  owasp: "A05:2021-Security Misconfiguration"
+  why: |
+    `frame-ancestors` in your Content-Security-Policy controls which sites are
+    allowed to embed your pages inside an `<iframe>`. Setting it to `*` (or
+    leaving X-Frame-Options off and frame-ancestors wide open) lets ANY site frame
+    your app. An attacker can then overlay your real page under their own buttons
+    and trick a logged-in user into clicking things they didn't mean to —
+    transferring money, changing settings, granting access. This is called
+    clickjacking.
+  fix: |
+    Set `frame-ancestors 'self'` (or list the specific partner domains allowed to
+    embed you) and pair it with `X-Frame-Options: SAMEORIGIN` for older browsers.
+  secure_example: |
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors
+    - https://owasp.org/www-community/attacks/Clickjacking
+
+- id: csrf.disabled-protection
+  title: "CSRF protection explicitly disabled"
+  severity: high
+  cwe: CWE-352
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    CSRF (cross-site request forgery) is when another website makes a logged-in
+    user's browser send a real request to YOUR app — the browser helpfully
+    attaches the user's session cookie, so the request looks legitimate and your
+    server performs the action (change email, transfer funds, delete data)
+    without the user intending it. Frameworks ship CSRF protection on by default;
+    options like `csrf: false`, `csrfProtection: false`, or NextAuth's
+    `skipCSRFCheck` turn that guard off and re-open the door.
+  fix: |
+    Leave the framework's CSRF protection enabled. If you disabled it to make an
+    API call work, the right fix is usually to authenticate that endpoint with a
+    bearer token / API key (not cookies) instead of switching the protection off
+    for everyone.
+  secure_example: |
+    // Keep the default protection on; authenticate machine-to-machine calls with a token:
+    app.use(csurf());                       // do NOT pass { ignoreMethods: [...] } to skip POST
+    // or, for an API route, require an Authorization header instead of a cookie.
+  references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+    - https://owasp.org/www-community/attacks/csrf
+
+- id: csrf.samesite-none-cookie
+  title: "Session cookie set with SameSite=None (sent on cross-site requests)"
+  severity: medium
+  cwe: CWE-352
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    The `SameSite` attribute on a cookie controls whether the browser attaches it
+    to requests that other websites trigger. `SameSite=Lax` (the modern default)
+    already blocks most cross-site request forgery (CSRF) by withholding the
+    cookie on cross-site POSTs. Setting `sameSite: 'none'` on an authentication or
+    session cookie turns that built-in protection back off, so a malicious site
+    can make the user's browser fire authenticated requests at your app again.
+  fix: |
+    Use `sameSite: 'lax'` (or `'strict'`) for session and auth cookies. Only use
+    `'none'` for cookies that truly must travel cross-site (e.g. a third-party
+    embed), and when you do, add a separate anti-CSRF token check.
+  secure_example: |
+    res.cookie('session', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+    });
+  references:
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
+    - https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#samesite-cookie-attribute

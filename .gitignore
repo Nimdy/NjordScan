@@ -1,0 +1,92 @@
+# ─── Virtual environments ──────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.virtualenv/
+
+# ─── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ─── Packaging / build ─────────────────────────────────────────────────
+build/
+dist/
+sdist/
+wheels/
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+MANIFEST
+
+# ─── Test / coverage ───────────────────────────────────────────────────
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.hypothesis/
+junit*.xml
+test-report.*
+
+# ─── Type checkers / linters ───────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pyre/
+.pytype/
+
+# ─── NjordScan output & user cache ─────────────────────────────────────
+reports/
+*.sarif
+njordscan-report.*
+njordscan_report_*
+njordscan-baseline.json
+.njordscan/
+# Generated rules feed — built by scripts/gen_rules_feed.py and published to the
+# hosting endpoint per release; never committed (would duplicate data/ and drift).
+feed/
+# Local Claude Code session runtime state (scheduler locks, etc.) — not project files.
+.claude/
+
+# ─── Local secrets / env (but KEEP the intentional test/example fixtures) ──────
+.env
+.env.local
+.env.*.local
+!tests/fixtures/**/.env
+!tests/fixtures/**/.env.*
+!examples/**/.env
+!examples/**/.env.*
+
+# ─── Node (in case a fixture or example installs deps) ─────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─── Docs build ────────────────────────────────────────────────────────
+site/
+docs/_build/
+
+# ─── Editors / OS ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Simulation lab generated output ───────────────────────────────────────
+simulation-lab/reports/*
+!simulation-lab/reports/.gitkeep
+
+simulation-lab/logs/*
+!simulation-lab/logs/.gitkeep

@@ -1,0 +1,131 @@
+{
+  "name": "NjordScan — vulnerable-shop",
+  "versions": {
+    "layer": "4.5",
+    "navigator": "4.9.1",
+    "attack": "15"
+  },
+  "domain": "enterprise-attack",
+  "description": "Attack surface of vulnerable-shop from a NjordScan v2.0.0b1 scan: 18 findings across 8 ATT&CK techniques. Score = number of findings mapping to each technique.",
+  "techniques": [
+    {
+      "techniqueID": "T1190",
+      "score": 8,
+      "enabled": true,
+      "comment": "8 finding(s) — Exploit Public-Facing Application [Initial Access]. Rules: ai.endpoint-no-auth, ai.no-rate-limit, config.missing-security-headers, nextjs.dangerous-config, sqli.string-concatenation, sqli.tainted-query",
+      "metadata": [
+        {
+          "name": "njordscan-findings",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1059.007",
+      "score": 4,
+      "enabled": true,
+      "comment": "4 finding(s) — Command and Scripting Interpreter: JavaScript [Execution]. Rules: xss.dangerously-set-inner-html, xss.inner-html",
+      "metadata": [
+        {
+          "name": "njordscan-findings",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1496",
+      "score": 3,
+      "enabled": true,
+      "comment": "3 finding(s) — Resource Hijacking [Impact]. Rules: ai.endpoint-no-auth, ai.no-rate-limit, ai.unbounded-output",
+      "metadata": [
+        {
+          "name": "njordscan-findings",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1195.001",
+      "score": 2,
+      "enabled": true,
+      "comment": "2 finding(s) — Supply Chain Compromise: Compromise Software Dependencies and Development Tools [Initial Access]. Rules: deps.known-vulnerability",
+      "metadata": [
+        {
+          "name": "njordscan-findings",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1195.002",
+      "score": 1,
+      "enabled": true,
+      "comment": "1 finding(s) — Supply Chain Compromise: Compromise Software Supply Chain [Initial Access]. Rules: supply-chain.dangerous-install-script",
+      "metadata": [
+        {
+          "name": "njordscan-findings",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1552.001",
+      "score": 1,
+      "enabled": true,
+      "comment": "1 finding(s) — Unsecured Credentials: Credentials In Files [Credential Access]. Rules: secret.generic",
+      "metadata": [
+        {
+          "name": "njordscan-findings",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1552",
+      "score": 1,
+      "enabled": true,
+      "comment": "1 finding(s) — Unsecured Credentials [Credential Access]. Rules: secret.public-env-exposure",
+      "metadata": [
+        {
+          "name": "njordscan-findings",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1185",
+      "score": 1,
+      "enabled": true,
+      "comment": "1 finding(s) — Browser Session Hijacking [Collection]. Rules: config.missing-security-headers",
+      "metadata": [
+        {
+          "name": "njordscan-findings",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "gradient": {
+    "colors": [
+      "#ffe6e6",
+      "#ff8c66",
+      "#cc0000"
+    ],
+    "minValue": 0,
+    "maxValue": 8
+  },
+  "legendItems": [
+    {
+      "label": "few findings",
+      "color": "#ffe6e6"
+    },
+    {
+      "label": "many findings",
+      "color": "#cc0000"
+    }
+  ],
+  "showTacticRowBackground": true,
+  "tacticRowBackground": "#205b8f",
+  "selectTechniquesAcrossTactics": true,
+  "sorting": 3
+}

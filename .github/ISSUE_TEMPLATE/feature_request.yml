@@ -1,0 +1,61 @@
+name: "💡 Feature request / new rule"
+description: "Suggest a new detector, rule, or feature."
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea for something NjordScan should catch, or a feature that'd make it more useful?
+        Tell us about it. New **rules** are the most common (and most welcome) ask — if you've hit a
+        web/Next.js/React/Vite/AI-app mistake we don't flag yet, that's a great rule.
+
+        Every rule has to teach (a plain-English *why* + *fix*) and stay quiet on clean code, so the
+        more real-world detail you give us, the better.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What security mistake or gap should NjordScan be catching? Who gets bitten by it?
+      placeholder: "People wire up a webhook handler with no signature check, so anyone can forge requests."
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your proposed idea
+      description: |
+        What should NjordScan do? If it's a new rule, what should it flag, and roughly what's the
+        fix it'd recommend?
+      placeholder: "A rule like `webhook.unverified-signature` that flags a handler reading a body without verifying the provider signature."
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: |
+        Show us. A **vulnerable** snippet that *should* fire and a **safe** snippet that should
+        *not* fire are exactly what we need to build the rule (and its tests).
+      render: javascript
+      placeholder: |
+        // should FLAG:
+        export async function POST(req) {
+          const body = await req.json(); // no signature verification
+          await handle(body);
+        }
+
+        // should STAY SILENT:
+        export async function POST(req) {
+          verifySignature(req.headers, await req.text());
+          ...
+        }
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Links to the relevant CWE/OWASP category, docs, or a real-world example all help.
+    validations:
+      required: false

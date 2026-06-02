@@ -1,0 +1,36 @@
+name: "NjordScan security scan"
+description: "Scan Next.js/React/Vite code for security issues — explained in plain English. Uploads SARIF for GitHub code scanning."
+branding:
+  icon: "shield"
+  color: "blue"
+inputs:
+  path:
+    description: "Directory to scan"
+    required: false
+    default: "."
+  fail-on:
+    description: "Fail the job if any finding is at or above this severity (critical|high|medium|low). Leave empty to never fail."
+    required: false
+    default: "high"
+  format:
+    description: "Report format (sarif|json|html)"
+    required: false
+    default: "sarif"
+  output:
+    description: "Report output path"
+    required: false
+    default: "njordscan.sarif"
+runs:
+  using: "composite"
+  steps:
+    - name: Install NjordScan
+      shell: bash
+      # --pre: 2.0 ships as a beta (2.0.0bN); plain `pip install njordscan` would skip
+      # a pre-release. Drop --pre once a stable 2.0 is published.
+      run: pip install --pre njordscan
+    - name: Run NjordScan
+      shell: bash
+      run: |
+        ARGS=(scan "${{ inputs.path }}" --format "${{ inputs.format }}" -o "${{ inputs.output }}")
+        if [ -n "${{ inputs.fail-on }}" ]; then ARGS+=(--fail-on "${{ inputs.fail-on }}"); fi
+        njordscan "${ARGS[@]}"

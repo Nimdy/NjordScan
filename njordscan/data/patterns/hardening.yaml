@@ -1,0 +1,111 @@
+# Hardening & info-leak detection patterns. Each rule_id has a 1:1 knowledge
+# entry in data/rules/hardening.yaml. Patterns are deliberately narrow: they look
+# for the specific risky SHAPE plus context (requires_line / exclude_line) so a
+# clean app stays at zero findings.
+
+# --- error detail leaked to the client -------------------------------------
+# res.send(err.stack) / res.status(500).send(err.stack) / res.json(error.stack)
+- rule_id: info-leak.error-stack-to-client
+  pattern: '\b(res(ponse)?|reply)\b[^;\n]*\.\s*(send|json|end|write)\s*\([^;\n]*\b(err|error|e|ex)\s*\.\s*stack\b'
+  confidence: high
+  message: 'A raw error stack trace is being sent to the client — it leaks server file paths, library versions, and internals to attackers.'
+
+# res.json({ error: err }) / res.send({ message: err }) — whole error object out
+- rule_id: info-leak.error-stack-to-client
+  pattern: '\bres(ponse)?\s*\.\s*(send|json)\s*\(\s*\{[^}]*\b(error|err|message|detail)\b\s*:\s*(err|error|ex|e)\s*[,}]'
+  exclude_line: '\.(message|code|name)\b'
+  confidence: medium
+  message: 'The full error object is being returned to the client — it can expose stack traces, paths, and secrets. Send a generic message instead.'
+
+# return Response.json({ error: err.message }) / res.status(400).json({ error: err.message })
+- rule_id: info-leak.error-message-to-client
+  pattern: '\b(res(ponse)?|reply|Response|NextResponse)\b[^;\n]*\.\s*(send|json)\s*\([^;\n]*\b(err|error|ex)\s*\.\s*message\b'
+  confidence: medium
+  message: 'Forwarding err.message to the client leaks internal details (and enables account enumeration on auth). Return a generic message and log the real one.'
+
+# --- secrets / bodies written to logs --------------------------------------
+# console.log(password) / console.error('token', token) / logger.info(apiKey)
+- rule_id: info-leak.console-logs-secret
+  pattern: '\b(console\s*\.\s*(log|info|debug|warn|error)|logger\s*\.\s*(log|info|debug|warn|error))\s*\([^)]*\b(password|passwd|secret|api[_-]?key|apikey|access[_-]?token|refresh[_-]?token|auth[_-]?token|bearer|private[_-]?key|client[_-]?secret|session[_-]?(token|id)|jwt|credentials?)\b'
+  exclude_line: '\b(hasPassword|passwordError|isSecret|secretName|tokenName|keyName|password\s*:\s*(true|false)|\.length|redact)\b'
+  confidence: medium
+  message: 'A secret/token/password is being written to the logs — logs are read by many people and rarely scrubbed. Log an id or a boolean, never the value.'
+
+# console.log(req.body) / console.log(request.body)
+- rule_id: info-leak.console-logs-request-body
+  pattern: '\bconsole\s*\.\s*(log|info|debug|warn|error)\s*\([^)]*\b(req|request|ctx)\s*\.\s*body\b'
+  exclude_line: '\.body\s*\.\s*\w+'
+  confidence: medium
+  message: 'Logging the whole request body can capture passwords and personal data. Log only the specific fields you need.'
+
+# --- debug / verbose mode on ------------------------------------------------
+# debug: true / devtools: true in a config/code file
+- rule_id: hardening.debug-enabled-in-prod
+  pattern: '\b(debug|devtools|verbose)\s*:\s*true\b'
+  exclude_line: '(process\.env|NODE_ENV|!==|===\s*["'']dev)'
+  confidence: low
+  message: 'Debug/verbose mode is hard-coded ON. Drive it from the environment (default OFF) so production never runs in debug mode by accident.'
+
+# --- security control disabled outside production --------------------------
+# if (process.env.NODE_ENV !== 'production') { ...skip auth... }
+- rule_id: hardening.dev-only-branch-shipping-secret-bypass
+  pattern: 'NODE_ENV\s*!==?\s*["'']production["'']'
+  requires_line: '(auth|login|admin|skip|bypass|disable|allow[_-]?all|require[_-]?user|authenticate|verif|guard|permission)'
+  confidence: medium
+  message: 'A security check appears to be skipped when NODE_ENV is not "production" — but NODE_ENV is often unset on real servers, so this can disable the check for live users. Keep security controls always on.'
+
+# --- whole environment exposed to the client -------------------------------
+# JSON.stringify(process.env) / { ...process.env }
+- rule_id: info-leak.process-env-to-client
+  pattern: '(JSON\s*\.\s*stringify\s*\(\s*process\s*\.\s*env\b|\.\.\.\s*process\s*\.\s*env\b)'
+  confidence: high
+  message: 'The entire process.env (all your server secrets) is being serialized. If this reaches the browser it leaks every credential at once.'
+
+# returning process.env directly from props / a handler
+- rule_id: info-leak.process-env-to-client
+  pattern: '\b(return\s+process\s*\.\s*env\b|props\s*:\s*process\s*\.\s*env\b|env\s*:\s*process\s*\.\s*env\b)'
+  confidence: high
+  message: 'Returning process.env to the client exposes all server secrets. Pass only the specific, non-secret values the browser needs.'
+
+# --- insecure deserialization ----------------------------------------------
+# node-serialize unserialize() of user input
+- rule_id: hardening.insecure-deserialization
+  pattern: '\bunserialize\s*\('
+  requires_file: '(node-serialize|serialize-javascript|require\(|import\b)'
+  confidence: high
+  message: 'unserialize() (node-serialize) can rebuild live functions from a string — feeding it user input lets an attacker run code on your server. Use JSON.parse instead.'
+
+# vm.runInNewContext / vm.runInThisContext on input
+- rule_id: hardening.insecure-deserialization
+  pattern: '\bvm\s*\.\s*(runInNewContext|runInThisContext|runInContext|compileFunction)\s*\('
+  requires_line: '\b(req|request|body|query|params|input|userInput|payload|data|ctx)\b'
+  confidence: medium
+  message: 'Running the vm module on user-controlled input executes their code on your server. Parse data with JSON.parse and validate it instead.'
+
+# --- ReDoS: nested quantifiers ---------------------------------------------
+# (a+)+ , (.*)* , (\d+)* style nested quantifiers inside a regex literal
+- rule_id: hardening.redos-regex
+  pattern: '/[^/\n]*\([^()|\n]*[+*]\)[+*][^/\n]*/'
+  exclude_line: '//'
+  confidence: low
+  message: 'This regular expression nests one quantifier inside another (e.g. (a+)+ ), which can hang the whole app on a short crafted input (ReDoS). Rewrite it without nested +/* and use bounded repetition.'
+
+# new RegExp('(...)+...') with a nested quantifier
+- rule_id: hardening.redos-regex
+  pattern: 'new\s+RegExp\(\s*["''][^"'']*\([^()|]*[+*]\)[+*]'
+  confidence: low
+  message: 'This dynamically built regex nests quantifiers, which can cause catastrophic backtracking (ReDoS) and freeze the app on crafted input. Use bounded, non-nested patterns.'
+
+# --- security TODO/FIXME markers -------------------------------------------
+- rule_id: hardening.unhandled-todo-security
+  pattern: '//\s*(TODO|FIXME|HACK|XXX)\b[^\n]*\b(secur\w*|auth\w*|authoriz\w*|authentic\w*|validat\w*|sanitiz\w*|escap\w*|csrf|xss|injection|permission|access[_\s-]?control|vuln\w*|exploit)\b'
+  confidence: high
+  message: 'A TODO/FIXME marks an unfinished security control on this line. Finish it before shipping (or track it as a real issue) — public repos hand attackers these notes directly.'
+
+# --- production source maps -------------------------------------------------
+- rule_id: hardening.source-map-shipped-to-prod
+  pattern: '\b(productionBrowserSourceMaps\s*:\s*true|sourcemap\s*:\s*true|sourceMap\s*:\s*true)\b'
+  paths: ["**/*.config.*", "**/next.config.*", "**/vite.config.*", "**/webpack.config.*", "**/rollup.config.*"]
+  exclude_line: '(process\.env|NODE_ENV)'
+  confidence: medium
+  message: 'Production source maps are enabled, publishing your readable source to every visitor. Keep them off the public bundle (upload them privately to your error tracker instead).'

@@ -1,0 +1,17 @@
+# NjordScan's OWN repository deliberately contains vulnerable code — for the test
+# fixtures, the showcase examples, and the simulation lab. A plain `njordscan scan .`
+# from the repo root shouldn't report all of that as if it were *your app's* problems,
+# so those directories are excluded here.
+#
+# This is scoped on purpose: ignore globs are matched relative to the SCAN TARGET, so
+# scanning a sub-directory directly (e.g. `njordscan scan examples/vulnerable-shop` or
+# the lab targets) is completely unaffected and still finds everything.
+ignore:
+  - simulation-lab/**
+  - tests/**
+  - examples/**
+  - docs/**
+  - scripts/**
+  - feed/**
+  - .venv/**           # vendored JS inside pip/urllib3 lives here on a dev machine
+  - "**/.venv/**"

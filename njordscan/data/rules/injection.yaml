@@ -1,0 +1,253 @@
+# Injection rule library (server-side, beyond eval/command which are core rules).
+# Every id here is referenced 1:1 by njordscan/data/patterns/injection.yaml.
+# Voice: name the consequence in plain English BEFORE the security label.
+
+- id: sqli.string-concatenation
+  title: SQL query built by glueing strings together
+  severity: critical
+  cwe: CWE-89
+  owasp: "A03:2021-Injection"
+  why: |
+    When you build a SQL query by adding (`+`) a variable into the query
+    string, the database can't tell your query apart from data the user typed.
+    If that variable came from a form, a URL, or an API request, an attacker can
+    type SQL of their own — for example ending your query early and adding
+    `OR 1=1 --` to dump every row, or `; DROP TABLE users; --` to delete data.
+    This is the classic "SQL injection" bug, and it can leak or destroy your
+    entire database.
+  fix: |
+    Never put user data directly into the query text. Use a parameterized query
+    (also called a "prepared statement"): write `?` or `$1` placeholders and
+    pass the values as a separate array. The database driver then treats them as
+    pure data that can never become SQL. If you use an ORM (Prisma, Drizzle,
+    Sequelize), use its query builder instead of raw string SQL.
+  secure_example: |
+    // instead of: db.query('SELECT * FROM users WHERE id = ' + id)
+    db.query('SELECT * FROM users WHERE id = ?', [id]); // value is sent separately
+  references:
+    - https://owasp.org/www-community/attacks/SQL_Injection
+    - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+
+- id: sqli.template-literal
+  title: SQL query built with a template literal containing a variable
+  severity: critical
+  cwe: CWE-89
+  owasp: "A03:2021-Injection"
+  why: |
+    A backtick template literal like `` `SELECT * FROM users WHERE name='${name}'` ``
+    drops the variable straight into the query text. If `name` comes from a user,
+    they can break out of the quotes and run their own SQL — reading other
+    users' data, bypassing a login, or deleting tables. This is SQL injection,
+    just hidden behind nicer-looking string syntax.
+  fix: |
+    Use a parameterized query with placeholders and a values array instead of
+    interpolating into the string. Note: a tagged template from a library that
+    escapes for you (e.g. the `sql` tag from `postgres`/`@vercel/postgres`) is
+    safe — the danger is a plain string passed to `.query()`/`.execute()`.
+  secure_example: |
+    // safe tagged template (library escapes ${name} for you):
+    await sql`SELECT * FROM users WHERE name = ${name}`;
+    // or classic placeholder:
+    db.query('SELECT * FROM users WHERE name = ?', [name]);
+  references:
+    - https://owasp.org/www-community/attacks/SQL_Injection
+    - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+
+- id: sqli.tainted-query
+  title: User input flows into a database query
+  severity: critical
+  cwe: CWE-89
+  owasp: "A03:2021-Injection"
+  why: |
+    NjordScan traced a value that started from user input (a request body, query
+    string, route param, etc.) all the way into a database call — `.query()`,
+    `.execute()`, a Prisma `$queryRawUnsafe`/`$executeRawUnsafe`, or a `.raw()`
+    query — without it being parameterized along the way. Because the value lands
+    in the *query text*, an attacker can inject their own SQL: read other users'
+    rows, bypass a login with `OR 1=1 --`, or `DROP TABLE`. This is SQL injection
+    proven by data flow, not just a suspicious-looking string.
+  fix: |
+    Pass user data as parameters, never as part of the query text. Use placeholders
+    (`?` / `$1`) with a values array, or an ORM/query-builder (Prisma's typed
+    client, Drizzle, Knex's binding API). For Prisma specifically, prefer the safe
+    tagged-template `$queryRaw`/`$executeRaw` (which parameterizes `${...}`) over
+    the `...Unsafe` variants. Validate/allow-list anything that must be part of the
+    SQL structure itself (table/column names), since those can't be parameterized.
+  secure_example: |
+    // unsafe: db.query(`SELECT * FROM users WHERE id = ${req.query.id}`)
+    db.query('SELECT * FROM users WHERE id = ?', [req.query.id]); // value sent separately
+    // Prisma: use the safe tagged template, not $queryRawUnsafe
+    await prisma.$queryRaw`SELECT * FROM users WHERE id = ${req.query.id}`;
+  references:
+    - https://owasp.org/www-community/attacks/SQL_Injection
+    - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+
+- id: nosqli.where-operator
+  title: MongoDB $where clause runs server-side JavaScript
+  severity: critical
+  cwe: CWE-943
+  owasp: "A03:2021-Injection"
+  why: |
+    A MongoDB query that uses `$where` runs a string of JavaScript inside your
+    database to decide which documents match. If any part of that string is
+    built from user input, an attacker can inject their own JavaScript — slowing
+    the database to a crawl (denial of service) or, depending on setup, reading
+    data they should never see. `$where` is slow and dangerous even with trusted
+    input.
+  fix: |
+    Replace `$where` with normal query operators (`$eq`, `$gt`, `$in`, `$regex`
+    with care). Almost anything you can express in `$where` has a safe operator
+    equivalent that the database can also index.
+  secure_example: |
+    // instead of: collection.find({ $where: `this.age > ${age}` })
+    collection.find({ age: { $gt: Number(age) } });
+  references:
+    - https://www.mongodb.com/docs/manual/reference/operator/query/where/
+    - https://owasp.org/www-community/attacks/NoSQL_injection
+
+- id: nosqli.untrusted-query-filter
+  title: Request body or query passed straight into a database filter
+  severity: high
+  cwe: CWE-943
+  owasp: "A03:2021-Injection"
+  why: |
+    Passing `req.body` or `req.query` directly as a MongoDB filter looks
+    harmless, but the user controls the SHAPE of that object, not just the
+    values. By sending `{"password": {"$ne": null}}` they turn your equality
+    check into "any password that isn't null", letting them log in without
+    knowing the password or pull back records they shouldn't. This is NoSQL
+    injection through operator smuggling.
+  fix: |
+    Pull out the specific fields you expect and coerce them to plain values
+    (e.g. `String(req.body.email)`), or validate the input with a schema
+    (Zod, Joi) before it reaches the query. Never spread an untrusted object
+    into a filter. Many setups also disable operator parsing with
+    `express-mongo-sanitize`.
+  secure_example: |
+    // instead of: User.findOne(req.body)
+    const email = String(req.body.email);
+    const password = String(req.body.password);
+    const user = await User.findOne({ email }); // then verify the hash
+  references:
+    - https://owasp.org/www-community/attacks/NoSQL_injection
+    - https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+
+- id: path-traversal.fs-read
+  title: File read with a path built from user input
+  severity: high
+  cwe: CWE-22
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    When you open a file using a name or path that came from the user, they can
+    send `../../../../etc/passwd` (or `..\..\` on Windows) to "walk up" out of
+    your intended folder and read files anywhere your server can — config files,
+    other users' uploads, even secrets and SSH keys. This is called path (or
+    "directory") traversal.
+  fix: |
+    Resolve the final path and confirm it still lives inside the directory you
+    intended before reading it. Strip path separators from the user value, or
+    better, look the file up by an id in a database and never let the raw name
+    touch the filesystem.
+  secure_example: |
+    const base = path.resolve('./uploads');
+    const target = path.resolve(base, path.basename(userName)); // basename drops ../
+    if (!target.startsWith(base + path.sep)) throw new Error('invalid path');
+    fs.readFileSync(target);
+  references:
+    - https://owasp.org/www-community/attacks/Path_Traversal
+    - https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+
+- id: path-traversal.send-file
+  title: File served back to the user with a request-controlled path
+  severity: high
+  cwe: CWE-22
+  owasp: "A01:2021-Broken Access Control"
+  why: |
+    `res.sendFile()` and `res.download()` stream a file straight to the
+    visitor's browser. If the path is built from the request (a query string, a
+    URL parameter), an attacker can request `../../config/.env` and have your
+    server hand them files outside the public folder — leaking source code,
+    credentials, or other users' data. This is path traversal in a download
+    endpoint.
+  fix: |
+    Pass an absolute `root` option and a sanitized filename to sendFile, and
+    reject any name containing `..` or a slash. Express's sendFile blocks `..`
+    only when you supply the `root` option, so always include it.
+  secure_example: |
+    const name = path.basename(req.params.name); // removes any ../ segments
+    res.sendFile(name, { root: path.resolve('./public/files') });
+  references:
+    - https://owasp.org/www-community/attacks/Path_Traversal
+    - https://expressjs.com/en/api.html#res.sendFile
+
+- id: injection.template-ssti
+  title: User input compiled into a server-side template
+  severity: critical
+  cwe: CWE-94
+  owasp: "A03:2021-Injection"
+  why: |
+    Template engines like Handlebars, EJS, Pug, and Nunjucks turn a template
+    STRING into executable code. If you build that template string out of user
+    input (instead of passing the user input as data to a fixed template),
+    an attacker can inject template syntax that runs JavaScript on your server —
+    often leading to full server takeover. This is server-side template
+    injection (SSTI).
+  fix: |
+    Keep templates as fixed files or constant strings, and pass user input only
+    as DATA in the context object — never concatenate user input into the
+    template source. Leave the engine's auto-escaping on.
+  secure_example: |
+    // instead of: ejs.render('Hello ' + req.query.name)
+    ejs.render('Hello <%= name %>', { name: req.query.name }); // name is data, escaped
+  references:
+    - https://owasp.org/www-community/attacks/Server-Side_Template_Injection
+    - https://portswigger.net/web-security/server-side-template-injection
+
+- id: injection.prototype-pollution-merge
+  title: Untrusted object merged into a target (prototype pollution)
+  severity: high
+  cwe: CWE-1321
+  owasp: "A08:2021-Software and Data Integrity Failures"
+  why: |
+    Deep-merging or assigning an attacker-controlled object (like `req.body`)
+    into another object lets the attacker smuggle a special `__proto__` key.
+    That key doesn't just set one object — it changes the prototype that EVERY
+    object in your app inherits from, letting an attacker plant default values
+    everywhere. Depending on your code this can flip security flags
+    (`isAdmin`), break the app, or even lead to code execution.
+  fix: |
+    Don't merge raw request data into objects. Validate and pick the exact keys
+    you expect with a schema (Zod), or use a merge utility that is hardened
+    against prototype pollution and reject keys named `__proto__`,
+    `constructor`, or `prototype`.
+  secure_example: |
+    // instead of: Object.assign(config, req.body) or _.merge({}, req.body)
+    const { theme, locale } = req.body;            // pick only known keys
+    const config = { ...defaults, theme, locale }; // __proto__ can't sneak in
+  references:
+    - https://owasp.org/www-community/attacks/Prototype_Pollution
+    - https://cheatsheetseries.owasp.org/cheatsheets/Prototype_Pollution_Prevention_Cheat_Sheet.html
+
+- id: injection.prototype-pollution-bracket
+  title: Object key taken from user input written with bracket assignment
+  severity: medium
+  cwe: CWE-1321
+  owasp: "A08:2021-Software and Data Integrity Failures"
+  why: |
+    Writing `obj[userKey] = value` where `userKey` comes from the user is risky:
+    if the user sends the key `__proto__` (or `constructor`), the assignment can
+    reach into the prototype shared by every object in your program instead of
+    your own object. This "prototype pollution" can quietly turn on admin flags,
+    corrupt data, or crash the app.
+  fix: |
+    Reject the dangerous keys before assigning (`__proto__`, `constructor`,
+    `prototype`), or store user-keyed data in a `Map`, which never touches the
+    prototype chain. Validating the key against an allowlist is best.
+  secure_example: |
+    const DANGEROUS = new Set(['__proto__', 'constructor', 'prototype']);
+    if (DANGEROUS.has(userKey)) throw new Error('invalid key');
+    obj[userKey] = value;
+    // or: const store = new Map(); store.set(userKey, value);
+  references:
+    - https://owasp.org/www-community/attacks/Prototype_Pollution
+    - https://cheatsheetseries.owasp.org/cheatsheets/Prototype_Pollution_Prevention_Cheat_Sheet.html

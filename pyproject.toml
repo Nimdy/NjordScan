@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "njordscan"
+version = "2.0.0b1"
+description = "A security scanner for Next.js, React, and Vite apps that explains every finding in plain English."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [{ name = "NjordScan" }]
+keywords = ["security", "scanner", "nextjs", "react", "vite", "sast", "xss", "secrets", "owasp"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security",
+]
+
+# Core dependencies only. Everything here is a pure-python or pre-built wheel that
+# installs cleanly on a fresh machine with no system libraries. No numpy/pandas/etc.
+dependencies = [
+    "click>=8.1,<9",
+    "rich>=13.0,<15",
+    "pyyaml>=6.0,<7",
+    "packaging>=23.0",
+    "tree-sitter>=0.23.0",
+    "tree-sitter-javascript>=0.23.0",
+    "tree-sitter-typescript>=0.23.0",
+]
+
+[project.optional-dependencies]
+# Opt-in LLM explanation providers (Tier 2/3). Offline explanations always work without this.
+ai = ["httpx>=0.24,<1"]
+# Opt-in dynamic scanning (--url DAST + live headers). Static scanning needs nothing extra.
+dynamic = ["httpx>=0.24,<1"]
+dev = ["pytest>=7.4", "pytest-asyncio>=0.23", "mypy>=1.8", "ruff>=0.3", "httpx>=0.24,<1"]
+
+[project.scripts]
+njordscan = "njordscan.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Nimdy/NjordScan"
+Repository = "https://github.com/Nimdy/NjordScan.git"
+Issues = "https://github.com/Nimdy/NjordScan/issues"
+Changelog = "https://github.com/Nimdy/NjordScan/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/Nimdy/NjordScan#readme"
+
+[tool.setuptools.packages.find]
+include = ["njordscan*"]
+
+[tool.setuptools.package-data]
+njordscan = ["data/patterns/*.yaml", "data/rules/*.yaml", "data/advisories/*.json", "data/*.yaml"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+filterwarnings = ["error::SyntaxWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.mypy]
+python_version = "3.9"
+warn_unused_ignores = true
+disallow_untyped_defs = true

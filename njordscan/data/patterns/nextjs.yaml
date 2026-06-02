@@ -1,0 +1,164 @@
+# Next.js-specific detection patterns. Every rule_id maps 1:1 to an entry in
+# data/rules/nextjs.yaml. Filters are tuned so a clean Next.js app produces ZERO
+# findings — precision over recall.
+#
+# NOTE on path globs: the engine uses fnmatch, where "*" already spans "/". A
+# leading "**/" therefore REQUIRES at least one directory before the match and
+# will miss root-level files. So each location is listed both with and without a
+# directory prefix to cover root-level and nested files alike.
+
+# --- API route / Route Handler dumps process.env to the client -----------------
+# Fires only inside server endpoints (pages/api/** or app/**/route.*) where the
+# whole env (or json(process.env)) is handed back in a response.
+- rule_id: nextjs.api-env-exposure
+  pattern: '(?:res\.(?:json|send)|Response\.json|NextResponse\.json|return)\s*\(\s*(?:\{[^}]*\.\.\.\s*)?process\.env\b'
+  languages: [js, ts, jsx, tsx]
+  frameworks: [nextjs]
+  paths:
+    - "pages/api/**"
+    - "*/pages/api/**"
+    - "**/pages/api/**"
+    - "app/**/route.*"
+    - "*/app/**/route.*"
+    - "**/app/**/route.*"
+  confidence: high
+  severity: high
+  message: 'This API response returns process.env — every server secret (DB password, API keys) is sent to anyone who calls this URL.'
+
+# --- getServerSideProps / getStaticProps leaks a non-public secret into props ---
+# Multiline: match a `props:` object literal that contains process.env.<NAME>
+# where NAME is NOT a NEXT_PUBLIC_ value. Excludes the clean-app case where the
+# env var is read but never placed inside props.
+- rule_id: nextjs.props-secret-leak
+  pattern: 'props\s*:\s*\{[^}]*\bprocess\.env\.(?!NEXT_PUBLIC_)[A-Z0-9_]+[^}]*\}'
+  languages: [js, ts, jsx, tsx]
+  frameworks: [nextjs]
+  requires_file: 'get(?:ServerSide|Static)Props'
+  multiline: true
+  confidence: high
+  severity: high
+  message: 'A server-only secret from process.env is placed into page props — props ship to the browser, so this value is exposed to every visitor.'
+
+# --- wildcard CORS in an API route (single-quoted header form) ------------------
+- rule_id: nextjs.api-wildcard-cors
+  pattern: '''Access-Control-Allow-Origin''\s*,\s*''\*'''
+  languages: [js, ts, jsx, tsx]
+  frameworks: [nextjs]
+  paths:
+    - "pages/api/**"
+    - "*/pages/api/**"
+    - "**/pages/api/**"
+    - "app/**/route.*"
+    - "*/app/**/route.*"
+    - "**/app/**/route.*"
+    - "middleware.*"
+    - "*/middleware.*"
+    - "**/middleware.*"
+  confidence: high
+  severity: high
+  message: 'Access-Control-Allow-Origin: * lets any website read this endpoint''s responses in your users'' browsers.'
+
+# Same rule, double-quoted header form (kept separate so each regex stays simple
+# under single-quoted YAML).
+- rule_id: nextjs.api-wildcard-cors
+  pattern: '"Access-Control-Allow-Origin"\s*,\s*"\*"'
+  languages: [js, ts, jsx, tsx]
+  frameworks: [nextjs]
+  paths:
+    - "pages/api/**"
+    - "*/pages/api/**"
+    - "**/pages/api/**"
+    - "app/**/route.*"
+    - "*/app/**/route.*"
+    - "**/app/**/route.*"
+    - "middleware.*"
+    - "*/middleware.*"
+    - "**/middleware.*"
+  confidence: high
+  severity: high
+  message: 'Access-Control-Allow-Origin: * lets any website read this endpoint''s responses in your users'' browsers.'
+
+# --- middleware redirect/rewrite to a user-controlled destination --------------
+# Fires when redirect()/rewrite() takes request-derived input on the same line
+# (searchParams.get, headers.get, cookies.get, a bare query reference).
+- rule_id: nextjs.middleware-open-redirect
+  pattern: 'NextResponse\.(?:redirect|rewrite)\s*\([^)]*(?:searchParams\.get|\.headers\.get|\.cookies\.get|\breq\.query\b)'
+  languages: [js, ts, jsx, tsx]
+  frameworks: [nextjs]
+  paths:
+    - "middleware.*"
+    - "*/middleware.*"
+    - "**/middleware.*"
+  confidence: medium
+  severity: medium
+  message: 'Middleware redirects to a destination taken from the request — an attacker can craft a link on your domain that bounces users to a phishing site.'
+
+# --- error stack trace returned to the client ----------------------------------
+- rule_id: nextjs.error-stack-leak
+  pattern: '(?:res\.(?:json|send)|res\.status\([0-9]+\)\.(?:json|send)|Response\.json|NextResponse\.json)\s*\([^)]*\b(?:err|error|e|ex)\.stack\b'
+  languages: [js, ts, jsx, tsx]
+  frameworks: [nextjs]
+  paths:
+    - "pages/api/**"
+    - "*/pages/api/**"
+    - "**/pages/api/**"
+    - "app/**/route.*"
+    - "*/app/**/route.*"
+    - "**/app/**/route.*"
+  confidence: high
+  severity: medium
+  message: 'This response sends an error stack trace to the client, exposing file paths, internals, and sometimes secrets.'
+
+# --- next.config: poweredByHeader not disabled ---------------------------------
+# Only flag when poweredByHeader is explicitly set to true (the dangerous,
+# deliberate case). Leaving it absent is the silent default and would be noisy.
+- rule_id: nextjs.powered-by-header
+  pattern: 'poweredByHeader\s*:\s*true'
+  languages: [js, ts]
+  frameworks: [nextjs]
+  paths:
+    - "next.config.*"
+    - "*/next.config.*"
+    - "**/next.config.*"
+  confidence: high
+  severity: low
+  message: 'poweredByHeader: true advertises that you run Next.js, helping scanners pick targeted exploits — set it to false.'
+
+# --- next.config: production browser source maps exposed -----------------------
+- rule_id: nextjs.source-maps-exposed
+  pattern: 'productionBrowserSourceMaps\s*:\s*true'
+  languages: [js, ts]
+  frameworks: [nextjs]
+  paths:
+    - "next.config.*"
+    - "*/next.config.*"
+    - "**/next.config.*"
+  confidence: high
+  severity: low
+  message: 'productionBrowserSourceMaps: true publishes your original source code to the public — anyone can download and read it.'
+
+# --- next.config: Server Actions allow any origin ------------------------------
+- rule_id: nextjs.unsafe-allowed-dev-origins
+  pattern: 'allowedOrigins\s*:\s*\[[^\]]*([''"])\*\1'
+  languages: [js, ts]
+  frameworks: [nextjs]
+  paths:
+    - "next.config.*"
+    - "*/next.config.*"
+    - "**/next.config.*"
+  confidence: high
+  severity: high
+  message: 'allowedOrigins includes "*" — it disables Next.js CSRF protection so any site can trigger your Server Actions as a logged-in user.'
+
+# --- next.config: image optimizer set to serve untrusted SVGs ------------------
+- rule_id: nextjs.image-dangerously-allow-svg
+  pattern: 'dangerouslyAllowSVG\s*:\s*true'
+  languages: [js, ts]
+  frameworks: [nextjs]
+  paths:
+    - "next.config.*"
+    - "*/next.config.*"
+    - "**/next.config.*"
+  confidence: high
+  severity: medium
+  message: 'dangerouslyAllowSVG: true lets the image optimizer serve SVGs, which can run JavaScript — an XSS risk if any SVG is user-controlled.'
