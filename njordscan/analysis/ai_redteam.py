@@ -58,18 +58,20 @@ def _inventory(findings: List[Finding], *, redact: bool) -> Tuple[List[Dict[str,
             continue
         by_id[fid] = f
         reach = ap._reach(f)
-        msg = f.message or f.title
+        # When sending to a REMOTE provider, mask high-entropy tokens that could ride
+        # in the message OR a file path / entrypoint, not just the message.
+        rd = _redact if redact else (lambda s: s)
         items.append({
             "id": fid,
             "type": f.rule_id,
-            "what": _redact(msg) if redact else msg,
-            "file": f.file,
+            "what": rd(f.message or f.title),
+            "file": rd(f.file),
             "line": f.line,
             "severity": f.effective_severity.value,
             "capabilities": caps,
             "reachable": f.reachable,
             "surface": reach.get("kind"),            # server | client | project | None
-            "entrypoint": reach.get("entrypoint"),
+            "entrypoint": rd(reach.get("entrypoint") or "") or None,
             "data_asset": f.metadata.get("data_asset"),
             "actively_exploited": bool(f.metadata.get("cisa_kev")),
         })
@@ -80,42 +82,56 @@ def _inventory(findings: List[Finding], *, redact: bool) -> Tuple[List[Dict[str,
 
 # ── 2. deterministic edge grounding (the part the model cannot fake) ──────────
 
+def _secret_eligible(f: Finding) -> bool:
+    """A secret a real attacker could actually reach — not public-by-design, not a
+    test fixture, not proven dead. Mirrors the secret-pivot template's guards exactly."""
+    return (("secret" in ap._roles(f))
+            and f.rule_id not in ap._PUBLIC_SECRET_IDS
+            and not ap._is_test_path(f.file)
+            and f.reachable is not False)
+
+
 def _edge_grounded(a: Finding, b: Finding) -> Optional[str]:
     """Return a human reason iff a real attacker advances from finding ``a`` to ``b``.
 
-    Mirrors the grounding the templates use, generalised so any two findings can be
-    checked. Returns None when the link is not supported by the engine's facts — that
-    edge (and the chain that needs it) is then rejected. Order matters."""
+    Held to the SAME rigor as the deterministic templates: every transition requires
+    BOTH role-complementarity (the roles genuinely compose) AND a locality/reachability
+    binding (same exposed surface, or a server primitive reaching a reachable secret).
+    Proven-dead findings never chain. The model may only connect facts the engine would
+    connect itself — it cannot relabel co-located or cross-route findings as a chain."""
+    # Proven dead code never participates in a live chain (global guard).
+    if a.reachable is False or b.reachable is False:
+        return None
     ra, rb = ap._roles(a), ap._roles(b)
     ea, eb = ap._entrypoint(a), ap._entrypoint(b)
+    same_surface = bool(ea and eb and ea == eb)
 
-    # same exposed surface — both reachable from the same entrypoint
-    if ea and eb and ea == eb and ap._is_reachable(a) and ap._is_reachable(b):
-        return f"both reachable from the same entrypoint ({ea})"
+    # 1. auth gap → an exec/injection sink ON THE SAME ROUTE (matches _t_unauth_exec;
+    #    NO cross-route stitching — the single most important guard).
+    if ("open_door" in ra) and ({"code_exec", "browser_exec"} & rb) and same_surface and b.reachable is True:
+        return f"unauthenticated access to {ea} reaches this sink on the same route"
 
-    # an access-control gap exposes whatever is reachable behind it
-    if "open_door" in ra and ap._is_reachable(b):
-        return "the missing authentication exposes the next step's surface"
+    # 2. a server-side primitive (exec / SSRF / file-read) can read a reachable secret
+    #    (matches _t_secret_pivot; secret must be real & reachable, not public/test/dead).
+    if ({"code_exec"} & ra) and ap._is_server(a) and _secret_eligible(b):
+        return "the server-side primitive can read the exposed secret"
 
-    # a server-side primitive (exec / SSRF / file-read) can reach an exposed secret
-    if ({"code_exec"} & ra) and ap._is_server(a) and ({"secret", "sensitive_egress"} & rb):
-        return "the server-side primitive can read the exposed secret/credential"
+    # 3. a reachable known-vulnerable dependency yields execution that reaches a secret
+    if ("vuln_dep" in ra) and a.reachable is True and _secret_eligible(b):
+        return "exploiting the vulnerable dependency yields code execution that reads the secret"
 
-    # a missing browser control unleashes script execution / token theft
-    if ({"weak_csp", "open_cors"} & ra) and ({"browser_exec", "token_store"} & rb):
-        return "the missing browser-side control unleashes the next step"
+    # 4. a missing browser control unleashes reachable script execution / token theft
+    #    (matches _t_xss_unleashed / _t_cors_token_theft).
+    if ({"weak_csp", "open_cors"} & ra) and ({"browser_exec", "token_store", "data_leak"} & rb) and b.reachable is True:
+        return "the missing browser-side control unleashes the next step in the page"
 
-    # script execution in the page can read a token kept in the page
-    if ("browser_exec" in ra) and ({"token_store", "data_leak", "sensitive_egress"} & rb):
+    # 5. script execution in the page can read reachable client-side data
+    if ("browser_exec" in ra) and ({"token_store", "data_leak", "sensitive_egress"} & rb) and b.reachable is True:
         return "script execution can read the exposed client-side data"
 
-    # a held secret/credential enables exfiltration or lateral movement
-    if ({"secret"} & ra) and ({"sensitive_egress", "data_leak"} & rb):
-        return "the exposed credential is what gets carried out"
-
-    # data-flow continuation: a's sink lands in the file where b operates
-    if a.taint_flow and b.file and a.taint_flow[-1].file == b.file and a.fingerprint != b.fingerprint:
-        return "data flows from the first step into the second step's location"
+    # 6. a held, reachable secret is what gets carried out of the boundary
+    if _secret_eligible(a) and ({"sensitive_egress", "data_leak"} & rb) and b.reachable is not False:
+        return "the exposed credential is what gets exfiltrated"
 
     return None
 
@@ -173,6 +189,29 @@ def _tactic_for(f: Finding) -> str:
         if role in roles:
             return tactic
     return "Execution"
+
+
+_IMPACT_PHRASE = [   # checked in priority order over the roles present in the chain
+    ("code_exec", "server-side code or database execution"),
+    ("secret", "theft of a real credential / secret"),
+    ("sensitive_egress", "a secret or credential leaving the trust boundary"),
+    ("token_store", "session/account takeover"),
+    ("browser_exec", "account takeover in your users' browsers"),
+    ("vuln_dep", "exploitation of a known-vulnerable dependency"),
+    ("supply_foothold", "code execution on your build/CI"),
+    ("data_leak", "exposure of sensitive data"),
+]
+
+
+def _derive_title_impact(chain: List[Finding]) -> Tuple[str, str]:
+    """Title + impact computed from the chain's REAL roles — never from the model, so a
+    'verified' badge can never sit next to model hyperbole (no 'RCE' unless code_exec)."""
+    roles = set().union(*(ap._roles(f) for f in chain)) if chain else set()
+    impact = next((phrase for role, phrase in _IMPACT_PHRASE if role in roles),
+                  "a multi-step compromise")
+    prefix = "Unauthenticated " if "open_door" in roles else ""
+    title = f"{prefix}{len(chain)}-step chain → {impact}".strip().capitalize()
+    return title, f"{prefix}{impact}".strip().capitalize()
 
 
 def _build_path(chain: List[Finding], reasons: List[str], title: str, impact: str) -> ap.AttackPath:
@@ -244,7 +283,7 @@ def _parse(text: str) -> List[Dict[str, Any]]:
         return []
     try:
         data = json.loads(s[start:end + 1])
-    except (ValueError, json.JSONDecodeError):
+    except (ValueError, json.JSONDecodeError, RecursionError):
         return []
     chains = data.get("chains") if isinstance(data, dict) else None
     return chains if isinstance(chains, list) else []
@@ -258,10 +297,10 @@ def redteam(result, config, *, provider=None, existing: Optional[List["ap.Attack
 
     ``provider`` may be injected (for tests / reuse); otherwise it is resolved from
     config. Never raises — returns ``[]`` on any error, no findings, or no provider."""
-    findings = [f for f in result.findings if ap._roles(f)]
-    if len(findings) < 2:
-        return []
     try:
+        findings = [f for f in (getattr(result, "findings", None) or []) if ap._roles(f)]
+        if len(findings) < 2:
+            return []
         redact = False
         if provider is None:
             from ..explain.providers import get_provider, is_remote
@@ -302,8 +341,9 @@ def redteam(result, config, *, provider=None, existing: Optional[List["ap.Attack
         if any(fps <= s for s in seen_sets):
             continue
         seen_sets.append(fps)
-        title = str(ch.get("title") or "AI-discovered attack chain")[:120]
-        impact = str(ch.get("impact") or "Compromise via a verified multi-step chain")[:200]
+        # Title + impact are DERIVED from the verified chain's real roles — never the
+        # model's prose — so a "verified" badge can't sit next to model hyperbole.
+        title, impact = _derive_title_impact(chain)
         out.append(_build_path(chain, reasons, title, impact))
         if len(out) >= _MAX_CHAINS:
             break

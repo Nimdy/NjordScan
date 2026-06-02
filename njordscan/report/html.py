@@ -68,21 +68,41 @@ def _attack_paths_html(paths: list) -> str:
         factors = (f'<p class="muted">Why this scores {p.score}: '
                    f'{escape("; ".join(p.score_factors))}.</p>') if p.score_factors else ""
         advice = f'<p class="advice">🛠 {escape(p.advice)}</p>' if p.advice else ""
+        ai = getattr(p, "ai_verified", False)
+        badge = ('<span class="kev" style="color:#c084fc">🤖 AI-discovered · every step '
+                 'verified</span>') if ai else ""
+        ver = getattr(p, "verification", None)
+        ver_html = ""
+        if ver:
+            links = "".join(f"<li>{escape(v)}</li>" for v in ver)
+            ver_html = ('<div class="block"><h4>✓ Verified links (engine-confirmed, not the '
+                        f'model\'s word)</h4><ul>{links}</ul></div>')
         cards.append(f"""
-    <div class="path" style="border-left-color:{color}">
+    <div class="path" style="border-left-color:{'#a855f7' if ai else color}">
       <div class="phead">
-        <span class="score" style="background:{color}">score {p.score} · {escape(p.band.value)}</span>
-        {kev}
+        <span class="score" style="background:{'#a855f7' if ai else color}">score {p.score} · {escape(p.band.value)}</span>
+        {kev}{badge}
         <span class="ptitle">{escape(p.title)}</span>
       </div>
       <p class="impact">Impact: {escape(p.impact)}</p>
       <ol class="steps">{''.join(steps)}</ol>
+      {ver_html}
       {advice}
       {factors}
     </div>""")
-    return ('<section class="paths"><h2>🎯 Attack paths — how these issues chain into a breach</h2>'
-            '<p class="psub">The routes an attacker can actually walk. Fix the ★ step in each — it '
-            'collapses the whole chain.</p>' + "\n".join(cards) + '</section>')
+    template = [c for c, p in zip(cards, paths) if not getattr(p, "ai_verified", False)]
+    aicards = [c for c, p in zip(cards, paths) if getattr(p, "ai_verified", False)]
+    out = ""
+    if template:
+        out += ('<section class="paths"><h2>🎯 Attack paths — how these issues chain into a breach</h2>'
+                '<p class="psub">The routes an attacker can actually walk. Fix the ★ step in each — it '
+                'collapses the whole chain.</p>' + "\n".join(template) + '</section>')
+    if aicards:
+        out += ('<section class="paths"><h2>🤖 AI-discovered attack paths</h2>'
+                '<p class="psub">An AI proposed these; NjordScan verified every step and link against '
+                'your code. The outcome wording is engine-derived from the chain\'s real findings.</p>'
+                + "\n".join(aicards) + '</section>')
+    return out
 
 
 def _finding_html(idx: int, f: Finding) -> str:

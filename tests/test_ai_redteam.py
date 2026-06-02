@@ -81,10 +81,10 @@ def test_valid_chain_passes_verification():
 
 def test_hallucinated_finding_id_is_dropped():
     door = F("auth.middleware-bypass")
-    secret = F("secret.aws-access-key", file=".env", kind="project")
-    provider = FakeProvider(_chains_json([door.fingerprint, "deadbeefdeadbeef", secret.fingerprint]))
-    paths = ai_redteam.redteam(_result([door, secret]), _cfg(), provider=provider)
-    # the fake id is silently dropped; the real, grounded door→secret link remains
+    sink = F("sqli.tainted-query", file="lib/db.ts")          # same entrypoint as door
+    provider = FakeProvider(_chains_json([door.fingerprint, "deadbeefdeadbeef", sink.fingerprint]))
+    paths = ai_redteam.redteam(_result([door, sink]), _cfg(), provider=provider)
+    # the fake id is silently dropped; the real, grounded door→sink link remains
     assert len(paths) == 1
     assert all("deadbeef" not in fp for s in paths[0].steps for fp in s.fingerprints)
 
@@ -123,9 +123,9 @@ def test_garbage_model_output_is_safe():
 
 def test_parse_handles_fenced_json():
     door = F("auth.middleware-bypass")
-    secret = F("secret.aws-access-key", file=".env", kind="project")
-    fenced = "```json\n" + _chains_json([door.fingerprint, secret.fingerprint]) + "\n```"
-    paths = ai_redteam.redteam(_result([door, secret]), _cfg(), provider=FakeProvider(fenced))
+    sink = F("sqli.tainted-query", file="lib/db.ts")
+    fenced = "```json\n" + _chains_json([door.fingerprint, sink.fingerprint]) + "\n```"
+    paths = ai_redteam.redteam(_result([door, sink]), _cfg(), provider=FakeProvider(fenced))
     assert len(paths) == 1
 
 
@@ -144,6 +144,58 @@ def test_dedupes_against_existing_template_paths():
     # the AI chain is a subset of a template path's findings → suppressed
     paths = ai_redteam.redteam(_result(findings), _cfg(), provider=provider, existing=existing)
     assert paths == []
+
+
+def test_cross_route_open_door_to_sink_is_rejected():
+    # the headline fix: an auth gap on /login must NOT chain to a sink on /admin
+    door = F("auth.middleware-bypass", file="app/api/login/route.ts", entrypoint="app/api/login/route.ts")
+    sink = F("sqli.tainted-query", file="app/api/admin/route.ts", entrypoint="app/api/admin/route.ts",
+             severity=Severity.CRITICAL)
+    provider = FakeProvider(_chains_json([door.fingerprint, sink.fingerprint]))
+    assert ai_redteam.redteam(_result([door, sink]), _cfg(), provider=provider) == []
+
+
+def test_same_route_open_door_to_sink_is_accepted():
+    door = F("auth.middleware-bypass", file="app/api/x/route.ts", entrypoint="app/api/x/route.ts")
+    sink = F("sqli.tainted-query", file="lib/db.ts", entrypoint="app/api/x/route.ts")
+    provider = FakeProvider(_chains_json([door.fingerprint, sink.fingerprint]))
+    assert len(ai_redteam.redteam(_result([door, sink]), _cfg(), provider=provider)) == 1
+
+
+def test_public_secret_is_not_pivoted():
+    sink = F("path-traversal.fs-read")                         # server primitive
+    pub = F("vite.vite-prefixed-secret", file="src/config.ts", kind="client",
+            entrypoint="src/config.ts")                        # public by design
+    provider = FakeProvider(_chains_json([sink.fingerprint, pub.fingerprint]))
+    assert ai_redteam.redteam(_result([sink, pub]), _cfg(), provider=provider) == []
+
+
+def test_dead_code_findings_do_not_chain():
+    door = F("auth.middleware-bypass", reachable=False, kind=None)
+    sink = F("sqli.tainted-query", file="lib/db.ts", reachable=False, kind=None,
+             severity=Severity.CRITICAL)
+    provider = FakeProvider(_chains_json([door.fingerprint, sink.fingerprint]))
+    assert ai_redteam.redteam(_result([door, sink]), _cfg(), provider=provider) == []
+
+
+def test_title_impact_are_engine_derived_not_model_hyperbole():
+    # a data-leak-only chain must NEVER be titled "RCE", whatever the model says
+    leak1 = F("info-leak.error-stack-to-client", file="app/page.tsx", kind="client",
+              entrypoint="app/page.tsx", severity=Severity.MEDIUM)
+    csp = F("headers.missing-csp", file="next.config.js", kind="project", severity=Severity.MEDIUM)
+    # model claims RCE; engine must override with a data-exposure characterization
+    payload = json.dumps({"chains": [{"steps": [csp.fingerprint, leak1.fingerprint],
+                                      "title": "Unauthenticated Remote Code Execution",
+                                      "impact": "Attacker achieves RCE and full server takeover"}]})
+    paths = ai_redteam.redteam(_result([csp, leak1]), _cfg(), provider=FakeProvider(payload))
+    for p in paths:
+        assert "rce" not in p.title.lower() and "code execution" not in p.impact.lower()
+        assert "takeover" not in p.title.lower() or "session" in p.title.lower()
+
+
+def test_redteam_never_raises_on_none_findings():
+    assert ai_redteam.redteam(SimpleNamespace(findings=None), _cfg(),
+                              provider=FakeProvider("{}")) == []
 
 
 def test_inventory_excludes_code_and_roleless_findings():
