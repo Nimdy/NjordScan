@@ -87,3 +87,6 @@ desktop.ini
 # ─── Simulation lab generated output ───────────────────────────────────────
 simulation-lab/reports/*
 !simulation-lab/reports/.gitkeep
+
+simulation-lab/logs/*
+!simulation-lab/logs/.gitkeep

@@ -21,8 +21,13 @@ services:
     container_name: lab-web
     environment:
       PORT: "3001"
-    ports: ["3001:3001"]
+      LOG_DIR: "/logs"
+    # host port is overridable (set WEB_HOST_PORT) in case 3001 is taken; the lab's
+    # internal network always uses 3001 regardless.
+    ports: ["${WEB_HOST_PORT:-3001}:3001"]
     networks: [labnet]
+    volumes:
+      - ./logs:/logs        # access logs the blue team consumes
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001/"]
       interval: 3s
@@ -37,8 +42,11 @@ services:
     container_name: lab-api
     environment:
       PORT: "3002"
-    ports: ["3002:3002"]
+      LOG_DIR: "/logs"
+    ports: ["${API_HOST_PORT:-3002}:3002"]
     networks: [labnet]
+    volumes:
+      - ./logs:/logs        # access logs the blue team consumes
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3002/"]
       interval: 3s
@@ -57,3 +65,24 @@ services:
     volumes:
       - ./:/lab          # the targets' source (static scan) + reports/ output
     profiles: ["scanner"]  # not started by `up`; invoked via `compose run njordscan ...`
+
+  # ── RED TEAM: actually exploits the live targets over the network ────────────
+  redteam:
+    build: ./redteam
+    image: njordlab-redteam:local
+    container_name: lab-redteam
+    networks: [labnet]
+    environment:
+      WEB_URL: "http://web:3001"
+      API_URL: "http://api:3002"
+    profiles: ["purple"]   # run on demand: docker compose run --rm redteam
+
+  # ── BLUE TEAM: a mini-SIEM tailing the targets' access logs ──────────────────
+  blueteam:
+    build: ./blueteam
+    image: njordlab-blueteam:local
+    container_name: lab-blueteam
+    networks: [labnet]
+    volumes:
+      - ./logs:/logs:ro    # the same access logs the targets write
+    profiles: ["purple"]

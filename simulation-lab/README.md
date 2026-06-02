@@ -56,6 +56,43 @@ product.
 
 ---
 
+## 🟣 Purple team: NjordScan predicts → red team proves → blue team detects
+
+The lab isn't just a NjordScan demo — it's a usable **purple-team range**. Two more
+containers join the network and close the loop:
+
+```bash
+make purple        # the full loop: attack the live targets, then show what defenders saw
+make redteam       # just the offensive playbook
+make blueteam      # just the detection pass over the access logs
+```
+
+- **🔴 Red team** (`redteam/`) — an attacker container that runs a real exploit playbook
+  against the *live* services over the network (env-overridable `WEB_URL`/`API_URL`), each
+  step mapped to a MITRE ATT&CK technique and verified with captured evidence. A real run:
+
+  > 7/7 techniques landed — recon (T1595.002), reflected XSS (T1059.007), open redirect
+  > (T1566.002), **OS command injection → RCE** (`uid=0(root)`, T1059.004), insecure session
+  > cookie (T1539), **denial-of-wallet** on the unauthenticated AI endpoint (10/10 calls
+  > answered, T1499.003), and verbose-error/secret leak (T1592). Exit code = range smoke test.
+
+- **🔵 Blue team** (`blueteam/`) — a dependency-free Python mini-SIEM that tails the JSON
+  access logs the targets write (the `LOG_CONTRACT`) and raises MITRE-mapped alerts. Same run:
+
+  > 38 alerts over 55 events — **CRITICAL os-command-injection** (the RCE, caught on both
+  > `;id` and `$(whoami)`), HIGH reflected-xss + denial-of-wallet-burst ("6 requests to
+  > /api/chat within 10s"), MEDIUM open-redirect + scanner-tooling-UA, LOW verbose-error —
+  > while staying **silent on benign traffic** (normal `GET /`, real searches, internal
+  > redirects, low-volume API use).
+
+The vulnerable targets each append one JSON line per request to a shared `/logs` volume,
+so the *exact same traffic* the red team generates is what the blue team detects — and
+what NjordScan predicted statically in the first place. Red teamers get a live practice
+target with a real toolkit; blue teamers get attack telemetry to write and tune detections
+against; and the whole thing validates the scanner's predictions against ground truth.
+
+---
+
 ## The targets (what each one proves)
 
 | # | Target | Proves | Captured result |

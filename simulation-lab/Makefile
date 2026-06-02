@@ -1,5 +1,19 @@
 # NjordScan Simulation Lab
-.PHONY: demo build up down scan dast keystone clean logs arm disarm secrets
+.PHONY: demo build up down scan dast keystone clean logs arm disarm secrets redteam blueteam purple
+
+redteam: up ## Red team: actually exploit the live targets over the lab network
+	@sleep 2
+	docker compose run --rm redteam
+
+blueteam: ## Blue team: detect the attacks in the targets' access logs (one-shot)
+	docker compose run --rm blueteam --once
+
+purple: up ## Full purple loop — NjordScan predicts, red team proves, blue team detects
+	@sleep 3
+	@printf '\n\033[1;31m== RED TEAM: exploiting the live targets ==\033[0m\n'
+	-docker compose run --rm redteam
+	@printf '\n\033[1;34m== BLUE TEAM: what the defenders saw in the logs ==\033[0m\n'
+	docker compose run --rm blueteam --once
 
 arm: ## Inject real-FORMAT fake provider keys for the full demo (DO NOT COMMIT)
 	python3 ../scripts/lab-secrets.py arm

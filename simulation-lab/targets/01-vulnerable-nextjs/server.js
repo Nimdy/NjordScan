@@ -7,8 +7,29 @@
 const http = require("http");
 const { URL } = require("url");
 const { exec } = require("child_process");
+const fs = require("fs");
+const pathmod = require("path");
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
+
+// Purple-team access log: one JSON line per request to <LOG_DIR>/web.log — the
+// LOG CONTRACT the blue-team detector consumes. Best-effort; never affects responses.
+const LOG_DIR = process.env.LOG_DIR || "/logs";
+try { fs.mkdirSync(LOG_DIR, { recursive: true }); } catch (e) { /* not writable -> no logs */ }
+function _safeDecode(s) { try { return decodeURIComponent(s); } catch (e) { return s; } }
+function logAccess(req, res, u, svc) {
+  res.on("finish", () => {
+    try {
+      fs.appendFile(pathmod.join(LOG_DIR, svc + ".log"), JSON.stringify({
+        ts: new Date().toISOString(), svc,
+        ip: String(req.headers["x-forwarded-for"] || (req.socket && req.socket.remoteAddress) || ""),
+        method: req.method, path: u.pathname, query: _safeDecode(u.search.replace(/^\?/, "")),
+        status: res.statusCode, ua: req.headers["user-agent"] || "",
+        ref: req.headers["referer"] || "", body: "",
+      }) + "\n", () => {});
+    } catch (e) { /* never break the request */ }
+  });
+}
 
 // Hard-coded creds, same as the .env the real app reads.
 const STRIPE_SECRET_KEY = "lab_demo_key_a3f9c2b18d7e6f5a4b3c2d1e0f9a8b7c";
@@ -26,6 +47,7 @@ function send(res, status, body, headers) {
 
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  logAccess(req, res, u, "web");
 
   // --- reflected XSS: the query is echoed straight into the HTML ----------
   if (u.pathname === "/search") {

@@ -8,6 +8,8 @@
 
 const http = require('http');
 const { URL } = require('url');
+const fs = require('fs');
+const pathmod = require('path');
 
 const db = require('./src/db');
 const auth = require('./src/auth');
@@ -15,6 +17,26 @@ const attachments = require('./src/attachments');
 const aiChat = require('./src/aiChat');
 
 const PORT = parseInt(process.env.PORT, 10) || 3002;
+
+// Purple-team access log: one JSON line per request to <LOG_DIR>/api.log — the LOG
+// CONTRACT the blue-team detector consumes. Best-effort; never affects responses.
+const LOG_DIR = process.env.LOG_DIR || '/logs';
+try { fs.mkdirSync(LOG_DIR, { recursive: true }); } catch (e) { /* not writable -> no logs */ }
+function _safeDecode(s) { try { return decodeURIComponent(s); } catch (e) { return s; } }
+function logAccess(req, res, u, svc) {
+  res.on('finish', () => {
+    try {
+      const b = typeof req.body === 'string' ? req.body : (req.body ? JSON.stringify(req.body) : '');
+      fs.appendFile(pathmod.join(LOG_DIR, svc + '.log'), JSON.stringify({
+        ts: new Date().toISOString(), svc,
+        ip: String(req.headers['x-forwarded-for'] || (req.socket && req.socket.remoteAddress) || ''),
+        method: req.method, path: u.pathname, query: _safeDecode((u.search || '').replace(/^\?/, '')),
+        status: res.statusCode, ua: req.headers['user-agent'] || '',
+        ref: req.headers['referer'] || '', body: b.slice(0, 500),
+      }) + '\n', () => {});
+    } catch (e) { /* never break the request */ }
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Tiny request/response helpers so route modules can use a familiar
@@ -249,6 +271,7 @@ async function route(req, res, parsedUrl) {
 const server = http.createServer((req, res) => {
   res.setHeader('X-Powered-By', 'QuickNotes/1.4.2 (Node)');
   const parsedUrl = new URL(req.url, `http://localhost:${PORT}`);
+  logAccess(req, res, parsedUrl, 'api');
   decorate(req, res, parsedUrl);
   route(req, res, parsedUrl).catch((err) => {
     // Even the catch-all leaks the stack to the client.
