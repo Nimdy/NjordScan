@@ -496,7 +496,7 @@ Key `scan` flags: `--fix` / `--ai-fix` / `--dry-run`, `--reachable-only`, `--fai
 ## See it in action
 
 **[examples/vulnerable-shop](examples/)** is a realistic deliberately-insecure Next.js app —
-`njordscan scan examples/vulnerable-shop` finds 30 issues spanning secrets, cross-file taint,
+`njordscan scan examples/vulnerable-shop` finds 18 issues spanning secrets, cross-file taint,
 AI-app security, supply-chain, and dependency **VEX**, each explained with a fix. The full captured
 report and sample SBOM/Navigator artifacts are committed there.
 
