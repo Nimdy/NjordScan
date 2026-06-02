@@ -42,8 +42,11 @@ dev = ["pytest>=7.4", "pytest-asyncio>=0.23", "mypy>=1.8", "ruff>=0.3", "httpx>=
 njordscan = "njordscan.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/nimdy/njordscan"
-Repository = "https://github.com/nimdy/njordscan.git"
+Homepage = "https://github.com/Nimdy/NjordScan"
+Repository = "https://github.com/Nimdy/NjordScan.git"
+Issues = "https://github.com/Nimdy/NjordScan/issues"
+Changelog = "https://github.com/Nimdy/NjordScan/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/Nimdy/NjordScan#readme"
 
 [tool.setuptools.packages.find]
 include = ["njordscan*"]
