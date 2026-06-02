@@ -1,0 +1,58 @@
+name: lab-ci
+
+# Self-test for the simulation lab: spin up the range and run the purple loop as an
+# integration test, asserting the red team lands its techniques AND the blue team
+# detects the critical attacks. So the lab can never silently break. Only runs when
+# the lab changes.
+on:
+  push:
+    paths: ["simulation-lab/**", ".github/workflows/lab-ci.yml"]
+  pull_request:
+    paths: ["simulation-lab/**", ".github/workflows/lab-ci.yml"]
+  workflow_dispatch:
+
+jobs:
+  purple-loop:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: simulation-lab
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint the lab scripts
+        run: |
+          bash -n redteam/attack.sh redteam/attack-byo.sh
+          python3 -m py_compile blueteam/detect.py dashboard/server.py byo-proxy/proxy.py c2/server.py
+          python3 blueteam/gen-sigma.py    # the Sigma export must stay generatable
+
+      - name: Build images
+        run: docker compose build web api internal c2 redteam blueteam
+
+      - name: Start the range
+        run: |
+          docker compose up -d web api internal c2
+          for i in $(seq 1 30); do
+            w=$(docker inspect -f '{{.State.Health.Status}}' lab-web 2>/dev/null || echo none)
+            a=$(docker inspect -f '{{.State.Health.Status}}' lab-api 2>/dev/null || echo none)
+            [ "$w" = healthy ] && [ "$a" = healthy ] && break
+            sleep 2
+          done
+
+      - name: Red team — techniques must land
+        run: |
+          NO_COLOR=1 docker compose run --rm redteam | tee /tmp/rt.out
+          landed=$(grep -oE '[0-9]+/[0-9]+ techniques landed' /tmp/rt.out | head -1 | cut -d/ -f1)
+          echo "landed=$landed"
+          if [ "${landed:-0}" -lt 8 ]; then echo "::error::red team landed only ${landed:-0} techniques"; exit 1; fi
+
+      - name: Blue team — must detect the critical attacks
+        run: |
+          NO_COLOR=1 docker compose run --rm blueteam --once | tee /tmp/blue.out
+          for rule in os-command-injection internal-tier-access exfiltration-to-c2 reflected-xss; do
+            grep -q "$rule" /tmp/blue.out || { echo "::error::blue team missed: $rule"; exit 1; }
+          done
+
+      - name: Tear down
+        if: always()
+        run: docker compose --profile purple --profile scanner down -v || true
