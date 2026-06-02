@@ -121,3 +121,46 @@ async def test_deterministic_and_safe_without_git(tmp_path):
     (tmp_path / "x.ts").write_text("const x = 1;\n")
     assert keystone(tmp_path, "HEAD", []) == []
     assert keystone(tmp_path, "", []) == []
+
+
+async def test_untracked_gitignored_secret_is_not_a_false_keystone(tmp_path):
+    # the critical fix: an untracked .env supplies a pre-existing chain link the
+    # before-tree must still see (symmetric reconstruction) — an unrelated docs commit
+    # must NOT be flagged as having armed the secret-pivot chain.
+    repo = tmp_path / "repo"
+    _init(repo)
+    _scaffold(repo)
+    (repo / ".gitignore").write_text(".env\n")
+    (repo / "app" / "api" / "search").mkdir(parents=True, exist_ok=True)
+    (repo / "app" / "api" / "x").mkdir(parents=True, exist_ok=True)
+    (repo / "app" / "api" / "x" / "route.ts").write_text(
+        "export async function POST(req) {\n  eval(req.body.code);\n}\n")
+    (repo / ".env").write_text("AWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLEKEYDATA1234567890ab\n")
+    _commit(repo, "route + untracked env", author=("Alice", "alice@x.test"))
+    (repo / "README.md").write_text("# docs only change\n")
+    _commit(repo, "docs", author=("Bob", "bob@x.test"))
+
+    result = await scan(repo)
+    # an unrelated docs commit never armed the eval+secret chain (both pre-existed)
+    assert keystone(repo, "HEAD~1", result.attack_paths) == []
+
+
+async def test_born_date_uses_author_timezone(tmp_path):
+    from njordscan.core.gitblame import blame_line
+
+    repo = tmp_path / "repo"
+    _init(repo)
+    f = repo / "a.txt"
+    f.write_text("line\n")
+    # commit at 2026-01-02 01:00 in +1100 → that's 2026-01-01 14:00 UTC; the author's
+    # local date (what git log shows) is 2026-01-02, NOT the UTC 2026-01-01.
+    env = {"GIT_AUTHOR_NAME": "Tz", "GIT_AUTHOR_EMAIL": "tz@x", "GIT_COMMITTER_NAME": "Tz",
+           "GIT_COMMITTER_EMAIL": "tz@x", "GIT_AUTHOR_DATE": "2026-01-02T01:00:00+1100",
+           "GIT_COMMITTER_DATE": "2026-01-02T01:00:00+1100", "PATH": _PATH, "HOME": str(repo)}
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True, capture_output=True, env=env)
+    subprocess.run(["git", "-C", str(repo), "commit", "-q", "-m", "tz"], check=True,
+                   capture_output=True, env=env)
+    blamed = blame_line(repo, "a.txt", 1)
+    assert blamed is not None
+    from njordscan.analysis.keystone import _date_with_tz
+    assert _date_with_tz(blamed[2], blamed[3]) == "2026-01-02"   # author-local, not UTC

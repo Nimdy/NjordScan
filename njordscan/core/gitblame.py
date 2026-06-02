@@ -15,11 +15,13 @@ from typing import Optional, Set, Tuple
 _UNCOMMITTED = "0" * 40
 
 
-def blame_line(root: Path, file: str, line: int) -> Optional[Tuple[str, str, int]]:
-    """Return (short_sha, author, author_time_epoch) for ``file:line``, or None.
+def blame_line(root: Path, file: str, line: int) -> Optional[Tuple[str, str, int, str]]:
+    """Return (short_sha, author, author_time_epoch, author_tz) for ``file:line``, or None.
 
-    None means: git unavailable, the path/line doesn't resolve, or the line isn't
-    committed (so it has no birthday yet — the caller treats it as brand-new)."""
+    ``author_tz`` is git's ``+HHMM``/``-HHMM`` offset, so the date can be shown in the
+    author's own timezone (matching git log / GitHub) rather than UTC. None means: git
+    unavailable, the path/line doesn't resolve, or the line isn't committed (no birthday
+    yet — the caller treats it as brand-new)."""
     if line < 1:
         return None
     args = ["git", "-C", str(root), "blame", "--porcelain",
@@ -36,6 +38,7 @@ def blame_line(root: Path, file: str, line: int) -> Optional[Tuple[str, str, int
         return None
     author = ""
     epoch = 0
+    tz = "+0000"
     for ln in lines[1:]:
         if ln.startswith("author "):
             author = ln[len("author "):].strip()
@@ -44,9 +47,11 @@ def blame_line(root: Path, file: str, line: int) -> Optional[Tuple[str, str, int
                 epoch = int(ln[len("author-time "):].strip())
             except ValueError:
                 epoch = 0
+        elif ln.startswith("author-tz "):
+            tz = ln[len("author-tz "):].strip() or "+0000"
         elif ln.startswith("\t"):  # the code line — porcelain header is done
             break
-    return (sha[:12], author or "unknown", epoch)
+    return (sha[:12], author or "unknown", epoch, tz)
 
 
 def commits_in_range(root: Path, base_ref: str) -> Set[str]:

@@ -80,12 +80,18 @@ def _render_attack_paths(paths: List, console: Console, *, limit: int = 5) -> No
 
 
 def render_keystone(keystones: List, console: Console) -> None:
-    """The headline for --diff mode: a change that COMPLETED a latent kill chain."""
+    """The headline for --diff mode: a change that COMPLETED (or escalated) a kill chain."""
     if not keystones:
         return
+    completed = sum(1 for k in keystones if getattr(k, "new_kind", True))
+    raised = len(keystones) - completed
+    parts = []
+    if completed:
+        parts.append(f"completed {completed} pre-existing attack path(s)")
+    if raised:
+        parts.append(f"escalated {raised} existing attack path(s)")
     console.print(Text.assemble(
-        ("🔑 Keystone", "bold yellow"),
-        (f"  ·  this change completed {len(keystones)} pre-existing attack path(s)", "dim"),
+        ("🔑 Keystone", "bold yellow"), ("  ·  this change " + " and ".join(parts), "dim"),
     ))
     console.print(Text("A vulnerability you can't see in a single diff: your change supplied the "
                        "missing link to a chain whose other halves were already in the repo.\n",
@@ -93,10 +99,11 @@ def render_keystone(keystones: List, console: Console) -> None:
     for ks in keystones:
         path = ks.path
         band = path.band
+        new_kind = getattr(ks, "new_kind", True)
         head = Text.assemble(
             (f"{band.emoji} ", ""),
             (f"score {path.score} · {band.value}", band.color),
-            ("   armed by this change", "bold yellow"),
+            ("   armed by this change" if new_kind else "   escalated by this change", "bold yellow"),
         )
         body: List = [head, Text(f"Impact: {path.impact}", style="italic"), Text("")]
         for ks_step in ks.steps:
@@ -106,23 +113,30 @@ def render_keystone(keystones: List, console: Console) -> None:
                 tail = Text("  ← the link this change added", style="bold yellow")
             else:
                 marker = Text("  ", style="dim")
-                who = ks_step.born_author or "someone"
+                who = ks_step.born_author
                 when = f" on {ks_step.born_date}" if ks_step.born_date else ""
-                tail = Text(f"  planted by {who}{when}", style="dim")
+                tail = (Text(f"  planted by {who}{when}", style="dim") if who
+                        else Text("  already in the repo", style="dim"))
             body.append(Text.assemble(
                 marker, (f"{s.order}. ", "bold"), (f"[{s.tactic}] ", "cyan"), (s.title, "bold"), tail,
             ))
             body.append(Text(f"     {s.location}", style="dim"))
-        supplied = ", ".join(str(o) for o in ks.supplied_orders)
-        assemblers = ", ".join(ks.assemblers) or "earlier commits"
         body.append(Text(""))
-        body.append(Text.assemble(
-            ("🔑 ", ""),
-            (f"Step {supplied} is new in this change; the rest was already in the repo "
-             f"(planted by {assemblers}). ", "yellow"),
-            ("Neither change was a vulnerability alone — together they're a complete chain. "
-             "Revert or guard the new link to disarm it.", "yellow"),
-        ))
+        orders = ks.supplied_orders
+        assemblers = ", ".join(a for a in ks.assemblers if a) or "earlier commits"
+        if orders:
+            plural = "Steps" if len(orders) > 1 else "Step"
+            verb = "are" if len(orders) > 1 else "is"
+            nums = ", ".join(str(o) for o in orders)
+            if new_kind:
+                lead = (f"{plural} {nums} {verb} new in this change; the rest was already in the "
+                        f"repo (planted by {assemblers}). Neither change was a vulnerability alone "
+                        "— together they're a complete chain. Revert or guard the new link to disarm it.")
+            else:
+                lead = (f"{plural} {nums} {verb} new in this change, raising an attack path that "
+                        f"already existed (other links planted by {assemblers}) to {band.value}. "
+                        "Guard the new link to bring it back down.")
+            body.append(Text.assemble(("🔑 ", ""), (lead, "yellow")))
         console.print(Panel(Group(*body),
                             title=Text.assemble((f" {path.title} ", "bold")),
                             title_align="left", border_style="yellow", padding=(1, 2)))

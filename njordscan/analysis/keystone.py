@@ -22,10 +22,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -91,18 +92,36 @@ def _scan_now(cfg) -> Any:
 
 
 def _reconstruct_tree(root: Path, ref: str, dest: Path) -> bool:
-    """Materialize the tracked tree at ``ref`` into ``dest`` via ``git archive | tar``."""
+    """Materialize the repo as it was at ``ref`` into ``dest`` — SYMMETRICALLY with the
+    working tree, so untracked/gitignored files (a local ``.env``, etc.) exist
+    identically in both 'before' and 'after' and cancel out of the comparison.
+
+    We copy the current working tree, then revert ONLY the tracked files the change
+    touched back to their ``ref`` content (and drop files the change added). This avoids
+    the ``git archive`` blind spots — untracked files and ``.gitattributes`` export-ignore
+    — that would otherwise make a pre-existing link look brand-new."""
     try:
-        archive = subprocess.run(
-            ["git", "-C", str(root), "archive", ref],
-            capture_output=True, timeout=60, check=False)
-        if archive.returncode != 0 or not archive.stdout:
+        shutil.copytree(root, dest, ignore=shutil.ignore_patterns(
+            ".git", ".venv", "node_modules", ".njordscan", "dist", "build", "__pycache__"))
+        changed = subprocess.run(
+            ["git", "-C", str(root), "diff", "--name-only", "--no-renames", ref],
+            capture_output=True, text=True, timeout=60, check=False)
+        if changed.returncode != 0:
             return False
-        dest.mkdir(parents=True, exist_ok=True)
-        tar = subprocess.run(["tar", "-x", "-C", str(dest)], input=archive.stdout,
-                             capture_output=True, timeout=60, check=False)
-        return tar.returncode == 0
-    except (OSError, subprocess.SubprocessError):
+        for rel in changed.stdout.splitlines():
+            rel = rel.strip()
+            if not rel:
+                continue
+            target = dest / rel
+            base = subprocess.run(["git", "-C", str(root), "show", f"{ref}:{rel}"],
+                                  capture_output=True, timeout=30, check=False)
+            if base.returncode == 0:                     # existed at ref → restore that content
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(base.stdout)
+            elif target.exists():                        # added by the change → absent at ref
+                target.unlink()
+        return True
+    except (OSError, subprocess.SubprocessError, shutil.Error):
         return False
 
 
@@ -143,7 +162,7 @@ def keystone(root: Path, diff_ref: str, paths_after: List[AttackPath]) -> List[K
             prev = before_idx.get(p.kind, -1)
             if p.kind in before_idx and p.band.rank <= prev:
                 continue  # this kind already existed at >= this severity → not newly armed
-            ks = _classify(root, p, changed, in_range)
+            ks = _classify(root, p, changed, in_range, new_kind=p.kind not in before_idx)
             if ks is not None:
                 out.append(ks)
         out.sort(key=lambda k: -k.path.score)
@@ -153,29 +172,55 @@ def keystone(root: Path, diff_ref: str, paths_after: List[AttackPath]) -> List[K
         return []
 
 
-def _classify(root: Path, path: AttackPath, changed, in_range) -> Optional[KeystonePath]:
-    """Split a path's steps into newly-introduced vs pre-existing; keystone iff both."""
+def _date_with_tz(epoch: int, tz: str) -> Optional[str]:
+    """ISO date in the author's own timezone (so it matches git log / GitHub)."""
+    if not epoch:
+        return None
+    try:
+        sign = -1 if tz.startswith("-") else 1
+        hh, mm = int(tz[1:3]), int(tz[3:5])
+        offset = timezone(sign * timedelta(hours=hh, minutes=mm))
+    except (ValueError, IndexError):
+        offset = timezone.utc
+    return datetime.fromtimestamp(epoch, tz=offset).date().isoformat()
+
+
+def _classify(root: Path, path: AttackPath, changed, in_range, *, new_kind: bool
+              ) -> Optional[KeystonePath]:
+    """Split a path's steps into newly-introduced vs pre-existing; keystone iff both.
+
+    A step is 'newly-introduced' only with positive evidence it is part of THIS change:
+    its line is in the diff, or its line was last touched by an in-range commit. A line
+    we cannot date (untracked/uncommitted) or a file-level finding (line 0) is treated
+    as pre-existing — we never label a step 'new' merely because its file was touched,
+    so an unrelated edit can't be accused of arming a pre-existing finding."""
     steps: List[KeystoneStep] = []
     has_new = has_old = False
     assemblers: List[str] = []
     for step in path.steps:
-        if in_diff(changed, step.file, step.line):
+        # file-level finding (line 0): cannot be tied to a changed line → pre-existing,
+        # never the 'supplied' link.
+        if step.line > 0 and in_diff(changed, step.file, step.line):
             steps.append(KeystoneStep(step, "newly-introduced"))
             has_new = True
             continue
-        blamed = gitblame.blame_line(root, step.file, step.line)
-        # a line last touched by a commit IN the change range is part of the change
-        if blamed is None or blamed[0] in in_range:
+        blamed = gitblame.blame_line(root, step.file, step.line) if step.line > 0 else None
+        if blamed is not None and blamed[0] in in_range:
+            # the line was last touched by a commit in this change range → part of it
             steps.append(KeystoneStep(step, "newly-introduced"))
             has_new = True
             continue
-        sha, author, epoch = blamed
-        date = datetime.fromtimestamp(epoch, tz=timezone.utc).date().isoformat() if epoch else None
-        steps.append(KeystoneStep(step, "pre-existing", born_commit=sha,
-                                  born_author=author, born_date=date))
+        if blamed is not None:
+            sha, author, epoch, tz = blamed
+            steps.append(KeystoneStep(step, "pre-existing", born_commit=sha,
+                                      born_author=author, born_date=_date_with_tz(epoch, tz)))
+            if author not in assemblers:
+                assemblers.append(author)
+        else:
+            # untracked/uncommitted-unchanged, or a file-level finding — pre-existing,
+            # but with no datable author (never fabricate one).
+            steps.append(KeystoneStep(step, "pre-existing"))
         has_old = True
-        if author not in assemblers:
-            assemblers.append(author)
     if not (has_new and has_old):
         return None
-    return KeystonePath(path=path, steps=steps, new_kind=True, assemblers=assemblers)
+    return KeystonePath(path=path, steps=steps, new_kind=new_kind, assemblers=assemblers)
