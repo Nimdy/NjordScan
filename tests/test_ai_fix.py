@@ -113,6 +113,93 @@ async def test_ai_fix_retries_with_feedback_then_verifies(tmp_path):
     assert 'rel="noopener noreferrer"' in (work / "components" / "Share.jsx").read_text()
 
 
+class RemoteSpyProvider:
+    """Stands in for a remote provider (name 'claude' is_remote==True) and records
+    whether it was ever asked to complete — so we can prove no egress happened."""
+
+    name = "claude"
+
+    def __init__(self):
+        self.completed = False
+
+    def check(self):
+        return True, "spy"
+
+    def complete(self, system: str, user: str, **_):
+        self.completed = True
+        return "```tsx\nshould never be sent\n```"
+
+
+async def test_ai_fix_no_external_blocks_remote_egress(tmp_path):
+    """--no-external must hard-block --ai-fix from sending source to a remote model.
+
+    Unlike --explain, --ai-fix can't redact (the model must return the real file),
+    so under --no-external it must refuse outright and never call the provider.
+    """
+    work = tmp_path / "app"
+    shutil.copytree(VULN_APP, work, ignore=shutil.ignore_patterns(".njordscan"))
+    result = await scan(work)
+
+    spy = RemoteSpyProvider()
+    report = ai_fix(
+        result,
+        Config(target=work, ai_provider="claude", no_external=True),
+        dry_run=True,
+        provider=spy,
+    )
+
+    assert report.error and "no-external" in report.error.lower()
+    assert not report.applied
+    assert spy.completed is False  # the provider was never called -> nothing left the machine
+
+
+async def test_ai_fix_no_external_blocks_ollama_pointed_off_box(tmp_path, monkeypatch):
+    """ollama is 'local', but OLLAMA_HOST can point it at a remote box — and then it
+    IS egress. --no-external must block that too (the gate uses would_reach_network)."""
+    monkeypatch.setenv("OLLAMA_HOST", "http://attacker.example.com:11434")
+    work = tmp_path / "app"
+    shutil.copytree(VULN_APP, work, ignore=shutil.ignore_patterns(".njordscan"))
+    result = await scan(work)
+
+    # provider=None -> the CLI path, which builds the provider from config
+    report = ai_fix(result, Config(target=work, ai_provider="ollama", no_external=True), dry_run=True)
+    assert report.error and "no-external" in report.error.lower()
+    assert not report.applied
+
+
+async def test_ai_fix_no_external_allows_local_ollama(tmp_path, monkeypatch):
+    """The legit case: ollama on a loopback host under --no-external must NOT be blocked
+    (it stays on-box). It may fail later for other reasons, but not with an egress error."""
+    monkeypatch.setenv("OLLAMA_HOST", "http://127.0.0.1:11434")
+    work = tmp_path / "app"
+    shutil.copytree(VULN_APP, work, ignore=shutil.ignore_patterns(".njordscan"))
+    result = await scan(work)
+
+    report = ai_fix(result, Config(target=work, ai_provider="ollama", no_external=True), dry_run=True)
+    # not the egress refusal (it either ran against a local model, or failed because no
+    # model is reachable — never the --no-external block)
+    assert not (report.error and "no-external" in report.error.lower())
+
+
+async def test_ai_fix_gate_fails_closed_for_unregistered_remote_provider(tmp_path):
+    """A passed-in provider with a name not in the registry must be treated as remote
+    (fail closed), so --no-external still blocks it instead of assuming it's local."""
+    work = tmp_path / "app"
+    shutil.copytree(VULN_APP, work, ignore=shutil.ignore_patterns(".njordscan"))
+    result = await scan(work)
+
+    spy = RemoteSpyProvider()
+    spy.name = "azure-openai"  # a real remote service, NOT in _PROVIDERS
+    report = ai_fix(
+        result,
+        Config(target=work, ai_provider="claude", no_external=True),
+        dry_run=True,
+        provider=spy,
+    )
+    assert report.error and "no-external" in report.error.lower()
+    assert spy.completed is False
+
+
 async def test_ai_fix_dry_run_writes_nothing(tmp_path):
     work = tmp_path / "app"
     shutil.copytree(VULN_APP, work, ignore=shutil.ignore_patterns(".njordscan"))

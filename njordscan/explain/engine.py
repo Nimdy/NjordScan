@@ -20,7 +20,7 @@ from rich.markup import escape
 
 from ..core.config import Config
 from ..core.finding import Finding
-from .providers import Provider, ProviderError, get_provider, is_remote
+from .providers import Provider, ProviderError, get_provider, would_reach_network
 from .redact import redact
 
 err = Console(stderr=True)
@@ -44,9 +44,9 @@ def explain_findings(findings: List[Finding], config: Config) -> None:
 
     provider_name = config.ai_provider or "ollama"
 
-    if is_remote(provider_name) and config.no_external:
-        err.print(f"[yellow]--no-external is set; skipping remote provider '{provider_name}'. "
-                  "Use --ai-provider ollama for a local model.[/yellow]")
+    if would_reach_network(provider_name) and config.no_external:
+        err.print(f"[yellow]--no-external is set; skipping provider '{provider_name}' (would "
+                  "reach the network). Use a local model (ollama on a loopback OLLAMA_HOST).[/yellow]")
         return
 
     try:
@@ -62,7 +62,7 @@ def explain_findings(findings: List[Finding], config: Config) -> None:
         return
 
     targets = findings[:_MAX_EXPLAIN]
-    redacting = is_remote(provider_name) and config.ai_redact
+    redacting = would_reach_network(provider_name) and config.ai_redact
     _notice(provider, reason, len(targets), redacting, config)
 
     def _explain_one(finding: Finding) -> None:

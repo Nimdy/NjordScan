@@ -32,3 +32,31 @@ jobs:
         with:
           name: njordscan-sarif-${{ matrix.python-version }}
           path: njordscan.sarif
+
+  # Build the artifact we actually ship and prove it installs + runs from a clean
+  # venv — a scanner whose own CI never builds its wheel is one packaging bug away
+  # from a broken first release, exactly when trust is most fragile.
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build wheel + sdist
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          twine check dist/*
+      - name: Smoke-install the wheel in a clean venv and run it
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install dist/*.whl
+          /tmp/smoke/bin/njordscan --version
+          /tmp/smoke/bin/njordscan doctor
+          /tmp/smoke/bin/njordscan scan tests/fixtures/clean-app --fail-on high
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: njordscan-dist
+          path: dist/*

@@ -45,6 +45,7 @@ class Config:
     reachability: bool = True                    # annotate findings with import-graph reachability
     reachable_only: bool = False                 # report only reachable findings
     max_file_bytes: int = 2_000_000              # skip files larger than this
+    detector_timeout: float = 120.0              # per-detector wall-clock cap (0 = no limit)
     explain_with_ai: bool = False
     ai_provider: Optional[str] = None            # "ollama" | "claude" | "openai"
     ai_redact: bool = True                       # redact code before sending to an API

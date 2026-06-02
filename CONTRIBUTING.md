@@ -19,7 +19,7 @@ self-explaining?**
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev,dynamic,ai]'
-pytest -q          # 55 tests, ~3s
+pytest -q          # 171 tests, ~8s
 ruff check njordscan
 ```
 

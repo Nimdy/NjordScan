@@ -65,10 +65,29 @@ class AiFixReport:
 def ai_fix(result: ScanResult, config: Config, *, dry_run: bool, provider=None) -> AiFixReport:
     report = AiFixReport(dry_run=dry_run)
 
+    provider_name = getattr(provider, "name", None) or config.ai_provider or "ollama"
+
+    # Privacy gate. Unlike --explain (which sends a small, REDACTED snippet and gets
+    # text back), --ai-fix must send the FULL file contents to the model to receive a
+    # working corrected file — so it cannot redact without corrupting the output. We
+    # therefore honor --no-external as a HARD BLOCK for anything that would leave the
+    # machine, and warn loudly before any egress otherwise. The egress check fails
+    # CLOSED: remote providers, ollama pointed off-box via OLLAMA_HOST, and any passed
+    # provider that doesn't declare itself local all count as egress.
+    egress = _would_egress(provider, provider_name)
+    if egress and config.no_external:
+        report.provider = provider_name
+        report.error = (
+            f"--no-external is set, so --ai-fix refuses to send source code off this machine "
+            f"(provider '{provider_name}'). A fix cannot be redacted — the model must return your "
+            f"actual file — so use a LOCAL model (ollama on a loopback OLLAMA_HOST) to proceed."
+        )
+        return report
+
     if provider is None:
         from ..explain.providers import ProviderError, get_provider
         try:
-            provider = get_provider(config.ai_provider or "ollama")
+            provider = get_provider(provider_name)
         except ProviderError as exc:
             report.error = str(exc)
             return report
@@ -77,6 +96,9 @@ def ai_fix(result: ScanResult, config: Config, *, dry_run: bool, provider=None) 
     if not ok:
         report.error = reason
         return report
+
+    if egress:
+        _remote_egress_notice(provider_name, _MAX_FILES)
 
     project = result.project
     code_exts = (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs")
@@ -112,7 +134,10 @@ def ai_fix(result: ScanResult, config: Config, *, dry_run: bool, provider=None) 
             for attempt in range(1, _MAX_ATTEMPTS + 1):
                 prompt = (_prompt(rel, original, by_file[rel]) if candidate is None
                           else _retry_prompt(rel, candidate, still, introduced))
-                corrected = _strip_fences(provider.complete(_SYSTEM, prompt))
+                try:
+                    corrected = _strip_fences(provider.complete(_SYSTEM, prompt))
+                except Exception:  # noqa: BLE001 - a provider/network failure mid-run must
+                    break          # not crash the whole scan; leave this file unverified
                 if not corrected or corrected.strip() == original.strip():
                     break
                 tfile.write_text(corrected, encoding="utf-8")
@@ -139,6 +164,41 @@ def ai_fix(result: ScanResult, config: Config, *, dry_run: bool, provider=None) 
                 report.unverified.append(rel)
 
     return report
+
+
+def _would_egress(provider, provider_name: str) -> bool:
+    """True if running --ai-fix with this provider would send source OFF this machine.
+
+    Fails CLOSED: a remote provider, ollama pointed at a non-loopback OLLAMA_HOST, or
+    any passed-in provider object that does not explicitly declare ``is_local`` — an
+    unknown/unregistered provider name is treated as remote, never assumed local.
+    """
+    from ..explain.providers import would_reach_network
+
+    if would_reach_network(provider_name):
+        return True
+    if provider is not None and not getattr(provider, "is_local", False):
+        return True
+    return False
+
+
+def _remote_egress_notice(provider_name: str, max_files: int) -> None:
+    """Warn, before any egress, that --ai-fix sends full file contents un-redacted."""
+    try:
+        from rich.console import Console
+
+        Console(stderr=True).print(
+            f"[yellow]☁  --ai-fix is sending the FULL contents of up to {max_files} file(s) to the "
+            f"remote provider '{escape_name(provider_name)}' UN-redacted — a fix must preserve your "
+            f"code, so it cannot be masked. Use --ai-provider ollama (local) or --no-external to keep "
+            f"code on your machine.[/yellow]"
+        )
+    except Exception:  # pragma: no cover - a notice must never break the fix path
+        pass
+
+
+def escape_name(name: str) -> str:
+    return name.replace("[", "").replace("]", "")
 
 
 def _scan_now(cfg: Config) -> ScanResult:

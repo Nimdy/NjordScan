@@ -303,15 +303,18 @@ def redteam(result, config, *, provider=None, existing: Optional[List["ap.Attack
             return []
         redact = False
         if provider is None:
-            from ..explain.providers import get_provider, is_remote
+            from ..explain.providers import get_provider, would_reach_network
             name = config.ai_provider or "ollama"
-            if is_remote(name) and getattr(config, "no_external", False):
+            # would_reach_network catches remote providers AND ollama pointed off-box
+            # via OLLAMA_HOST, so --no-external blocks all egress (not just the obvious
+            # remote names), and we redact the inventory whenever it leaves the machine.
+            if would_reach_network(name) and getattr(config, "no_external", False):
                 return []
             provider = get_provider(name)
             ok, _reason = provider.check()
             if not ok:
                 return []
-            redact = is_remote(name) and getattr(config, "ai_redact", True)
+            redact = would_reach_network(name) and getattr(config, "ai_redact", True)
 
         inventory, by_id = _inventory(findings, redact=redact)
         if len(inventory) < 2:

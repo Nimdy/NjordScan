@@ -25,7 +25,9 @@ runs:
   steps:
     - name: Install NjordScan
       shell: bash
-      run: pip install njordscan
+      # --pre: 2.0 ships as a beta (2.0.0bN); plain `pip install njordscan` would skip
+      # a pre-release. Drop --pre once a stable 2.0 is published.
+      run: pip install --pre njordscan
     - name: Run NjordScan
       shell: bash
       run: |

@@ -13,9 +13,11 @@ lazily so the package installs and runs fine without it.
 
 from __future__ import annotations
 
+import ipaddress
 import os
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple
+from urllib.parse import urlparse
 
 
 class ProviderError(RuntimeError):
@@ -198,3 +200,40 @@ def get_provider(name: str) -> Provider:
 def is_remote(name: str) -> bool:
     factory = _PROVIDERS.get(name)
     return bool(factory) and not getattr(factory, "is_local", False)
+
+
+_LOOPBACK_HOSTNAMES = {"localhost", "0.0.0.0", ""}
+
+
+def _host_is_loopback(host: str) -> bool:
+    h = (host or "").strip().lower()
+    if h in _LOOPBACK_HOSTNAMES:
+        return True
+    try:
+        return ipaddress.ip_address(h).is_loopback
+    except ValueError:
+        return False
+
+
+def ollama_is_local() -> bool:
+    """True only if OLLAMA_HOST points at this machine (loopback), so a call stays
+    on-box. Ollama is nominally a 'local' provider, but OLLAMA_HOST can point it at a
+    remote server — in which case using it IS network egress."""
+    host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    if "://" not in host:
+        host = "http://" + host
+    try:
+        return _host_is_loopback(urlparse(host).hostname or "")
+    except Exception:  # pragma: no cover - defensive
+        return False
+
+
+def would_reach_network(name: str) -> bool:
+    """True if using provider ``name`` would send data OFF this machine: a remote
+    provider, OR ollama pointed at a non-loopback OLLAMA_HOST. ``--no-external`` must
+    block every case this returns True for (is_remote() alone misses remote ollama)."""
+    if is_remote(name):
+        return True
+    if name == "ollama" and not ollama_is_local():
+        return True
+    return False

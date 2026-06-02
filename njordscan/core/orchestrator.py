@@ -9,6 +9,7 @@ failing the whole scan — a scanner that dies on one weird file is useless.
 from __future__ import annotations
 
 import asyncio
+import math
 import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List
@@ -121,7 +122,26 @@ class Orchestrator:
     async def _run_one(self, detector: Detector, project: Project) -> List[Finding]:
         if not detector.applies(project):
             return []
-        return await detector.scan(project)
+        # Per-detector timeout. A detector that hangs at an *await* point — a stuck live
+        # probe, slow network I/O — is cancelled here and reported as an isolated error
+        # so it can't block the whole scan (a hang is worse than a crash in CI). What
+        # this does NOT do: forcibly interrupt CPU-bound work running in a worker thread
+        # (Python has no safe thread-kill), so detectors bound that risk themselves by
+        # skipping oversized/pathological lines (e.g. the pattern engine caps lines at
+        # 2k chars to defuse catastrophic-backtracking regexes). Fully uninterruptible
+        # CPU hangs would need process isolation — a deliberate non-goal for a pure-
+        # Python, no-heavy-deps tool. Generous + configurable (Config.detector_timeout;
+        # 0/NaN/inf disable it).
+        timeout = getattr(self.config, "detector_timeout", 0) or 0
+        if not (isinstance(timeout, (int, float)) and math.isfinite(timeout) and timeout > 0):
+            return await detector.scan(project)
+        try:
+            return await asyncio.wait_for(detector.scan(project), timeout=timeout)
+        except asyncio.TimeoutError:
+            raise TimeoutError(
+                f"timed out after {timeout:.0f}s — raise detector_timeout in .njordscan.yml "
+                f"if this detector legitimately needs longer on your project"
+            ) from None
 
     def _annotate_reachability(self, findings: List[Finding], project: Project) -> None:
         """Mark each finding reachable/unreachable from a framework entrypoint."""
