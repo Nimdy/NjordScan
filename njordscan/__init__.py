@@ -9,7 +9,7 @@ Public API is intentionally small; most users interact via the ``njordscan`` CLI
 
 from __future__ import annotations
 
-__version__ = "2.0.0b1"
+__version__ = "2.0.0b2"
 
 from .core.finding import Finding, TaintStep
 from .core.severity import Severity

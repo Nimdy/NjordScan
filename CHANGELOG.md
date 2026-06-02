@@ -3,6 +3,21 @@
 All notable changes to NjordScan are documented here. This project follows
 [Semantic Versioning](https://semver.org/).
 
+## 2.0.0b2 — beta
+
+### Added
+- **`njordscan gui`** — a local web **scan studio**. Point it at a local folder, a git URL
+  (shallow-cloned then deleted), or a live URL (DAST) and explore the findings + attack paths in
+  the browser: filter by severity, expand a finding for the plain-English why/how-to-fix, walk an
+  attack-path kill chain. Same engine as the CLI; dependency-free (stdlib server + one offline HTML
+  page). Binds to localhost only, runs scans in-process (NjordScan only *reads* a target).
+
+### Fixed (carried over from the post-2.0.0b1 hardening)
+- **SSRF false positives** — a same-origin/relative `fetch(`/api/...`)` is no longer flagged as
+  SSRF (only a dynamic/attacker-controlled host is).
+- **Dev-only files de-prioritized** — findings in `scripts/`, build tooling, and tests are capped
+  to LOW and annotated (never hidden), so a local setup script doesn't read like an app vuln.
+
 ## 2.0.0b1 — clean-room rebuild (beta)
 
 NjordScan 2.0 is a complete rewrite focused on **trustworthiness for developers who aren't

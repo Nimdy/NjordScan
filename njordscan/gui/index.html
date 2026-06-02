@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NjordScan — Scan Studio</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#121723; --panel2:#0f1420; --line:#222a3a; --fg:#cdd6f4;
+    --dim:#7b88a8; --red:#ff5370; --blue:#82aaff; --green:#c3e88d; --purple:#c792ea;
+    --yellow:#ffcb6b; --cyan:#89ddff; --mag:#f78fff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  header{display:flex;align-items:center;gap:12px;padding:12px 20px;
+    background:linear-gradient(90deg,#15101f,#101620);border-bottom:1px solid var(--line)}
+  header h1{font-size:16px;margin:0}.header h1 .p{color:var(--purple)}
+  .p{color:var(--purple)} .spacer{flex:1}
+  .muted{color:var(--dim)} .empty{color:var(--dim);font-style:italic;padding:10px 0}
+  main{max-width:1080px;margin:0 auto;padding:18px}
+  /* scan form */
+  .studio{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  .modes{display:flex;gap:6px;margin-bottom:10px}
+  .mode{flex:1;text-align:center;padding:9px;border:1px solid var(--line);border-radius:8px;
+    background:var(--panel2);cursor:pointer;color:var(--dim);font-weight:700;font-size:13px}
+  .mode.on{color:var(--fg);border-color:var(--purple);background:#171225}
+  .row{display:flex;gap:8px;align-items:center}
+  input[type=text]{flex:1;padding:11px 12px;border:1px solid var(--line);border-radius:8px;
+    background:#0c111b;color:var(--fg);font:inherit}
+  input[type=text]:focus{outline:none;border-color:var(--blue)}
+  button.go{padding:11px 20px;border:0;border-radius:8px;background:var(--purple);color:#0b0e14;
+    font:inherit;font-weight:800;cursor:pointer}
+  button.go:disabled{opacity:.5;cursor:default}
+  .hint{color:var(--dim);font-size:12px;margin-top:8px}
+  .opts{margin-top:8px;font-size:13px;color:var(--dim)}
+  .opts label{cursor:pointer}
+  /* summary */
+  .summary{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .sev{padding:5px 12px;border-radius:8px;font-weight:800;border:1px solid var(--line);cursor:pointer;user-select:none}
+  .sev.off{opacity:.35}
+  .sev.critical{color:var(--mag)} .sev.high{color:var(--red)} .sev.medium{color:var(--yellow)}
+  .sev.low{color:var(--cyan)} .sev.info{color:var(--dim)}
+  .meta{color:var(--dim);font-size:12px}
+  .allclear{padding:18px;border:1px solid #2f4a2f;border-radius:12px;background:rgba(195,232,141,.06);
+    color:var(--green);font-weight:700;text-align:center}
+  .err{padding:14px;border:1px solid #5a2230;border-radius:10px;background:rgba(255,83,112,.08);color:var(--red)}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;overflow:hidden}
+  .hd{padding:10px 14px;border-bottom:1px solid var(--line);font-weight:700;background:var(--panel2)}
+  .hd .tag{font-weight:400;color:var(--dim);font-size:12px;margin-left:6px}
+  .bd{padding:6px 14px 12px}
+  /* attack paths */
+  .path{border:1px solid var(--line);border-radius:10px;margin:10px 0;overflow:hidden}
+  .path .ph{padding:9px 12px;cursor:pointer;display:flex;gap:10px;align-items:center;background:#0c111b}
+  .path .score{font-weight:800;font-size:13px}
+  .path.critical .score{color:var(--mag)} .path.high .score{color:var(--red)}
+  .path.medium .score{color:var(--yellow)} .path.low .score{color:var(--cyan)}
+  .path .pt{font-weight:700;flex:1}
+  .path .steps{padding:6px 14px 12px;display:none}
+  .path.open .steps{display:block}
+  .step{padding:5px 0;border-bottom:1px solid #1a2030}
+  .step:last-child{border-bottom:0}
+  .step .phase{color:var(--cyan);font-size:11px}
+  .step .loc{color:var(--dim);font-size:12px}
+  .star{color:var(--yellow)}
+  .advice{margin-top:8px;color:var(--green);font-size:13px}
+  .aiverified{color:var(--purple);font-size:11px;border:1px solid #3a2a44;border-radius:5px;padding:1px 6px}
+  /* findings */
+  .find{border-bottom:1px solid var(--line)}
+  .find:last-child{border-bottom:0}
+  .find .fh{padding:9px 2px;display:flex;gap:10px;align-items:baseline;cursor:pointer}
+  .pill{font-size:10px;padding:2px 8px;border-radius:999px;font-weight:800;white-space:nowrap}
+  .pill.critical{background:rgba(247,143,255,.15);color:var(--mag)} .pill.high{background:rgba(255,83,112,.15);color:var(--red)}
+  .pill.medium{background:rgba(255,203,107,.15);color:var(--yellow)} .pill.low{background:rgba(137,221,255,.15);color:var(--cyan)}
+  .pill.info{background:#1a2030;color:var(--dim)}
+  .find .ft{font-weight:600;flex:1}
+  .find .floc{color:var(--dim);font-size:12px}
+  .reach{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--green)}
+  .reach.no{color:var(--dim)}
+  .find .detail{display:none;padding:2px 0 12px 0;overflow-wrap:anywhere}
+  .find.open .detail{display:block}
+  .find .why,.find .fix{margin:6px 0}
+  .find .lbl{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  pre{background:#0c111b;border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;font-size:12px;margin:6px 0}
+  .att{font-size:11px;color:var(--cyan);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-right:4px}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--purple);
+    border-radius:50%;animation:s .7s linear infinite;vertical-align:middle}
+  @keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🛡️ NjordScan — <span class="p">Scan Studio</span></h1>
+  <div class="spacer"></div>
+  <span class="muted" id="ver"></span>
+</header>
+
+<main>
+  <div class="studio">
+    <div class="modes">
+      <div class="mode on" data-mode="path">📁 Local folder</div>
+      <div class="mode" data-mode="git">🐙 Git repo</div>
+      <div class="mode" data-mode="url">🌐 Live URL (DAST)</div>
+    </div>
+    <div class="row">
+      <input type="text" id="target" placeholder="/path/to/your/project" autofocus />
+      <button class="go" id="go">Scan</button>
+    </div>
+    <div class="opts" id="opts" style="display:none">
+      <label><input type="checkbox" id="allowPrivate" /> allow private/loopback host (your own staging)</label>
+    </div>
+    <div class="hint" id="hint">Scan a folder on this machine. NjordScan only reads it — never runs it.</div>
+  </div>
+
+  <div id="status"></div>
+  <div id="results"></div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SEV = ["critical","high","medium","low","info"];
+let MODE = "path", LAST = null, FILTER = new Set(SEV);
+
+const HINTS = {
+  path: "Scan a folder on this machine. NjordScan only reads it — never runs it.",
+  git:  "Paste a git URL (https or git@). It's shallow-cloned to a temp dir, scanned, then deleted.",
+  url:  "Scan a LIVE app over HTTP(S) — benign, SSRF-guarded probes only. Only scan apps you own or are authorized to test.",
+};
+const PLACE = { path:"/path/to/your/project", git:"https://github.com/you/your-repo.git", url:"https://staging.yourapp.com" };
+
+document.querySelectorAll(".mode").forEach(m => m.onclick = () => {
+  document.querySelectorAll(".mode").forEach(x=>x.classList.remove("on"));
+  m.classList.add("on"); MODE = m.dataset.mode;
+  $("hint").textContent = HINTS[MODE]; $("target").placeholder = PLACE[MODE];
+  $("opts").style.display = MODE==="url" ? "block" : "none";
+});
+$("target").addEventListener("keydown", e => { if(e.key==="Enter") scan(); });
+$("go").onclick = scan;
+
+async function scan(){
+  const target = $("target").value.trim();
+  if(!target){ $("target").focus(); return; }
+  $("go").disabled = true;
+  $("status").innerHTML = `<div class="meta"><span class="spin"></span> scanning ${esc(target)} …</div>`;
+  $("results").innerHTML = "";
+  try{
+    const r = await fetch("/api/scan", {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({target, mode: MODE, options:{allow_private: $("allowPrivate").checked}})});
+    render(await r.json());
+  }catch(e){ $("status").innerHTML = `<div class="err">Request failed: ${esc(e.message)}</div>`; }
+  $("go").disabled = false;
+}
+
+function render(rep){
+  $("status").innerHTML = "";
+  if(rep.error){ $("results").innerHTML = `<div class="err">⚠ ${esc(rep.error)}</div>`; return; }
+  LAST = rep; FILTER = new Set(SEV);
+  if(rep.version) $("ver").textContent = "v"+rep.version;
+  const s = rep.summary||{}, by = s.by_severity||{};
+  const chips = SEV.filter(k=>by[k]).map(k=>`<span class="sev ${k}" data-sev="${k}">${k.toUpperCase()} ${by[k]}</span>`).join("");
+  const head = `<div class="summary">
+      ${chips || '<span class="sev low">0 findings</span>'}
+      <span class="meta">· ${s.total||0} total · ${s.files_scanned||0} files · ${s.duration_seconds||0}s
+      ${rep.framework? "· "+esc(rep.framework):""}</span>
+    </div>`;
+  let out = head;
+  if(!s.total){ out += `<div class="allclear">✅ All clear — no findings. A clean result you can trust.</div>`; }
+  out += renderPaths(rep.attack_paths||[]);
+  out += `<div id="findwrap">${renderFindings(rep.findings||[])}</div>`;
+  $("results").innerHTML = out;
+  document.querySelectorAll(".sev[data-sev]").forEach(c => c.onclick = () => {
+    const k = c.dataset.sev;
+    if(FILTER.has(k) && FILTER.size>0) FILTER.delete(k); else FILTER.add(k);
+    c.classList.toggle("off", !FILTER.has(k));
+    $("findwrap").innerHTML = renderFindings(LAST.findings||[]);
+  });
+}
+
+function renderPaths(paths){
+  if(!paths.length) return "";
+  const rows = paths.map((p,i)=>{
+    const steps = (p.steps||[]).map(st=>{
+      const loc = (st.location && (st.location.file_path||st.location.file)) || st.file || "";
+      const ln = (st.location && st.location.line) || st.line || "";
+      return `<div class="step"><span class="phase">[${esc(st.phase||"")}]</span> ${st.star?'<span class="star">★ </span>':''}${esc(st.title||"")}
+        ${loc?`<span class="loc">  ${esc(loc)}${ln?":"+esc(ln):""}</span>`:""}</div>`;
+    }).join("");
+    return `<div class="path ${p.band||""}" data-i="${i}">
+      <div class="ph"><span class="score">score ${esc(p.score)} · ${esc(p.band||"")}</span>
+        <span class="pt">${esc(p.title)}</span>
+        ${p.ai_verified?'<span class="aiverified">🤖 verified</span>':''}</div>
+      <div class="steps">${p.impact?`<div class="meta">Impact: ${esc(p.impact)}</div>`:""}${steps}
+        ${p.advice?`<div class="advice">🛠 ${esc(p.advice)}</div>`:""}</div></div>`;
+  }).join("");
+  const html = `<section><div class="hd">🎯 Attack paths<span class="tag">how these chain into a breach — click to expand</span></div>
+    <div class="bd">${rows}</div></section>`;
+  setTimeout(()=>document.querySelectorAll(".path .ph").forEach(h=>h.onclick=()=>h.parentElement.classList.toggle("open")),0);
+  return html;
+}
+
+function renderFindings(findings){
+  const list = findings.filter(f=>FILTER.has((f.severity||"info")));
+  if(!list.length) return '<div class="empty">No findings in the selected severities.</div>';
+  const rows = list.map((f,i)=>{
+    const sev = (f.severity||"info");
+    const loc = f.location || ((f.file||"")+(f.line?":"+f.line:""));
+    const reach = f.reachable===true?'<span class="reach">reachable</span>':f.reachable===false?'<span class="reach no">not reachable</span>':'';
+    const tags = (f.attack||[]).map(t=>`<span class="att">${esc(t)}</span>`).join("");
+    const detail = `<div class="detail">
+      ${f.why?`<div class="why"><span class="lbl">Why it matters</span><br>${esc(f.why)}</div>`:""}
+      ${f.fix?`<div class="fix"><span class="lbl">How to fix it</span><br>${esc(f.fix)}</div>`:""}
+      ${f.secure_example?`<pre>${esc(f.secure_example)}</pre>`:""}
+      <div class="meta">${tags} ${f.cwe?esc(f.cwe)+" ":""}${f.owasp?esc(f.owasp):""} · confidence ${esc(f.confidence||"")}</div>
+    </div>`;
+    return `<div class="find" data-i="${i}">
+      <div class="fh"><span class="pill ${sev}">${sev.toUpperCase()}</span>
+        <span class="ft">${esc(f.title||f.rule_id)}</span> ${reach}
+        <span class="floc">${esc(loc)}</span></div>${detail}</div>`;
+  }).join("");
+  const html = `<section><div class="hd">🔎 Findings<span class="tag">${list.length} shown — click any to see why + how to fix</span></div>
+    <div class="bd">${rows}</div></section>`;
+  setTimeout(()=>document.querySelectorAll(".find .fh").forEach(h=>h.onclick=()=>h.parentElement.classList.toggle("open")),0);
+  return html;
+}
+</script>
+</body>
+</html>

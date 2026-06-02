@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "njordscan"
-version = "2.0.0b1"
+version = "2.0.0b2"
 description = "A security scanner for Next.js, React, and Vite apps that explains every finding in plain English."
 readme = "README.md"
 license = { text = "MIT" }
@@ -53,6 +53,7 @@ include = ["njordscan*"]
 
 [tool.setuptools.package-data]
 njordscan = ["data/patterns/*.yaml", "data/rules/*.yaml", "data/advisories/*.json", "data/*.yaml"]
+"njordscan.gui" = ["*.html"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"

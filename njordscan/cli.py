@@ -678,6 +678,21 @@ def mcp() -> None:
 
 
 @cli.command()
+@click.option("--port", default=8765, show_default=True, help="Port to serve the studio on.")
+@click.option("--host", default="127.0.0.1", show_default=True, help="Bind address (localhost by default — don't expose it).")
+@click.option("--no-open", "no_open", is_flag=True, help="Don't auto-open the browser.")
+def gui(port: int, host: str, no_open: bool) -> None:
+    """🖥️  Launch a local web 'scan studio' — point it at a folder, git URL, or live URL.
+
+    A click-don't-type interface: explore findings + attack paths in the browser.
+    Binds to localhost; scans run in-process (NjordScan only reads a target).
+    """
+    from .gui.server import run
+
+    run(host=host, port=port, open_browser=not no_open)
+
+
+@cli.command()
 def version() -> None:
     """📋 Show version information."""
     console.print(f"NjordScan [bold cyan]v{__version__}[/bold cyan]")

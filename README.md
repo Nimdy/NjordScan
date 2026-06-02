@@ -52,6 +52,7 @@ njordscan explain xss.dangerously-set-inner-html # deep-dive on any rule
 njordscan doctor                       # what's installed & working
 njordscan update                       # refresh CVE data from OSV.dev
 njordscan mcp                          # run as an MCP server for AI coding assistants
+njordscan gui                          # 🖥️ explore a scan in your browser (point-and-click)
 ```
 
 ## What it finds
@@ -266,6 +267,24 @@ claude mcp add njordscan -- njordscan mcp
 ```
 
 Now your assistant can call `njordscan_scan` / `njordscan_explain` inline while you build.
+
+## 🖥️ Scan in your browser (`njordscan gui`)
+
+Prefer to click than read terminal output? Launch the **scan studio** — a local web UI to
+point at any target and explore the results visually:
+
+```bash
+njordscan gui          # opens http://127.0.0.1:8765
+```
+
+Pick a **local folder**, a **git URL** (shallow-cloned, scanned, deleted), or a **live URL**
+(DAST), hit Scan, and browse the findings + **attack paths** — filter by severity, expand any
+finding for the plain-English *why* and *how to fix*, click an attack path to walk the kill
+chain. Same engine, same results as the CLI — just point-and-click.
+
+It binds to **localhost only** (never the network), runs scans **in-process** (NjordScan only
+*reads* a target — it never executes it), and live-URL scans use the same benign, SSRF-guarded
+probes as `--url`. Scan anything you want to assess; only run it against apps you're authorized to.
 
 ## Fast PR feedback (`--diff`)
 
@@ -482,6 +501,7 @@ Exit codes: `0` = clean (or below `--fail-on`), `1` = findings met the gate, `2`
 | `njordscan results [dir]` | Browse past scans and diff them over time |
 | `njordscan doctor` | Show what's installed and working |
 | `njordscan mcp` | Run as an MCP server for AI coding assistants |
+| `njordscan gui` | Launch the local web scan studio (folder / git URL / live URL) |
 | `njordscan version` | Show the version |
 
 Key `scan` flags: `--fix` / `--ai-fix` / `--dry-run`, `--reachable-only`, `--fail-on`, `--min-severity`,
