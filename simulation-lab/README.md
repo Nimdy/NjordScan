@@ -13,10 +13,21 @@ It exists for two reasons:
    realistic project trees, not just unit fixtures. The same harness doubles as a
    training range or a CI security-gate rehearsal.
 
+**New here? One command does everything:**
+
 ```bash
 cd simulation-lab
+./start.sh         # checks Docker, picks free ports, starts the lab + dashboard,
+                   # opens the dashboard, and offers to run the red/blue demo
+./start.sh down    # stop and remove everything
+```
+
+Or drive it by hand:
+
+```bash
+make dashboard     # start the lab + open the web dashboard  (→ http://localhost:8088)
+make purple        # run the full red-team → blue-team demo (the dashboard fills live)
 make demo          # build everything, run every scan, capture ./reports/
-# or: ./run-lab.sh
 make down          # tear it all down
 ```
 
@@ -144,15 +155,19 @@ make dashboard     # build + start it, then open:
 make purple        # generate activity; the dashboard updates within ~2.5s
 ```
 
-It shows, all auto-refreshing:
+Updates **stream live over SSE** (no polling). It shows:
 
 - **🌐 Network topology** — the segmented range (labnet DMZ vs the `internal-net` crown-jewel
   tier), with the "✗ no route → pivot via web RCE" path and live per-service activity.
+- **⛓️ Attack flow** — the run laid out along the **MITRE kill chain** (Recon → Initial Access →
+  Execution → … → Lateral Movement → Impact); each stage lights **green** when the blue team
+  caught it and **amber** when it's a blind spot.
 - **🟣 Purple scorecard** — an ATT&CK matrix of **predicted → attempted → detected**. NjordScan's
   static scan fills *predicted*, the red-team run fills *attempted*, the blue-team detector fills
   *detected* — and any **attempted-but-not-detected** technique is flagged as a **BLUE GAP**
   (e.g. session-cookie theft, which never appears in an access log: a real blind spot, surfaced
-  automatically).
+  automatically). **Click any row** (or any kill-chain stage) to drill into exactly what the red
+  team attempted and which blue-team alerts fired.
 - **🔴 Red team** — every technique with its ATT&CK id, LANDED/MISS, and evidence (from
   `redteam.jsonl`).
 - **🔵 Blue team** — alerts by severity + a live stream, produced by importing the same
@@ -186,6 +201,7 @@ proof that NjordScan is usable for non-experts is that a well-built app comes ba
 ```
 simulation-lab/
 ├── docker-compose.yml      # the lab: 2 target services + the scanner, on one network
+├── start.sh               # newcomer launcher: preflight + up + open dashboard + demo
 ├── run-lab.sh / Makefile   # one-command demo + per-step targets
 ├── njordscan/Dockerfile    # the scanner image (installs njordscan[dynamic] + git)
 ├── dashboard/             # the purple web GUI (stdlib server + 1 offline HTML page)

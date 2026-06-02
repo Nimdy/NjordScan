@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -63,17 +64,26 @@ TOPOLOGY = {
 # gap rather than being hidden.
 # ---------------------------------------------------------------------------
 ACTIVITY_CATALOG = [
-    {"key": "recon", "name": "Recon / scanning", "red": ["T1595.002"],
+    {"key": "recon", "name": "Recon / scanning", "phase": "Recon", "red": ["T1595.002"],
      "blue_rules": ["scanner-tooling-ua", "automated-client-ua"]},
-    {"key": "xss", "name": "Reflected XSS", "red": ["T1059.007"], "blue_rules": ["reflected-xss"]},
-    {"key": "open_redirect", "name": "Open redirect", "red": ["T1566.002"], "blue_rules": ["open-redirect"]},
-    {"key": "rce", "name": "OS command injection → RCE", "red": ["T1059.004"], "blue_rules": ["os-command-injection"]},
-    {"key": "cookie", "name": "Insecure session cookie", "red": ["T1539"], "blue_rules": [],
+    {"key": "open_redirect", "name": "Open redirect", "phase": "Initial Access", "red": ["T1566.002"],
+     "blue_rules": ["open-redirect"]},
+    {"key": "xss", "name": "Reflected XSS", "phase": "Execution", "red": ["T1059.007"], "blue_rules": ["reflected-xss"]},
+    {"key": "rce", "name": "OS command injection → RCE", "phase": "Execution", "red": ["T1059.004"],
+     "blue_rules": ["os-command-injection"]},
+    {"key": "verbose", "name": "Verbose error / info leak", "phase": "Discovery", "red": ["T1592.002", "T1592"],
+     "blue_rules": ["verbose-error"]},
+    {"key": "cookie", "name": "Insecure session cookie", "phase": "Credential Access", "red": ["T1539"], "blue_rules": [],
      "note": "not visible in an access log — a real blue-team blind spot"},
-    {"key": "dow", "name": "Denial of wallet", "red": ["T1499.003"], "blue_rules": ["denial-of-wallet-burst"]},
-    {"key": "verbose", "name": "Verbose error / info leak", "red": ["T1592.002", "T1592"], "blue_rules": ["verbose-error"]},
-    {"key": "pivot", "name": "Lateral movement (pivot to internal)", "red": ["T1210"], "blue_rules": ["internal-tier-access"]},
+    {"key": "pivot", "name": "Lateral movement (pivot to internal)", "phase": "Lateral Movement", "red": ["T1210"],
+     "blue_rules": ["internal-tier-access"]},
+    {"key": "dow", "name": "Denial of wallet", "phase": "Impact", "red": ["T1499.003"],
+     "blue_rules": ["denial-of-wallet-burst"]},
 ]
+
+# MITRE kill-chain ordering for the attack-flow view.
+PHASE_ORDER = ["Recon", "Initial Access", "Execution", "Discovery",
+               "Credential Access", "Lateral Movement", "Impact"]
 
 
 def _now() -> str:
@@ -185,11 +195,15 @@ def build_state() -> Dict[str, Any]:
                          for r in red)
         detected = any(rule in fired_rules for rule in act["blue_rules"])
         predicted_act = bool(red_parents & predicted) if have_predict else None
+        # per-activity drill-down: the red techniques and blue alerts that map to it
+        red_for = [r for r in red if r.get("mitre", "").split(".")[0] in red_parents]
+        blue_for = [a for a in alert_dicts if a["rule"] in act["blue_rules"]]
         scorecard.append({
-            "key": act["key"], "name": act["name"], "mitre": act["red"][0],
+            "key": act["key"], "name": act["name"], "phase": act["phase"], "mitre": act["red"][0],
             "predicted": predicted_act, "attempted": attempted,
             "landed": landed_act, "detected": detected,
             "gap": attempted and not detected, "note": act.get("note", ""),
+            "red_detail": red_for, "blue_detail": blue_for[:25],
         })
 
     return {
@@ -202,6 +216,7 @@ def build_state() -> Dict[str, Any]:
                  "by_rule": dict(det.alerts_by_rule),
                  "events": det.events_seen, "total": det.total_alerts},
         "scorecard": scorecard,
+        "phases": PHASE_ORDER,
         "have_predict": have_predict,
         "logs": logs[:120],
     }
@@ -220,6 +235,28 @@ class Handler(BaseHTTPRequestHandler):
         if self.command != "HEAD":
             self.wfile.write(body)
 
+    def _stream(self) -> None:
+        """Server-Sent Events: push a fresh state snapshot every ~2s until the
+        client disconnects. ThreadingHTTPServer gives each stream its own (daemon)
+        thread, so this blocking loop never holds up other requests."""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("X-Accel-Buffering", "no")
+        self.end_headers()
+        try:
+            while True:
+                try:
+                    payload = json.dumps(build_state())
+                except Exception as exc:  # noqa: BLE001
+                    payload = json.dumps({"error": str(exc)})
+                self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
+                self.wfile.flush()
+                time.sleep(2.0)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            return  # client went away
+
     def do_GET(self) -> None:  # noqa: N802
         path = self.path.split("?", 1)[0]
         if path in ("/", "/index.html"):
@@ -234,6 +271,8 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:  # noqa: BLE001 - the dashboard must never 500-crash
                 body = json.dumps({"error": str(exc)}).encode("utf-8")
             return self._send(200, body, "application/json")
+        if path == "/api/stream":
+            return self._stream()
         if path == "/healthz":
             return self._send(200, b"ok", "text/plain")
         return self._send(404, b"not found", "text/plain")
