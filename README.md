@@ -182,6 +182,44 @@ step that doesn't map to your code, or a link the engine can't confirm, is **sil
 so the AI literally cannot invent a vulnerability. Opt-in, **off by default**, and **offline-capable**
 via a local model.
 
+## 🔑 Keystone commit — the change that *armed* a pre-existing attack chain
+
+```bash
+njordscan scan . --diff origin/main    # keystone analysis is on by default in --diff mode
+```
+
+Every PR scanner on earth is **diff-local**: it flags issues whose lines you touched. None
+can see the most dangerous commit of all — the innocent-looking one that **completes a kill
+chain whose other links were planted months ago by other people** — because none own a
+whole-repo attack-chain model. NjordScan does, so it can ask a question nobody else can:
+*given everything already in the repo, did **this** change arm a latent chain?*
+
+It reconstructs the tree **before** your change, re-runs the exact same attack-path synthesis,
+and compares. A chain that exists *after* but not *before*, with one link you just added and
+one that pre-existed, is a chain your change **armed** — and each pre-existing link is dated by
+`git blame`:
+
+```
+🔑 Keystone · this change completed 1 pre-existing attack path
+
+╭─ Account/data takeover via unauthenticated injection   score 98 · critical ──╮
+│  ★ 1. [Initial Access] No authentication on the entry point   route.ts:1
+│        ← the link this change added
+│    2. [Execution] Attacker-controlled data hits a query   route.ts:5
+│        planted by Alice on 2026-03-02
+│  🔑 Step 1 is new in this change; the rest was already in the repo (planted by
+│     Alice). Neither change was a vulnerability alone — together they're a
+│     complete chain. Revert or guard the new link to disarm it.
+╰───────────────────────────────────────────────────────────────────────────────╯
+```
+
+A vulnerability stops being an event and becomes a **4D object** — repo state over time, with a
+git birthday and an assembling cast. The grounding is **bulletproof and has no model in it**:
+*"a new critical chain exists"* is a literal set-difference between two deterministic scans of
+two real git trees, reproducible by anyone who checks out the refs; *"this link pre-existed,
+planted by Alice"* is `git blame` on the unchanged line — with a self-correcting guard that
+demotes a moved/reformatted line so an author is never falsely accused. Perfect for a CI PR gate.
+
 ## AI / LLM application security
 
 Vibe coders are building AI apps — so NjordScan covers the risks unique to them, which most

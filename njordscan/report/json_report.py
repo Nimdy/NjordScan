@@ -24,6 +24,7 @@ def build_report(result: ScanResult) -> Dict[str, Any]:
             "errors": result.errors,
         },
         "attack_paths": [p.to_dict() for p in result.attack_paths],
+        "keystone_paths": [k.to_dict() for k in getattr(result, "keystone_paths", [])],
         "findings": [f.to_dict() for f in result.findings],
     }
 

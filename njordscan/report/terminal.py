@@ -79,6 +79,56 @@ def _render_attack_paths(paths: List, console: Console, *, limit: int = 5) -> No
             _render_one_path(path, console)
 
 
+def render_keystone(keystones: List, console: Console) -> None:
+    """The headline for --diff mode: a change that COMPLETED a latent kill chain."""
+    if not keystones:
+        return
+    console.print(Text.assemble(
+        ("🔑 Keystone", "bold yellow"),
+        (f"  ·  this change completed {len(keystones)} pre-existing attack path(s)", "dim"),
+    ))
+    console.print(Text("A vulnerability you can't see in a single diff: your change supplied the "
+                       "missing link to a chain whose other halves were already in the repo.\n",
+                       style="dim"))
+    for ks in keystones:
+        path = ks.path
+        band = path.band
+        head = Text.assemble(
+            (f"{band.emoji} ", ""),
+            (f"score {path.score} · {band.value}", band.color),
+            ("   armed by this change", "bold yellow"),
+        )
+        body: List = [head, Text(f"Impact: {path.impact}", style="italic"), Text("")]
+        for ks_step in ks.steps:
+            s = ks_step.step
+            if ks_step.provenance == "newly-introduced":
+                marker = Text("★ ", style="bold yellow")
+                tail = Text("  ← the link this change added", style="bold yellow")
+            else:
+                marker = Text("  ", style="dim")
+                who = ks_step.born_author or "someone"
+                when = f" on {ks_step.born_date}" if ks_step.born_date else ""
+                tail = Text(f"  planted by {who}{when}", style="dim")
+            body.append(Text.assemble(
+                marker, (f"{s.order}. ", "bold"), (f"[{s.tactic}] ", "cyan"), (s.title, "bold"), tail,
+            ))
+            body.append(Text(f"     {s.location}", style="dim"))
+        supplied = ", ".join(str(o) for o in ks.supplied_orders)
+        assemblers = ", ".join(ks.assemblers) or "earlier commits"
+        body.append(Text(""))
+        body.append(Text.assemble(
+            ("🔑 ", ""),
+            (f"Step {supplied} is new in this change; the rest was already in the repo "
+             f"(planted by {assemblers}). ", "yellow"),
+            ("Neither change was a vulnerability alone — together they're a complete chain. "
+             "Revert or guard the new link to disarm it.", "yellow"),
+        ))
+        console.print(Panel(Group(*body),
+                            title=Text.assemble((f" {path.title} ", "bold")),
+                            title_align="left", border_style="yellow", padding=(1, 2)))
+        console.print()
+
+
 def _render_one_path(path, console: Console) -> None:
     band = path.band
     score = Text.assemble(

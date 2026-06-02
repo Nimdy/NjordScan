@@ -84,6 +84,8 @@ def cli() -> None:
               help="Allow --url to target private/loopback hosts (off by default for SSRF safety).")
 @click.option("--diff", "diff_ref", is_flag=False, flag_value="HEAD", default=None,
               help="Only report issues on lines changed vs a git ref (bare --diff = vs HEAD). Great for PRs.")
+@click.option("--keystone/--no-keystone", "keystone_on", default=True,
+              help="With --diff: flag a commit that COMPLETES a pre-existing attack chain (on by default).")
 @click.option("--baseline", type=click.Path(path_type=Path), default=None,
               help="Baseline file: hide known findings and only fail on NEW ones.")
 @click.option("--update-baseline", is_flag=True,
@@ -104,7 +106,7 @@ def scan(
     do_fix: bool, do_ai_fix: bool, dry_run: bool,
     explain_with_ai: bool, ai_attack_paths: bool, ai_provider: Optional[str], no_redact: bool, no_external: bool,
     url: Optional[str], allow_private: bool,
-    diff_ref: Optional[str],
+    diff_ref: Optional[str], keystone_on: bool,
     baseline: Optional[Path], update_baseline: bool,
     config_path: Optional[Path], no_config: bool, no_history: bool,
     reachable_only: bool, no_reachability: bool,
@@ -168,6 +170,15 @@ def scan(
         from .core.history import record
         record(result)
 
+    # --- keystone: did this change ARM a pre-existing kill chain? (before filtering,
+    # so we compare the whole-repo attack surface, not just the diff lines) ---
+    if diff_ref and keystone_on:
+        from .analysis import keystone as _keystone
+        try:
+            result.keystone_paths = _keystone(target, diff_ref, result.attack_paths)
+        except Exception:  # noqa: BLE001 — temporal analysis is best-effort
+            result.keystone_paths = []
+
     # --- diff / PR mode: keep only findings on changed lines ---
     diff_hidden = 0
     if diff_ref:
@@ -216,6 +227,9 @@ def scan(
         _apply_ai_attack_paths(result, config)
 
     _emit(result, fmt, output, verbose=verbose, quiet=quiet, show_fix=not brief)
+    if result.keystone_paths and not quiet and fmt == "terminal":
+        from .report.terminal import render_keystone
+        render_keystone(result.keystone_paths, console)
     if hidden and not quiet and fmt == "terminal":
         console.print(f"[dim]({hidden} known finding(s) hidden by baseline.)[/dim]")
     if not quiet and fmt == "terminal":

@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 if TYPE_CHECKING:
     from ..analysis import AttackPath
@@ -36,6 +36,8 @@ class ScanResult:
     # I actually get hacked?" view). Populated by the orchestrator; recomputed by the
     # CLI when findings are filtered (--diff / --baseline). See njordscan.analysis.
     attack_paths: List["AttackPath"] = field(default_factory=list)
+    # kill chains the change under review ARMED (computed by the CLI in --diff mode).
+    keystone_paths: List[Any] = field(default_factory=list)
 
     @property
     def counts(self) -> Dict[Severity, int]:

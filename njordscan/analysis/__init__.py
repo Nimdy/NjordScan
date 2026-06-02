@@ -7,5 +7,6 @@ individual findings into the multi-step attack paths an adversary would walk.
 
 from .ai_redteam import redteam
 from .attack_paths import AttackPath, AttackStep, synthesize
+from .keystone import KeystonePath, keystone
 
-__all__ = ["AttackPath", "AttackStep", "synthesize", "redteam"]
+__all__ = ["AttackPath", "AttackStep", "synthesize", "redteam", "keystone", "KeystonePath"]
