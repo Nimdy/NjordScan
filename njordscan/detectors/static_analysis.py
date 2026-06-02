@@ -31,6 +31,7 @@ from typing import List, Optional
 from ..core.finding import Finding
 from ..core.project import Project
 from .base import Detector
+from .urlheuristics import fetch_host_is_dynamic
 
 # Lines longer than this are almost certainly minified/bundled or data blobs;
 # they explode regex cost and are not human-written source worth flagging.
@@ -505,6 +506,10 @@ class StaticAnalysisDetector(Detector):
                 open_idx = line.index("(", m.start())
                 arg = self._first_call_arg(line, open_idx)
                 if arg is None or _is_plain_string_literal(arg):
+                    continue
+                # A relative / fixed-literal-host URL is same-origin: request-derived
+                # data in the path or query of `fetch(`/api/...`)` is not SSRF.
+                if not fetch_host_is_dynamic(arg):
                     continue
                 # High precision: only flag when the URL clearly looks
                 # request-derived. A bare internal variable is too noisy.

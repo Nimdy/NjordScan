@@ -33,6 +33,7 @@ from typing import Dict, List, Optional, Set, Tuple
 from ..core.finding import Finding, TaintStep
 from ..core.project import Project
 from .base import Detector
+from .urlheuristics import fetch_host_is_dynamic
 
 logger = logging.getLogger(__name__)
 
@@ -534,10 +535,16 @@ class _FileAnalyzer:
             if name in _TIMER_SINKS:
                 self._handle_timer(node, args_node, tainted, record)
             elif name in _BARE_CALL_SINKS:
-                self._report_first_tainted_arg(
-                    args_node, tainted, rule_id=_BARE_CALL_SINKS[name],
-                    sink_label=f"{name}(...)", node=node, record=record,
-                )
+                rule_id = _BARE_CALL_SINKS[name]
+                # A relative / fixed-literal-host URL is same-origin: tainted data in
+                # the path or query of `fetch(`/api/...`)` is NOT SSRF.
+                if rule_id == "ssrf.fetch" and not self._ssrf_host_is_dynamic(args_node):
+                    pass
+                else:
+                    self._report_first_tainted_arg(
+                        args_node, tainted, rule_id=rule_id,
+                        sink_label=f"{name}(...)", node=node, record=record,
+                    )
             else:
                 self._handle_cross_function(name, args_node, tainted, record)
 
@@ -576,6 +583,8 @@ class _FileAnalyzer:
             rule_id = _MEMBER_ARG_SINKS[prop]
             if rule_id == "ssrf.fetch" and recv not in _SSRF_RECEIVERS:
                 pass  # not a recognised HTTP client receiver
+            elif rule_id == "ssrf.fetch" and not self._ssrf_host_is_dynamic(args_node):
+                pass  # relative / fixed-host URL -> same-origin, not SSRF
             else:
                 self._report_first_tainted_arg(
                     args_node, tainted, rule_id=rule_id,
@@ -887,6 +896,14 @@ class _FileAnalyzer:
             rule_id=rule_id, node=node, value_node=value_node,
             sink_label=sink_label, taint=taint, confidence=confidence, record=record,
         )
+
+    def _ssrf_host_is_dynamic(self, args_node) -> bool:
+        """Whether the first arg's URL host could be attacker-controlled (vs a
+        relative same-origin / fixed-literal-host URL, which is not SSRF)."""
+        args = _arg_list(args_node) if args_node is not None else []
+        if not args:
+            return True
+        return fetch_host_is_dynamic(_text(args[0]))
 
     def _report_first_tainted_arg(self, args_node, tainted, *, rule_id, sink_label, node, record) -> None:
         if args_node is None:
