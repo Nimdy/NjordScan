@@ -57,6 +57,37 @@ positives on a clean app, and explains every finding in plain English.
 - **CI**: GitHub composite Action, pre-commit hook, and a CI workflow.
 - `njordscan doctor` for a health check; correct, documented exit codes (0 / 1 / 2).
 
+#### Advanced analysis (the "how do I actually get hacked?" layer)
+- **Attack-path synthesis** — instead of a flat list, NjordScan correlates findings into the
+  ranked, plain-English **kill chains** an attacker would walk (ordered along the MITRE kill chain,
+  scored 0–100 with the factors shown, each step citing a real `file:line`), and marks the single
+  **★ break-the-chain** step that collapses the whole path. Renders in terminal/JSON/SARIF/HTML and
+  the MCP response. Deliberately conservative — unrelated or dead-code findings never form a path.
+- **Data-egress tracer (sensitivity-labeled taint)** — runs the taint engine in reverse: follows a
+  *named* sensitive value (an env secret, a credential) to where it **leaves the trust boundary** —
+  a log, an HTTP response, browser storage, or a third-party SDK (`dataflow.*` rules). Crosses the
+  label with reachability so a secret whose egress runs in **client code** is escalated to critical
+  ("bundled into the JS shipped to every visitor").
+- **SQL injection by data flow** (`sqli.tainted-query`) plus idiomatic Next.js App Router source
+  detection (`new URL(req.url).searchParams.get()`), so the flagship chains fire on real code.
+- **🤖 AI red-teamer** (`--ai-attack-paths`) — an LLM proposes novel multi-step attack chains, and
+  the deterministic engine **verifies every step and link against your real findings/reachability**,
+  discarding anything it can't ground. The model can recombine proven facts; it cannot invent a
+  vulnerability. Opt-in, offline-capable via Ollama; outputs show the engine-confirmed evidence.
+- **🔑 Keystone (temporal analysis)** — in `--diff` mode, names the change that *completed* a
+  pre-existing kill chain: it re-scans the tree before the change and reports a chain that exists
+  after-but-not-before, attributing each pre-existing link to the commit/author that planted it
+  (via `git blame`). Zero LLM in the verdict — a set-difference over two real git trees.
+- **Self-updating threat intel** — `njordscan update` also refreshes detection **rules + patterns**
+  from a configurable JSON feed (no reinstall), and a new **lockfile-integrity tamper detection**
+  flags a pinned dependency whose *same version* resolves to *different content* on redeploy.
+- **Simulation lab** (`simulation-lab/`) — a self-contained Dockerized **purple-team range**: a
+  NjordScan container scans deliberately-vulnerable target services statically *and* live (DAST)
+  over the container network, plus a red-team exploit playbook and a blue-team mini-SIEM, so
+  `make purple` runs the full loop — NjordScan predicts the attack paths, the red team proves them
+  by exploiting the live targets, and the blue team detects the traffic. (Repo tooling; not part of
+  the pip package.)
+
 ### Changed from 1.x
 - Single-source packaging (`pyproject.toml`); a small, pure-Python core install with **no numpy or
   other heavy/system dependencies**. AI and dynamic features live in optional extras.
