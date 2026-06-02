@@ -10,8 +10,15 @@
 name: njordscan-lab
 
 networks:
+  # The "DMZ": where the public-facing targets, the scanner and the attacker live.
   labnet:
     driver: bridge
+  # The segmented internal network — `internal: true` means no route to the host
+  # or the internet. Only services explicitly attached to it can talk to each
+  # other, so the red-team container (labnet only) cannot reach the internal tier.
+  internal-net:
+    driver: bridge
+    internal: true
 
 services:
   # ── target 1: a full-spectrum vulnerable storefront (static + DAST) ──────────
@@ -22,10 +29,16 @@ services:
     environment:
       PORT: "3001"
       LOG_DIR: "/logs"
+      # The web tier is the ONLY service that bridges into the internal network,
+      # and it carries the shared token to talk to the internal BackOffice tier —
+      # which is exactly what an attacker loots after landing RCE here.
+      INTERNAL_API: "http://internal:9000"
+      INTERNAL_API_TOKEN: "sk_internal_adm_7c4e9f2a1b8d6e3f0a5c9b2d4e6f8a1c"
     # host port is overridable (set WEB_HOST_PORT) in case 3001 is taken; the lab's
     # internal network always uses 3001 regardless.
     ports: ["${WEB_HOST_PORT:-3001}:3001"]
-    networks: [labnet]
+    # On BOTH networks: public (labnet) and segmented internal (internal-net).
+    networks: [labnet, internal-net]
     volumes:
       - ./logs:/logs        # access logs the blue team consumes
     healthcheck:
@@ -49,6 +62,30 @@ services:
       - ./logs:/logs        # access logs the blue team consumes
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3002/"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # ── target 6: the SEGMENTED internal admin tier — the crown jewels ───────────
+  # Reachable ONLY from the web tier (internal-net). NOT published to the host and
+  # NOT on labnet, so the red-team container cannot touch it directly: the only
+  # way in is to pivot through the web tier's RCE. This is the lateral-movement
+  # target — the customer datastore an attacker is actually after.
+  internal:
+    build: ./targets/06-internal-admin
+    image: njordlab-internal:local
+    container_name: lab-internal
+    environment:
+      PORT: "9000"
+      LOG_DIR: "/logs"
+      INTERNAL_API_TOKEN: "sk_internal_adm_7c4e9f2a1b8d6e3f0a5c9b2d4e6f8a1c"
+    # Deliberately NOT on labnet and with NO published ports — segmented away.
+    networks: [internal-net]
+    volumes:
+      - ./logs:/logs        # internal.log — the blue team sees the pivot land here
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9000/"]
       interval: 3s
       timeout: 3s
       retries: 10

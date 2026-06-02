@@ -91,6 +91,45 @@ what NjordScan predicted statically in the first place. Red teamers get a live p
 target with a real toolkit; blue teamers get attack telemetry to write and tune detections
 against; and the whole thing validates the scanner's predictions against ground truth.
 
+### 🧭 Lateral movement: a segmented internal tier you have to *pivot* to
+
+The range isn't flat. A third tier — the internal **BackOffice** service, which holds the
+customer datastore — lives on a **separate, internal-only Docker network** with no
+published port and **no route from the attacker container**. The web tier straddles both
+networks; the red-team box does not.
+
+```
+   labnet (DMZ)                                   internal-net  (internal: true)
+   ┌───────────┐   ┌───────────┐                  ┌───────────────────────────┐
+   │  lab-web   │──│  lab-api   │                  │       lab-internal        │
+   │ (has RCE)  │   └───────────┘                  │ BackOffice — customer DB  │
+   └─────┬──────┘ \________ also joins ___________▶└─────────────▲─────────────┘
+         │                  internal-net                         │  (web only)
+   ┌─────┴──────┐                                                 ✗
+   │ lab-redteam│   ✗ no route to lab-internal — must pivot through the web tier
+   └────────────┘
+```
+
+So the attacker can't touch the crown jewels directly. The red-team playbook proves it the
+honest way (**technique 8**):
+
+1. **Direct hit fails** — `curl http://internal:9000/admin/customers` from the attacker box
+   has no route. The segmentation holds.
+2. **Foothold → discovery** — it reuses the web RCE (technique 4) to run `printenv` and loot
+   the shared internal token the web tier carries (`T1552.001`).
+3. **Pivot → exfil** — it calls the internal service *from the web box* with the looted
+   token and pulls back the customer PII (`T1210`).
+
+The blue team catches the landing: the internal tier writes the same log contract, and the
+app itself only ever calls `/account` there — so **any** hit on `/admin/*` is a DMZ→internal
+pivot, raised CRITICAL (`internal-tier-access`, T1210). And NjordScan predicted the
+ingredients statically — a scan of the web tier flags both the **RCE** and the **hard-coded
+internal token** the pivot turns into lateral movement.
+
+```bash
+make pivot         # the focused lateral-movement demo (red proves it, blue detects it)
+```
+
 ---
 
 ## The targets (what each one proves)
@@ -102,6 +141,7 @@ against; and the whole thing validates the scanner's predictions against ground 
 | **03** | `supply-chain-attack` | A malicious `postinstall` in `node_modules`, a tampered lockfile, a known-vuln pin | `supply-chain.dependency-install-script` (critical) + `missing-integrity` + `deps.known-vulnerability` — benign/native deps **not** flagged |
 | **04** | `keystone-repo` (a git history) | **Keystone**: a later "temporarily disable auth" commit by *Bob* completes a SQLi *Alice* planted earlier | The 🔑 Keystone block naming the arming commit + the pre-existing author |
 | **05** | `clean-app` | **Precision** — the credibility anchor: a secure app must score **zero** | **0 findings · ✅ All clear** |
+| **06** | `internal-admin` — the segmented BackOffice tier | **Lateral movement**: no route from the attacker; only a pivot through the web RCE reaches the customer datastore | Direct hit blocked; the web RCE pivots in and exfiltrates PII; blue raises CRITICAL `internal-tier-access` |
 
 The clean app is the most important target. Anyone can make a scanner that screams; the
 proof that NjordScan is usable for non-experts is that a well-built app comes back
@@ -121,7 +161,8 @@ simulation-lab/
 │   ├── 02-vulnerable-api/      (runnable · port 3002 · the live DAST target)
 │   ├── 03-supply-chain-attack/ (static · malicious node_modules + lockfile)
 │   ├── 04-keystone-repo/       (build-history.sh → throwaway git repo)
-│   └── 05-clean-app/           (the zero-findings precision control)
+│   ├── 05-clean-app/           (the zero-findings precision control)
+│   └── 06-internal-admin/      (segmented · internal-net only · the pivot target)
 └── reports/                # generated scan output (gitignored)
 ```
 
@@ -129,9 +170,10 @@ simulation-lab/
 
 ```bash
 make build        # build scanner + target images
-make up           # start the targets  (web → :3001, api → :3002)
+make up           # start the targets  (web → :3001, api → :3002, internal → segmented)
 make scan         # static scans of every target via the containerized scanner
 make dast         # LIVE DAST against the running services over the lab network
+make pivot        # lateral-movement demo: pivot through the web RCE to the internal tier
 make keystone     # the temporal "armed a pre-existing chain" demo
 make down         # stop everything
 ```

@@ -387,6 +387,23 @@ def _m_verbose_error(ev: Event) -> Optional[str]:
     return None
 
 
+def _m_internal_tier(ev: Event) -> Optional[str]:
+    """Crown-jewel access on the SEGMENTED internal tier.
+
+    The internal BackOffice service sits on a network that only the web tier can
+    reach, and the application itself only ever calls /account there. So ANY hit
+    on /admin/* is a DMZ->internal pivot landing on the customer datastore —
+    lateral movement + collection, by definition. (A blocked attempt never even
+    produces a log line here, so a match means the pivot LANDED.)
+    """
+    if ev.svc != "internal":
+        return None
+    p = (ev.path or "").rstrip("/")
+    if p.startswith("/admin"):
+        return f"internal {ev.path} reached from {ev.ip or '-'} (DMZ->internal pivot onto the datastore)"
+    return None
+
+
 # ---------------------------------------------------------------------------
 # The rule registry (simple, per-event rules)
 # ---------------------------------------------------------------------------
@@ -454,6 +471,15 @@ RULES: List[Rule] = [
         matcher=_m_verbose_error,
         description="HTTP 500 response — verbose stack traces leak internals "
         "(stack frames, secrets, paths).",
+    ),
+    Rule(
+        name="internal-tier-access",
+        severity="CRITICAL",
+        technique="T1210",  # Exploitation of Remote Services (lateral movement)
+        matcher=_m_internal_tier,
+        description="Access to the segmented internal admin tier's /admin/* "
+        "endpoints — only reachable by pivoting through the DMZ web tier "
+        "(lateral movement landing on the customer datastore).",
     ),
 ]
 

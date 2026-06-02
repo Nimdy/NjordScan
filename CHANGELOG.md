@@ -85,8 +85,11 @@ positives on a clean app, and explains every finding in plain English.
   NjordScan container scans deliberately-vulnerable target services statically *and* live (DAST)
   over the container network, plus a red-team exploit playbook and a blue-team mini-SIEM, so
   `make purple` runs the full loop — NjordScan predicts the attack paths, the red team proves them
-  by exploiting the live targets, and the blue team detects the traffic. (Repo tooling; not part of
-  the pip package.)
+  by exploiting the live targets, and the blue team detects the traffic. A **segmented internal
+  tier** (its own Docker network, no route from the attacker) adds a real **lateral-movement**
+  scenario: the attacker must pivot through the web tier's RCE to reach the customer datastore
+  (`make pivot`), and the blue team flags the landing CRITICAL. (Repo tooling; not part of the
+  pip package.)
 
 ### Changed from 1.x
 - Single-source packaging (`pyproject.toml`); a small, pure-Python core install with **no numpy or

@@ -34,6 +34,13 @@ function logAccess(req, res, u, svc) {
 // Hard-coded creds, same as the .env the real app reads.
 const STRIPE_SECRET_KEY = "lab_demo_key_a3f9c2b18d7e6f5a4b3c2d1e0f9a8b7c";
 
+// The web tier talks to the SEGMENTED internal "BackOffice" service. The shared
+// token is hard-coded right here (the anti-pattern NjordScan flags on a static
+// scan) and the SAME value is also injected into the container environment, so an
+// attacker who lands RCE on this box can loot it from `printenv` too.
+const INTERNAL_API = process.env.INTERNAL_API || "http://internal:9000";
+const INTERNAL_API_TOKEN = "sk_internal_adm_7c4e9f2a1b8d6e3f0a5c9b2d4e6f8a1c";
+
 function send(res, status, body, headers) {
   // Note: no X-Frame-Options, no Content-Security-Policy, no
   // Strict-Transport-Security — set on purpose so the scanner sees them missing.
@@ -83,6 +90,22 @@ const server = http.createServer((req, res) => {
       }
       send(res, 200, "<pre>" + stdout + "</pre>");
     });
+    return;
+  }
+
+  // --- legit internal call: proxy /account to the internal BackOffice tier ---
+  // This is the BENIGN web->internal traffic. It authenticates with the shared
+  // token and only ever hits /account (a per-user lookup) — never /admin/*.
+  if (u.pathname === "/account") {
+    const id = u.searchParams.get("id") || "1";
+    const upstream = INTERNAL_API + "/account?id=" + encodeURIComponent(id);
+    http
+      .get(upstream, { headers: { "X-Internal-Token": INTERNAL_API_TOKEN } }, (r) => {
+        let data = "";
+        r.on("data", (c) => (data += c));
+        r.on("end", () => send(res, 200, data, { "Content-Type": "application/json" }));
+      })
+      .on("error", () => send(res, 502, "<pre>internal tier unavailable</pre>"));
     return;
   }
 

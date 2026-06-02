@@ -1,5 +1,5 @@
 # NjordScan Simulation Lab
-.PHONY: demo build up down scan dast keystone clean logs arm disarm secrets redteam blueteam purple
+.PHONY: demo build up down scan dast keystone clean logs arm disarm secrets redteam blueteam purple pivot
 
 redteam: up ## Red team: actually exploit the live targets over the lab network
 	@sleep 2
@@ -7,6 +7,15 @@ redteam: up ## Red team: actually exploit the live targets over the lab network
 
 blueteam: ## Blue team: detect the attacks in the targets' access logs (one-shot)
 	docker compose run --rm --build blueteam --once
+
+pivot: up ## Lateral movement: the attacker pivots through the web RCE to the SEGMENTED internal tier
+	@sleep 3
+	-docker run --rm -v "$(CURDIR)/logs:/x" alpine sh -c 'rm -f /x/*.log' 2>/dev/null
+	@printf '\n\033[1;31m== RED TEAM — no route to the internal tier, so pivot THROUGH the web RCE ==\033[0m\n'
+	-docker compose run --rm --build redteam
+	@printf '\n\033[1;34m== BLUE TEAM — the pivot landing on the internal datastore, seen in the logs ==\033[0m\n'
+	docker compose run --rm --build blueteam --once
+	@printf '\n\033[1;32mThe internal tier is unreachable from the attacker box — yet the web foothold reached the crown jewels, and the blue team saw it.\033[0m\n'
 
 purple: up ## Full purple loop — NjordScan predicts, red team proves, blue team detects
 	@sleep 3
@@ -34,9 +43,9 @@ demo: ## Build everything, run every scan, capture reports (the full show)
 build: ## Build the scanner + target images
 	docker compose build
 
-up: ## Start the vulnerable target services
-	docker compose up -d web api
-	@echo "web → http://localhost:3001   api → http://localhost:3002"
+up: ## Start the vulnerable target services (incl. the segmented internal tier)
+	docker compose up -d web api internal
+	@echo "web → http://localhost:3001   api → http://localhost:3002   internal → segmented (no host port)"
 
 down: ## Stop and remove the lab
 	docker compose down
@@ -45,6 +54,7 @@ scan: ## Static scan of every target through the containerized scanner
 	docker compose run --rm njordscan scan /lab/targets/01-vulnerable-nextjs
 	docker compose run --rm njordscan scan /lab/targets/03-supply-chain-attack
 	docker compose run --rm njordscan scan /lab/targets/05-clean-app
+	docker compose run --rm njordscan scan /lab/targets/06-internal-admin
 
 dast: up ## Live DAST against the running services over the lab network
 	docker compose run --rm njordscan scan /lab/targets/02-vulnerable-api --url http://api:3002 --allow-private
