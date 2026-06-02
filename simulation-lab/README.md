@@ -218,6 +218,7 @@ on the dashboard. The proxy only *observes* — it never modifies your traffic.
 | **04** | `keystone-repo` (a git history) | **Keystone**: a later "temporarily disable auth" commit by *Bob* completes a SQLi *Alice* planted earlier | The 🔑 Keystone block naming the arming commit + the pre-existing author |
 | **05** | `clean-app` | **Precision** — the credibility anchor: a secure app must score **zero** | **0 findings · ✅ All clear** |
 | **06** | `internal-admin` — the segmented BackOffice tier | **Lateral movement**: no route from the attacker; only a pivot through the web RCE reaches the customer datastore | Direct hit blocked; the web RCE pivots in and exfiltrates PII; blue raises CRITICAL `internal-tier-access` |
+| **07** | `ssrf-gateway` — a URL-preview service | **SSRF precision + a 2nd path to the crown jewels**: `fetch(userURL)` with no allow-list, on both networks → `/fetch?url=http://internal:9000/admin/customers` reaches the datastore with no RCE | NjordScan flags the real SSRF (`server.js:56`) + the hard-coded token, but **not** the same-origin `/health/api` call (the precision fix) |
 
 The clean app is the most important target. Anyone can make a scanner that screams; the
 proof that NjordScan is usable for non-experts is that a well-built app comes back
@@ -242,7 +243,9 @@ simulation-lab/
 │   ├── 03-supply-chain-attack/ (static · malicious node_modules + lockfile)
 │   ├── 04-keystone-repo/       (build-history.sh → throwaway git repo)
 │   ├── 05-clean-app/           (the zero-findings precision control)
-│   └── 06-internal-admin/      (segmented · internal-net only · the pivot target)
+│   ├── 06-internal-admin/      (segmented · internal-net only · the pivot target)
+│   └── 07-ssrf-gateway/        (SSRF → internal tier · a 2nd path to the crown jewels)
+├── c2/                     # attacker C2 / exfiltration collector (the data-egress loop)
 ├── logs/                   # access logs + redteam.jsonl + predict.json (the dashboard's data)
 └── reports/                # generated scan output (gitignored)
 ```

@@ -87,6 +87,7 @@ scan: ## Static scan of every target through the containerized scanner
 	docker compose run --rm njordscan scan /lab/targets/03-supply-chain-attack
 	docker compose run --rm njordscan scan /lab/targets/05-clean-app
 	docker compose run --rm njordscan scan /lab/targets/06-internal-admin
+	docker compose run --rm njordscan scan /lab/targets/07-ssrf-gateway
 
 dast: up ## Live DAST against the running services over the lab network
 	docker compose run --rm njordscan scan /lab/targets/02-vulnerable-api --url http://api:3002 --allow-private

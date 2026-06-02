@@ -117,6 +117,25 @@ services:
       - ./logs:/logs        # writes redteam.jsonl for the dashboard
     profiles: ["purple"]   # run on demand: docker compose run --rm redteam
 
+  # ── target 7: an SSRF gateway — a SECOND path to the crown jewels ────────────
+  # A URL-preview service that fetches a user-supplied URL server-side with no host
+  # allow-list (textbook SSRF). It's on BOTH networks, so the SSRF can reach the
+  # segmented internal tier: GET /fetch?url=http://internal:9000/admin/customers reads
+  # the customer datastore with no RCE and no pivot box — just one unvalidated fetch.
+  ssrf-gateway:
+    build: ./targets/07-ssrf-gateway
+    image: njordlab-ssrf:local
+    container_name: lab-ssrf-gateway
+    environment:
+      PORT: "3003"
+      LOG_DIR: "/logs"
+    ports: ["${SSRF_HOST_PORT:-3003}:3003"]
+    networks: [labnet, internal-net]
+    volumes:
+      - ./logs:/logs
+    profiles: ["extra"]   # not in the default `up`; start with `docker compose up ssrf-gateway`
+    restart: unless-stopped
+
   # ── C2: the attacker's exfiltration collector ────────────────────────────────
   # Closes the data-egress loop: the red team uses its foothold to send a stolen
   # secret OUT to this box, and the blue team flags any contact with it as

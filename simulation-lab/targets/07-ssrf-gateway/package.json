@@ -1,0 +1,8 @@
+{
+  "name": "linkpreview-ssrf-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SSRF gateway target for the NjordScan simulation lab.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" }
+}
