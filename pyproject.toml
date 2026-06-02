@@ -54,6 +54,7 @@ include = ["njordscan*"]
 [tool.setuptools.package-data]
 njordscan = ["data/patterns/*.yaml", "data/rules/*.yaml", "data/advisories/*.json", "data/*.yaml"]
 "njordscan.gui" = ["*.html"]
+"njordscan.monitor" = ["*.html"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"

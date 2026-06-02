@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NjordScan — Operational Dashboard</title>
+<style>
+  :root{
+    --bg:#0b0e14;--panel:#121723;--panel2:#0f1420;--line:#222a3a;--fg:#cdd6f4;--dim:#7b88a8;
+    --red:#ff5370;--blue:#82aaff;--green:#c3e88d;--purple:#c792ea;--yellow:#ffcb6b;--cyan:#89ddff;--mag:#f78fff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:linear-gradient(90deg,#15101f,#101620);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  header h1{font-size:16px;margin:0}.p{color:var(--purple)} .spacer{flex:1}
+  .muted{color:var(--dim)} .empty{color:var(--dim);font-style:italic;padding:10px 0}
+  main{max-width:1180px;margin:0 auto;padding:18px}
+  .add{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .modes{display:flex;gap:5px}
+  .mode{padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);cursor:pointer;color:var(--dim);font-weight:700;font-size:12px}
+  .mode.on{color:var(--fg);border-color:var(--purple);background:#171225}
+  input,select{padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#0c111b;color:var(--fg);font:inherit}
+  input#target{flex:1;min-width:240px}
+  button{padding:9px 16px;border:0;border-radius:8px;font:inherit;font-weight:700;cursor:pointer}
+  button.go{background:var(--purple);color:#0b0e14}
+  button.sm{padding:5px 10px;font-size:12px;background:#1a2030;color:var(--fg);border:1px solid var(--line)}
+  button.danger{color:var(--red)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;transition:.12s}
+  .card:hover{border-color:var(--blue)}
+  .card.crit{border-color:#5a2240}
+  .card h3{margin:0 0 2px;font-size:15px}
+  .card .tgt{color:var(--dim);font-size:12px;overflow-wrap:anywhere;margin-bottom:10px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .chip{padding:3px 9px;border-radius:7px;font-weight:800;font-size:12px;border:1px solid var(--line)}
+  .chip.critical{color:var(--mag)}.chip.high{color:var(--red)}.chip.medium{color:var(--yellow)}.chip.low{color:var(--cyan)}.chip.clean{color:var(--green)}
+  .spark{display:flex;align-items:flex-end;gap:2px;height:34px;margin-bottom:10px}
+  .spark .b{flex:1;background:#26304a;border-radius:2px 2px 0 0;min-height:2px}
+  .spark .b.up{background:var(--red)} .spark .b.down{background:var(--green)}
+  .row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+  .diff .n{color:var(--red)} .diff .f{color:var(--green)}
+  .scanning{color:var(--purple)}
+  .alerts{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;overflow:hidden}
+  .alerts .hd{padding:10px 14px;border-bottom:1px solid var(--line);font-weight:700;background:var(--panel2)}
+  .al{display:flex;gap:9px;align-items:baseline;padding:7px 14px;border-bottom:1px solid #1a2030;font-size:13px}
+  .al:last-child{border-bottom:0}
+  .sev{font-weight:800;font-size:10px;min-width:62px}
+  .sev.critical{color:var(--mag)}.sev.high{color:var(--red)}
+  .al .when{margin-left:auto;color:var(--dim);font-size:11px;white-space:nowrap}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--purple);border-radius:50%;animation:s .7s linear infinite;vertical-align:middle}
+  @keyframes s{to{transform:rotate(360deg)}}
+  /* detail modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:20;overflow:auto}
+  .modal.on{display:flex}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:840px;width:100%;padding:18px}
+  .sheet h2{margin:0 0 4px}
+  .find{border-bottom:1px solid var(--line);padding:7px 0;font-size:13px}
+  .pill{font-size:10px;padding:2px 7px;border-radius:999px;font-weight:800;margin-right:6px}
+  .pill.critical{background:rgba(247,143,255,.15);color:var(--mag)}.pill.high{background:rgba(255,83,112,.15);color:var(--red)}
+  .pill.medium{background:rgba(255,203,107,.15);color:var(--yellow)}.pill.low{background:rgba(137,221,255,.15);color:var(--cyan)}.pill.info{background:#1a2030;color:var(--dim)}
+  .floc{color:var(--dim);font-size:12px}
+  .new{color:var(--red);font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <h1>🛡️ NjordScan — <span class="p">Operational Dashboard</span></h1>
+  <span class="muted" id="watching"></span>
+  <div class="spacer"></div>
+  <span class="muted" id="conn">connecting…</span>
+</header>
+
+<main>
+  <div class="add">
+    <div class="modes">
+      <div class="mode on" data-mode="path">📁 Folder</div>
+      <div class="mode" data-mode="git">🐙 Git</div>
+      <div class="mode" data-mode="url">🌐 URL</div>
+    </div>
+    <input type="text" id="target" placeholder="/path/to/project — added projects are re-scanned on a schedule" />
+    <input type="text" id="name" placeholder="name (optional)" style="max-width:160px" />
+    <select id="interval">
+      <option value="60">hourly</option>
+      <option value="1440" selected>daily</option>
+      <option value="10080">weekly</option>
+    </select>
+    <button class="go" id="add">+ Watch</button>
+  </div>
+
+  <div class="alerts">
+    <div class="hd">🚨 Alerts <span class="muted" id="alertCount"></span></div>
+    <div id="alerts"></div>
+  </div>
+
+  <div id="projects" class="grid"></div>
+</main>
+
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+
+<script>
+const $=(id)=>document.getElementById(id);
+const esc=(s)=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SEV=["critical","high","medium","low"];
+const ago=(iso)=>{ if(!iso)return"never"; const d=(Date.now()-new Date(iso))/1000; if(d<90)return"just now"; if(d<5400)return Math.round(d/60)+"m ago"; if(d<129600)return Math.round(d/3600)+"h ago"; return Math.round(d/86400)+"d ago"; };
+let MODE="path";
+const PLACE={path:"/path/to/project — re-scanned on a schedule",git:"https://github.com/you/repo.git",url:"https://staging.yourapp.com"};
+
+document.querySelectorAll(".mode").forEach(m=>m.onclick=()=>{document.querySelectorAll(".mode").forEach(x=>x.classList.remove("on"));m.classList.add("on");MODE=m.dataset.mode;$("target").placeholder=PLACE[MODE];});
+$("add").onclick=add; $("target").addEventListener("keydown",e=>{if(e.key==="Enter")add();});
+$("modal").onclick=(e)=>{if(e.target===$("modal"))$("modal").classList.remove("on");};
+
+async function add(){
+  const target=$("target").value.trim(); if(!target)return;
+  await fetch("/api/add",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({target,mode:MODE,name:$("name").value.trim(),interval_minutes:+$("interval").value})});
+  $("target").value="";$("name").value=""; tick();
+}
+async function scanNow(id,ev){ ev.stopPropagation(); await fetch("/api/scan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})}); tick(); }
+async function remove(id,ev){ ev.stopPropagation(); if(!confirm("Stop watching this project?"))return; await fetch("/api/remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})}); tick(); }
+
+function spark(trend){
+  if(!trend||!trend.length) return '<div class="spark"></div>';
+  const max=Math.max(1,...trend.map(t=>t.total));
+  let prev=null;
+  return '<div class="spark">'+trend.map(t=>{
+    const cls=prev==null?"":t.total>prev?"up":t.total<prev?"down":""; prev=t.total;
+    return `<div class="b ${cls}" style="height:${Math.max(6,Math.round(t.total/max*34))}px" title="${esc(t.ts)}: ${t.total}"></div>`;
+  }).join("")+'</div>';
+}
+
+function renderProjects(projects){
+  if(!projects.length){ $("projects").innerHTML='<div class="empty">No projects yet. Add a folder, git URL, or live URL above — NjordScan re-scans it on a schedule and alerts you when a new critical appears.</div>'; return; }
+  $("projects").innerHTML=projects.map(p=>{
+    const c=p.counts||{};
+    const chips = SEV.filter(k=>c[k]).map(k=>`<span class="chip ${k}">${k[0].toUpperCase()} ${c[k]}</span>`).join("") || '<span class="chip clean">✓ clean</span>';
+    const diff = p.diff ? `<span class="diff">${p.diff.new?`<span class="n">+${p.diff.new} new</span> `:""}${p.diff.fixed?`<span class="f">−${p.diff.fixed} fixed</span>`:""}</span>` : "";
+    const crit = (c.critical||0)>0 ? "crit":"";
+    const status = p.scanning ? '<span class="scanning"><span class="spin"></span> scanning…</span>' : `${esc(p.last_status||"")} · ${ago(p.last_scan)}`;
+    return `<div class="card ${crit}" onclick="openDetail('${p.id}')">
+      <h3>${esc(p.name)}</h3>
+      <div class="tgt">${({path:"📁",git:"🐙",url:"🌐"})[p.mode]||""} ${esc(p.target)}</div>
+      <div class="chips">${chips}</div>
+      ${spark(p.trend)}
+      <div class="row"><span>${status}</span><span class="spacer" style="flex:1"></span>${diff}</div>
+      <div class="row" style="margin-top:8px">
+        <button class="sm" onclick="scanNow('${p.id}',event)">Scan now</button>
+        <button class="sm danger" onclick="remove('${p.id}',event)">Remove</button>
+        <span class="muted" style="margin-left:auto">every ${p.interval_minutes>=1440?(p.interval_minutes/1440)+"d":(p.interval_minutes/60)+"h"} · ${p.scans} scans</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderAlerts(alerts){
+  $("alertCount").textContent = alerts.length?`(${alerts.length})`:"";
+  $("alerts").innerHTML = alerts.length ? alerts.map(a=>`
+    <div class="al"><span class="sev ${a.severity}">${(a.severity||"").toUpperCase()}</span>
+      <div><b>${esc(a.project)}</b> — ${esc(a.title||a.rule_id)} <span class="floc">${esc(a.location)}</span>
+        ${a.kind==="new-finding"?'<span class="new"> NEW</span>':''}</div>
+      <span class="when">${ago(a.ts)}</span></div>`).join("")
+    : '<div class="empty" style="padding:10px 14px">No alerts yet. You\'ll be notified here when a new critical or high appears in a watched project.</div>';
+}
+
+async function openDetail(id){
+  $("modal").classList.add("on"); $("sheet").innerHTML='<div class="empty">loading…</div>';
+  const d=await (await fetch("/api/project?id="+id)).json();
+  if(d.error){ $("sheet").innerHTML=`<div class="empty">${esc(d.error)}</div>`; return; }
+  const p=d.project, finds=d.findings||[];
+  const newFps=new Set((d.diff&&d.diff.new||[]).map(f=>f.fingerprint));
+  $("sheet").innerHTML=`<h2>${esc(p.name)}</h2><div class="floc">${esc(p.target)} · ${d.timeline.length} scans</div>
+    <div style="margin:12px 0" class="muted">${finds.length} current findings${d.diff?` · ${d.diff.new.length} new / ${d.diff.fixed.length} fixed since last scan`:""}</div>
+    ${finds.map(f=>`<div class="find"><span class="pill ${f.severity}">${(f.severity||"").toUpperCase()}</span>
+      ${esc(f.title||f.rule_id)} ${newFps.has(f.fingerprint)?'<span class="new">NEW</span>':''}
+      <span class="floc">${esc((f.file||"")+(f.line?":"+f.line:""))}</span></div>`).join("")||'<div class="empty">no findings 🎉</div>'}`;
+}
+
+async function tick(){
+  try{
+    const s=await (await fetch("/api/state",{cache:"no-store"})).json();
+    $("conn").textContent="live"; $("watching").textContent=`watching ${s.projects.length} project(s)`;
+    renderAlerts(s.alerts||[]); renderProjects(s.projects||[]);
+  }catch(e){ $("conn").textContent="disconnected"; }
+}
+tick(); setInterval(tick,3000);
+</script>
+</body>
+</html>

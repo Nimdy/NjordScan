@@ -693,6 +693,22 @@ def gui(port: int, host: str, no_open: bool) -> None:
 
 
 @cli.command()
+@click.option("--port", default=8770, show_default=True, help="Port to serve the dashboard on.")
+@click.option("--host", default="127.0.0.1", show_default=True, help="Bind address (localhost by default).")
+@click.option("--no-open", "no_open", is_flag=True, help="Don't auto-open the browser.")
+def monitor(port: int, host: str, no_open: bool) -> None:
+    """📡 Operational dashboard — watch many projects, scheduled re-scans, alerts.
+
+    Register folders / git URLs / live URLs; NjordScan re-scans each on a schedule,
+    tracks findings appear/fixed/regress over time, and alerts when a new critical
+    shows up. Local & private — state lives under ~/.njordscan/monitor, no account.
+    """
+    from .monitor.server import run
+
+    run(host=host, port=port, open_browser=not no_open)
+
+
+@cli.command()
 def version() -> None:
     """📋 Show version information."""
     console.print(f"NjordScan [bold cyan]v{__version__}[/bold cyan]")

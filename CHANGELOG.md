@@ -6,6 +6,13 @@ All notable changes to NjordScan are documented here. This project follows
 ## 2.0.0b2 — beta
 
 ### Added
+- **`njordscan monitor` — a local-first operational security dashboard.** Register multiple
+  projects (folders, git URLs, live URLs); NjordScan **re-scans each on a schedule** (hourly /
+  daily / weekly), tracks findings **appear / get fixed / regress** over time (a trend sparkline per
+  project), and **alerts when a new critical/high shows up** — diffing each scan against the last so
+  it never re-alerts on issues you've already seen. Private and local: no account, no cloud, all
+  state under `~/.njordscan/monitor`. Drill into any project for its scan timeline + new/fixed diff.
+  An optional `docker/monitor.compose.yml` runs it always-on.
 - **`njordscan gui`** — a local web **scan studio**. Point it at a local folder, a git URL
   (shallow-cloned then deleted), or a live URL (DAST) and explore the findings + attack paths in
   the browser: filter by severity, expand a finding for the plain-English why/how-to-fix, walk an

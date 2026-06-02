@@ -286,6 +286,24 @@ It binds to **localhost only** (never the network), runs scans **in-process** (N
 *reads* a target — it never executes it), and live-URL scans use the same benign, SSRF-guarded
 probes as `--url`. Scan anything you want to assess; only run it against apps you're authorized to.
 
+## 📡 Watch your projects over time (`njordscan monitor`)
+
+A scanner you run once tells you today's risk. **`njordscan monitor`** watches your projects'
+security posture **over time** — local-first, private, no account:
+
+```bash
+njordscan monitor      # opens http://127.0.0.1:8770
+```
+
+Register multiple **projects** (folders, git URLs, live URLs); NjordScan **re-scans each on a
+schedule** (hourly / daily / weekly), and the dashboard shows — per project — its current posture, a
+**trend sparkline** of findings over time, and a **+new / −fixed** diff since the last scan. When a
+**new critical or high** appears it lands in the **alert feed**, diffed against the previous scan so
+you're never re-alerted on issues you've already seen. Drill into any project for its scan timeline.
+
+All state lives under `~/.njordscan/monitor` — no cloud, no account. Want it always-on?
+`docker compose -f docker/monitor.compose.yml up -d`.
+
 ## Fast PR feedback (`--diff`)
 
 ```bash
@@ -502,6 +520,7 @@ Exit codes: `0` = clean (or below `--fail-on`), `1` = findings met the gate, `2`
 | `njordscan doctor` | Show what's installed and working |
 | `njordscan mcp` | Run as an MCP server for AI coding assistants |
 | `njordscan gui` | Launch the local web scan studio (folder / git URL / live URL) |
+| `njordscan monitor` | Operational dashboard — watch many projects, scheduled re-scans, alerts |
 | `njordscan version` | Show the version |
 
 Key `scan` flags: `--fix` / `--ai-fix` / `--dry-run`, `--reachable-only`, `--fail-on`, `--min-severity`,
