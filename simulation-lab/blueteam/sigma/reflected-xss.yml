@@ -1,0 +1,31 @@
+title: Reflected Xss
+id: d119d9cc-1794-501f-ac9a-82d987caf01a
+status: experimental
+description: Reflected/stored XSS payload markers in path, query or body (<script, onerror=, javascript:, %3Cscript, img/svg/iframe handlers).
+references:
+  - https://github.com/Nimdy/NjordScan
+author: NjordScan Simulation Lab
+date: 2026/06/02
+logsource:
+  product: njordscan-lab
+  service: access-log
+detection:
+  keywords:
+    - '<script'
+    - 'onerror='
+    - 'onload='
+    - 'javascript:'
+    - '<svg'
+    - '<iframe'
+    - 'document.cookie'
+    - 'alert('
+  condition: keywords
+fields:
+  - svc
+  - ip
+  - method
+  - path
+  - query
+level: high
+tags:
+  - attack.t1059.007

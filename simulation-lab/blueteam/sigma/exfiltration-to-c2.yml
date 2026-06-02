@@ -1,0 +1,24 @@
+title: Exfiltration To C2
+id: 89318d9d-bd54-54c8-8221-ce174cad9a3e
+status: experimental
+description: A request reached the attacker C2 collector — data leaving the org to known-bad attacker infrastructure (the data egress NjordScan predicted, proven live).
+references:
+  - https://github.com/Nimdy/NjordScan
+author: NjordScan Simulation Lab
+date: 2026/06/02
+logsource:
+  product: njordscan-lab
+  service: access-log
+detection:
+  sel:
+    svc: 'c2'
+  condition: sel
+fields:
+  - svc
+  - ip
+  - method
+  - path
+  - query
+level: critical
+tags:
+  - attack.t1041

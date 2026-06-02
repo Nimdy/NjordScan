@@ -254,6 +254,7 @@ make build        # build scanner + target images
 make up           # start the targets + dashboard  (web → :3001, api → :3002, internal → segmented)
 make dashboard    # build + open the purple web GUI  (→ http://localhost:8088)
 make byo TARGET_URL=https://staging.yourapp.com   # run the purple loop on YOUR own app
+make sigma        # export the blue-team detections as portable Sigma rules for real SIEMs
 make scan         # static scans of every target via the containerized scanner
 make dast         # LIVE DAST against the running services over the lab network
 make pivot        # lateral-movement demo: pivot through the web RCE to the internal tier

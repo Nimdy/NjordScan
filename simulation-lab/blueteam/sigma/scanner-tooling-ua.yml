@@ -1,0 +1,34 @@
+title: Scanner Tooling Ua
+id: 954fbfe9-b940-5133-be83-1a7642d167a5
+status: experimental
+description: Dedicated offensive/scanner User-Agent (nmap, nikto, sqlmap, njordscan, dirb, gobuster, nuclei, ffuf, ZAP, ...).
+references:
+  - https://github.com/Nimdy/NjordScan
+author: NjordScan Simulation Lab
+date: 2026/06/02
+logsource:
+  product: njordscan-lab
+  service: access-log
+detection:
+  sel:
+    ua|contains:
+      - 'nmap'
+      - 'nikto'
+      - 'sqlmap'
+      - 'njordscan'
+      - 'gobuster'
+      - 'nuclei'
+      - 'ffuf'
+      - 'wpscan'
+      - 'masscan'
+      - 'hydra'
+  condition: sel
+fields:
+  - svc
+  - ip
+  - method
+  - path
+  - query
+level: medium
+tags:
+  - attack.t1595.002

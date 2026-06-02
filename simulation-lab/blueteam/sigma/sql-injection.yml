@@ -1,0 +1,31 @@
+title: Sql Injection
+id: 9af97757-b631-50a1-812e-4837f8774f71
+status: experimental
+description: SQL injection syntax (' OR, UNION SELECT, --, ; DROP, sleep()/benchmark(), OR 1=1, information_schema).
+references:
+  - https://github.com/Nimdy/NjordScan
+author: NjordScan Simulation Lab
+date: 2026/06/02
+logsource:
+  product: njordscan-lab
+  service: access-log
+detection:
+  keywords:
+    - ' OR 1=1'
+    - "' OR '"
+    - 'UNION SELECT'
+    - 'information_schema'
+    - 'sleep('
+    - 'benchmark('
+    - '; DROP TABLE'
+    - 'xp_cmdshell'
+  condition: keywords
+fields:
+  - svc
+  - ip
+  - method
+  - path
+  - query
+level: high
+tags:
+  - attack.t1190

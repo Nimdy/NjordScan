@@ -1,0 +1,30 @@
+title: Open Redirect
+id: 763d2dc5-431b-521e-9045-761d6b4ced83
+status: experimental
+description: Redirect parameter (url=, next=, /go?url=) pointing at an external host.
+references:
+  - https://github.com/Nimdy/NjordScan
+author: NjordScan Simulation Lab
+date: 2026/06/02
+logsource:
+  product: njordscan-lab
+  service: access-log
+detection:
+  sel:
+    query|contains:
+      - 'url=http'
+      - 'next=http'
+      - 'redirect=http'
+      - 'return=http'
+      - 'dest=http'
+      - 'returnTo=http'
+  condition: sel
+fields:
+  - svc
+  - ip
+  - method
+  - path
+  - query
+level: medium
+tags:
+  - attack.t1190

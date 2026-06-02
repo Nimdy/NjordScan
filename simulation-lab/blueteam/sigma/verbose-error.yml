@@ -1,0 +1,24 @@
+title: Verbose Error
+id: 26ad99e2-1b7a-5ce5-9ca1-a0cae55715c1
+status: experimental
+description: HTTP 500 response — verbose stack traces leak internals (stack frames, secrets, paths).
+references:
+  - https://github.com/Nimdy/NjordScan
+author: NjordScan Simulation Lab
+date: 2026/06/02
+logsource:
+  product: njordscan-lab
+  service: access-log
+detection:
+  sel:
+    status: 500
+  condition: sel
+fields:
+  - svc
+  - ip
+  - method
+  - path
+  - query
+level: low
+tags:
+  - attack.t1592

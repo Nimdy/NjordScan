@@ -1,0 +1,28 @@
+title: Path Traversal
+id: 712d8bc8-1627-58c7-ba26-219db2c49829
+status: experimental
+description: Directory traversal sequences (../, ..\, %2e%2e, ..%2f, /etc/passwd).
+references:
+  - https://github.com/Nimdy/NjordScan
+author: NjordScan Simulation Lab
+date: 2026/06/02
+logsource:
+  product: njordscan-lab
+  service: access-log
+detection:
+  keywords:
+    - '../'
+    - '..\\'
+    - '/etc/passwd'
+    - '%2e%2e'
+    - '..%2f'
+  condition: keywords
+fields:
+  - svc
+  - ip
+  - method
+  - path
+  - query
+level: high
+tags:
+  - attack.t1083

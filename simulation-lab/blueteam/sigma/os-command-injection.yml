@@ -1,0 +1,32 @@
+title: Os Command Injection
+id: 4764588a-7b82-5fb2-aad0-452f04cb0edb
+status: experimental
+description: Shell metacharacters / command chaining (;id, | cmd, $(...), `...`, && cmd, %3Bid encoded) — esp. against /ping.
+references:
+  - https://github.com/Nimdy/NjordScan
+author: NjordScan Simulation Lab
+date: 2026/06/02
+logsource:
+  product: njordscan-lab
+  service: access-log
+detection:
+  keywords:
+    - ';id'
+    - ';cat'
+    - ';whoami'
+    - ';uname'
+    - '$('
+    - '|sh'
+    - '|bash'
+    - ';wget'
+    - ';curl'
+  condition: keywords
+fields:
+  - svc
+  - ip
+  - method
+  - path
+  - query
+level: critical
+tags:
+  - attack.t1059.004

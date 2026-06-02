@@ -1,5 +1,5 @@
 # NjordScan Simulation Lab
-.PHONY: demo build up down scan dast keystone clean logs arm disarm secrets redteam blueteam purple pivot dashboard predict byo
+.PHONY: demo build up down scan dast keystone clean logs arm disarm secrets redteam blueteam purple pivot dashboard predict byo sigma
 
 DASH_PORT := $(or $(DASH_HOST_PORT),8088)
 
@@ -9,6 +9,9 @@ redteam: up ## Red team: actually exploit the live targets over the lab network
 
 blueteam: ## Blue team: detect the attacks in the targets' access logs (one-shot)
 	docker compose run --rm --build blueteam --once
+
+sigma: ## Export the blue-team detections as portable Sigma rules (blueteam/sigma/*.yml)
+	python3 blueteam/gen-sigma.py
 
 pivot: up ## Lateral movement: the attacker pivots through the web RCE to the SEGMENTED internal tier
 	@sleep 3

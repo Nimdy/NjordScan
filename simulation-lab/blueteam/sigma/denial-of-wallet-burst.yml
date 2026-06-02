@@ -1,0 +1,25 @@
+title: Denial Of Wallet Burst
+id: 72826576-8886-59af-8958-98810836c550
+status: experimental
+description: Request burst from one IP within a short window — flags denial-of-wallet against the unauthenticated /api/chat AI endpoint, and credential brute force against /login.
+references:
+  - https://github.com/Nimdy/NjordScan
+author: NjordScan Simulation Lab
+date: 2026/06/02
+logsource:
+  product: njordscan-lab
+  service: access-log
+detection:
+  sel:
+    path: '/api/chat'
+  timeframe: 10s
+  condition: sel | count() by ip > 5
+fields:
+  - svc
+  - ip
+  - method
+  - path
+  - query
+level: high
+tags:
+  - attack.t1499.003

@@ -1,0 +1,29 @@
+title: Automated Client Ua
+id: 6007bd40-0a16-5d02-8eba-8f95259d22b9
+status: experimental
+description: Generic automated HTTP client (curl/wget/python-requests/...). Low signal — noted once per source so it never buries the real alerts.
+references:
+  - https://github.com/Nimdy/NjordScan
+author: NjordScan Simulation Lab
+date: 2026/06/02
+logsource:
+  product: njordscan-lab
+  service: access-log
+detection:
+  sel:
+    ua|contains:
+      - 'curl/'
+      - 'wget/'
+      - 'python-requests'
+      - 'go-http-client'
+      - 'httpie'
+  condition: sel
+fields:
+  - svc
+  - ip
+  - method
+  - path
+  - query
+level: informational
+tags:
+  - attack.t1595.002

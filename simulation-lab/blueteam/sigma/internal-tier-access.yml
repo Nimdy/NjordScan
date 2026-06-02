@@ -1,0 +1,25 @@
+title: Internal Tier Access
+id: e09b375b-cf46-5854-a7b2-025c848fc362
+status: experimental
+description: Access to the segmented internal admin tier's /admin/* endpoints — only reachable by pivoting through the DMZ web tier (lateral movement landing on the customer datastore).
+references:
+  - https://github.com/Nimdy/NjordScan
+author: NjordScan Simulation Lab
+date: 2026/06/02
+logsource:
+  product: njordscan-lab
+  service: access-log
+detection:
+  sel:
+    svc: 'internal'
+    path|startswith: '/admin'
+  condition: sel
+fields:
+  - svc
+  - ip
+  - method
+  - path
+  - query
+level: critical
+tags:
+  - attack.t1210
