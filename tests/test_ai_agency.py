@@ -51,6 +51,30 @@ async def test_interprocedural_recall():
     assert hit, "interprocedural (helper-hidden) sink was missed"
 
 
+async def test_crossfile_interprocedural_recall():
+    """A tool whose dangerous sink lives in an imported helper (another file) is caught."""
+    result = await scan(CASES / "vulnerable", only_detectors=["ai_agency"])
+    hit = [f for f in result.findings
+           if "crossfile-tool" in f.file and f.rule_id == "ai.excessive-agency-command"]
+    assert hit, "cross-file (imported helper) sink was missed"
+
+
+async def test_multihop_chain_fires_on_injectable_armed_call():
+    """A model call fed untrusted content AND wired to a dangerous tool = injection->RCE chain."""
+    ids = await _ids(CASES / "vulnerable")
+    assert "ai.prompt-injection-to-agency" in ids
+
+
+async def test_chain_requires_both_untrusted_prompt_and_dangerous_tool():
+    """The chain must NOT fire on a dangerous tool with a fixed prompt, nor on an untrusted
+    prompt with only safe tools — only when BOTH halves are present."""
+    result = await scan(CASES / "chain-negatives", only_detectors=["ai_agency"])
+    ids = rule_ids(result.findings)
+    assert "ai.prompt-injection-to-agency" not in ids, "chain fired without the full combination"
+    # the eval tool on its own is still (correctly) flagged as excessive agency
+    assert "ai.excessive-agency-code" in ids
+
+
 async def test_clean_app_has_no_agency_findings(clean_app):
     """A normal app with no AI tools must produce zero agency findings."""
     result = await scan(clean_app, only_detectors=["ai_agency"])

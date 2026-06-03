@@ -23,7 +23,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from pathlib import Path
+import re
+from pathlib import Path, PurePosixPath
 from typing import Dict, List, Optional, Set, Tuple
 
 from ..core.finding import Finding, TaintStep
@@ -348,6 +349,256 @@ def _find_llm_output_vars(scope) -> Set[str]:
 
 
 # --------------------------------------------------------------------------- #
+#  Cross-file: import resolution + cheap content gates
+# --------------------------------------------------------------------------- #
+
+_SINK_HINTS = ("exec", "spawn", "fork", "eval", "Function", "writeFile", "appendFile",
+               "unlink", "rmSync", "rmdir", "mkdir", "$queryRawUnsafe", "$executeRawUnsafe",
+               "fetch", "axios", "http.get", "https.get", "got", "ky", "outputFile")
+_AI_HINTS = ("execute", "tool(", "generateText", "streamText", "generateObject",
+             "streamObject", ".create(", "func:", "handler:")
+
+
+def _has_sink(text: str) -> bool:
+    return any(h in text for h in _SINK_HINTS)
+
+
+def _has_ai(text: str) -> bool:
+    return any(h in text for h in _AI_HINTS)
+
+
+_NAMED_IMPORT = re.compile(r"""import\s*\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]""")
+_CODE_EXTS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
+
+
+def _named_imports(text: str) -> Dict[str, Tuple[str, str]]:
+    """{local_name: (module_spec, original_export)} for local (relative) imports only."""
+    out: Dict[str, Tuple[str, str]] = {}
+    for m in _NAMED_IMPORT.finditer(text):
+        spec = m.group(2)
+        if not spec.startswith("."):
+            continue
+        for part in m.group(1).split(","):
+            part = part.strip()
+            if not part or part.startswith("type "):
+                continue
+            bits = re.split(r"\s+as\s+", part)
+            orig, local = bits[0].strip(), bits[-1].strip()
+            if re.fullmatch(r"[A-Za-z0-9_$]+", local) and re.fullmatch(r"[A-Za-z0-9_$]+", orig):
+                out[local] = (spec, orig)
+    return out
+
+
+def _norm_parts(parts) -> List[str]:
+    out: List[str] = []
+    for part in parts:
+        if part == "..":
+            if out:
+                out.pop()
+        elif part not in (".", ""):
+            out.append(part)
+    return out
+
+
+def _resolve_import(importer_rel: str, spec: str, file_rels: Set[str]) -> Optional[str]:
+    base = PurePosixPath(importer_rel).parent / spec
+    base = PurePosixPath(*_norm_parts(base.parts))
+    s = base.as_posix()
+    if s in file_rels:
+        return s
+    for ext in _CODE_EXTS:
+        if s + ext in file_rels:
+            return s + ext
+    for ext in _CODE_EXTS:
+        cand = (base / ("index" + ext)).as_posix()
+        if cand in file_rels:
+            return cand
+    return None
+
+
+# --------------------------------------------------------------------------- #
+#  Multi-hop chain: untrusted content → model prompt → dangerous tool → sink
+# --------------------------------------------------------------------------- #
+
+_ACTION = {
+    "command-exec": "run shell commands",
+    "code-eval": "execute arbitrary code",
+    "fs-write": "read/write/delete files",
+    "sql-raw": "run raw SQL",
+    "ssrf-fetch": "make the server fetch arbitrary URLs",
+}
+
+# Sources of untrusted EXTERNAL content that, if fed into a prompt, enable indirect
+# prompt injection: a fetched page, a file, a RAG retrieval, a request, a tool result.
+_UNTRUSTED_CALLS = {"fetch", "readFile", "readFileSync", "similaritySearch",
+                    "getRelevantDocuments", "maxMarginalRelevanceSearch", "retrieve",
+                    "scrape", "crawl", "load", "loadDocuments"}
+_UNTRUSTED_PROPS = {"json", "text"}            # response.json() / response.text()
+_REQ_ROOTS = {"req", "request"}
+_REQ_PROPS = {"body", "query", "params", "nextUrl", "json", "formData"}
+_REQ_BARE = {"searchParams", "params", "body", "formData"}
+_LLM_PROMPT_KEYS = ("prompt", "system", "input")
+_TOOLS_KEYS = ("tools", "toolset", "experimental_activeTools")
+
+
+def _is_untrusted_expr(node) -> bool:
+    if node is None:
+        return False
+    t = node.type
+    if t == "await_expression" and node.children:
+        return _is_untrusted_expr(node.children[-1])
+    if t in ("member_expression", "subscript_expression"):
+        parts = _flatten_member(node)
+        if not parts:
+            return False
+        if parts[0] in _REQ_BARE:
+            return True
+        return any(parts[i] in _REQ_ROOTS and parts[i + 1] in _REQ_PROPS for i in range(len(parts) - 1))
+    if t == "call_expression":
+        f = node.child_by_field_name("function")
+        nm = ""
+        if f is not None and f.type == "identifier":
+            nm = _text(f)
+        elif f is not None and f.type == "member_expression":
+            p = _flatten_member(f)
+            nm = p[-1] if p else ""
+        return nm in _UNTRUSTED_CALLS or nm in _UNTRUSTED_PROPS
+    return False
+
+
+def _collect_untrusted(scope) -> Set[str]:
+    u: Set[str] = set()
+    for _ in range(3):
+        for n in _walk(scope):
+            if n.type != "variable_declarator":
+                continue
+            name = n.child_by_field_name("name")
+            val = n.child_by_field_name("value")
+            if name is None or val is None:
+                continue
+            if _is_untrusted_expr(val) or _expr_tainted(val, u):
+                if name.type == "identifier":
+                    u.add(_text(name))
+                elif name.type == "object_pattern":
+                    u.update(_obj_pat_names(name))
+    return u
+
+
+def _obj_field(obj, *keys):
+    if obj is None or obj.type != "object":
+        return None
+    for c in obj.children:
+        if c.type == "pair":
+            k = c.child_by_field_name("key")
+            if k is not None and _text(k) in keys:
+                return c.child_by_field_name("value")
+        elif c.type == "shorthand_property_identifier" and _text(c) in keys:
+            return c
+    return None
+
+
+def _execute_of_tool_value(val):
+    """The execute/func node of a `tool({...})` call or `tool(fn, ...)` or tool object."""
+    obj = None
+    if val.type == "call_expression":
+        f = val.child_by_field_name("function")
+        if f is not None and f.type == "identifier" and _text(f) == "tool":
+            args = _arg_list(val.child_by_field_name("arguments"))
+            if args and args[0].type in ("arrow_function", "function", "function_expression"):
+                return args[0]
+            obj = next((a for a in args if a.type == "object"), None)
+    elif val.type == "object":
+        obj = val
+    if obj is not None:
+        for c in obj.children:
+            if c.type == "pair":
+                k = c.child_by_field_name("key")
+                v = c.child_by_field_name("value")
+                if (k is not None and _text(k) in ("execute", "func", "handler")
+                        and v is not None and v.type in ("arrow_function", "function", "function_expression")):
+                    return v
+    return None
+
+
+def _dangerous_tool_names(root, summaries) -> Dict[str, str]:
+    """{tool_variable_name: sink_class} for tools whose execute reaches a dangerous sink."""
+    names: Dict[str, str] = {}
+    for n in _walk(root):
+        if n.type != "variable_declarator":
+            continue
+        nm = n.child_by_field_name("name")
+        val = n.child_by_field_name("value")
+        if nm is None or nm.type != "identifier" or val is None:
+            continue
+        ex = _execute_of_tool_value(val)
+        if ex is None:
+            continue
+        body = ex.child_by_field_name("body")
+        if body is None:
+            continue
+        hits = _taint_body(body, set(_param_names(ex)), summaries)
+        if hits:
+            names[_text(nm)] = hits[0][0]
+    return names
+
+
+def _iter_llm_calls(root):
+    for n in _walk(root):
+        if n.type != "call_expression":
+            continue
+        f = n.child_by_field_name("function")
+        nm = ""
+        if f is not None and f.type == "identifier":
+            nm = _text(f)
+        elif f is not None and f.type == "member_expression":
+            p = _flatten_member(f)
+            nm = p[-1] if p else ""
+        if nm in _LLM_CALLS or nm == "create":
+            obj = next((a for a in _arg_list(n.child_by_field_name("arguments")) if a.type == "object"), None)
+            if obj is not None:
+                yield n, obj
+
+
+def _tools_field_dangerous(arg_obj, names: Dict[str, str]):
+    tv = _obj_field(arg_obj, *_TOOLS_KEYS)
+    if tv is None:
+        return None
+    candidates: List[str] = []
+    if tv.type == "object":
+        for c in tv.children:
+            if c.type == "shorthand_property_identifier":
+                candidates.append(_text(c))
+            elif c.type == "pair":
+                k = c.child_by_field_name("key")
+                v = c.child_by_field_name("value")
+                if k is not None:
+                    candidates.append(_text(k))
+                if v is not None and v.type == "identifier":
+                    candidates.append(_text(v))
+    elif tv.type == "identifier":
+        candidates.append(_text(tv))
+    for nm in candidates:
+        if nm in names:
+            return nm, names[nm]
+    return None
+
+
+def _prompt_untrusted(arg_obj, untrusted: Set[str]) -> bool:
+    for key in _LLM_PROMPT_KEYS:
+        v = _obj_field(arg_obj, key)
+        if v is not None and (_is_untrusted_expr(v) or _expr_tainted(v, untrusted)):
+            return True
+    mv = _obj_field(arg_obj, "messages")
+    if mv is not None:
+        for n in _walk(mv):
+            if _is_untrusted_expr(n):
+                return True
+            if n.type == "identifier" and _text(n) in untrusted:
+                return True
+    return False
+
+
+# --------------------------------------------------------------------------- #
 #  Detector
 # --------------------------------------------------------------------------- #
 
@@ -376,35 +627,71 @@ class AIAgencyDetector(Detector):
         if not self._languages:
             return []
         files = [p for p in project.source_files if _is_code(p)]
-        results = await asyncio.gather(
-            *(asyncio.to_thread(self._scan_file, project, path) for path in files),
+        file_rels = {project.rel(p) for p in files}
+
+        # Phase A: parse + summarise every relevant file (which functions forward a
+        # parameter into a dangerous sink). Helper-only files are summarised too, so a
+        # tool calling an imported dangerous helper in another module is still caught.
+        prep = await asyncio.gather(
+            *(asyncio.to_thread(self._parse_summarize, project, path) for path in files),
             return_exceptions=True,
+        )
+        parsed: Dict[str, Tuple[object, str]] = {}
+        summaries_by_file: Dict[str, Dict[str, Dict[int, Tuple[str, str]]]] = {}
+        imports_by_file: Dict[str, Dict[str, Tuple[str, str]]] = {}
+        for res in prep:
+            if isinstance(res, Exception) or res is None:
+                continue
+            rel, root, text, summ, imps = res
+            parsed[rel] = (root, text)
+            summaries_by_file[rel] = summ
+            imports_by_file[rel] = imps
+
+        # Phase B: analyse each file, injecting summaries of imported helpers (cross-file).
+        def analyze(rel: str) -> List[Finding]:
+            root, text = parsed[rel]
+            merged = dict(summaries_by_file.get(rel, {}))
+            for local, (spec, orig) in imports_by_file.get(rel, {}).items():
+                target = _resolve_import(rel, spec, file_rels)
+                if target and orig in summaries_by_file.get(target, {}):
+                    merged.setdefault(local, summaries_by_file[target][orig])
+            try:
+                return self._analyze(rel, text, root, merged)
+            except Exception as exc:  # noqa: BLE001 — never crash on weird input
+                logger.debug("ai_agency: analysis failed on %s: %r", rel, exc)
+                return []
+
+        results = await asyncio.gather(
+            *(asyncio.to_thread(analyze, rel) for rel in parsed), return_exceptions=True
         )
         findings: List[Finding] = []
         for res in results:
-            if isinstance(res, Exception) or not res:
+            if isinstance(res, Exception):
                 continue
             findings.extend(res)
         return _dedup(findings)
 
-    def _scan_file(self, project: Project, path: Path) -> List[Finding]:
+    def _parse_summarize(self, project: Project, path: Path):
+        """Parse a file → (rel, root, text, fn_summaries, named_imports), or None."""
         try:
             text = project.read_text(path)
-            if not text.strip() or "execute" not in text and "tool(" not in text and "generateText" not in text \
-                    and "streamText" not in text and ".create(" not in text:
-                return []  # cheap skip: nothing AI-agent-shaped here
+            if not text.strip() or not (_has_ai(text) or _has_sink(text)):
+                return None  # neither an AI source nor a possible dangerous helper
             lang = self._languages.get("tsx" if path.suffix.lower() in (".ts", ".tsx") else "js") \
                 or self._languages.get("js")
             if lang is None:
-                return []
+                return None
             root = ts.Parser(lang).parse(text.encode("utf-8")).root_node
+            rel = project.rel(path)
+            return rel, root, text, _collect_fn_summaries(root), _named_imports(text)
         except Exception as exc:  # noqa: BLE001 — never crash on weird input
             logger.debug("ai_agency: parse failed on %s: %r", path, exc)
-            return []
+            return None
 
-        rel = project.rel(path)
+    def _analyze(self, rel: str, text: str, root, summaries) -> List[Finding]:
+        if not _has_ai(text):
+            return []  # only files with a tool/LLM source can produce findings
         sandboxed = any(h in text for h in _SANDBOX_HINTS)
-        summaries = _collect_fn_summaries(root)
         out: List[Finding] = []
         seen: Set[Tuple[str, int]] = set()
 
@@ -431,7 +718,46 @@ class AIAgencyDetector(Detector):
                                       sandboxed, seen, output=True))
             if scope.type == "program":
                 break
+
+        # 3) the multi-hop chain — only when a dangerous tool ACTUALLY exists in this
+        # file (the precise anchor): an LLM call wired to that tool AND fed untrusted
+        # external content is a full indirect-prompt-injection → exploit chain.
+        dangerous_names = _dangerous_tool_names(root, summaries)
+        if dangerous_names:
+            untrusted = _collect_untrusted(root)
+            chain_seen: Set[int] = set()
+            for call, arg_obj in _iter_llm_calls(root):
+                used = _tools_field_dangerous(arg_obj, dangerous_names)
+                if used is None or not _prompt_untrusted(arg_obj, untrusted):
+                    continue
+                line = call.start_point.row + 1
+                if line in chain_seen:
+                    continue
+                chain_seen.add(line)
+                out.append(self._make_chain(rel, text, line, used))
+
         return [f for f in out if f is not None]
+
+    def _make_chain(self, rel, text, line, used) -> Finding:
+        tool_name, sink_class = used
+        action = _ACTION.get(sink_class, "a dangerous operation")
+        message = (
+            f"Indirect prompt injection → excessive agency: this model call is fed untrusted "
+            f"external content (a fetched page, a RAG document, a file, or request input) AND is "
+            f"wired to the `{tool_name}` tool, which can {action}. Attacker-controlled content can "
+            f"steer the model into triggering it — a full inject-the-content → run-the-exploit chain."
+        )
+        flow = [
+            TaintStep(label="untrusted external content reaches the model's prompt", file=rel,
+                      line=line, kind="source", code=_line_text(text, line)),
+            TaintStep(label=f"model can call `{tool_name}` → {action}", file=rel, line=line,
+                      kind="sink", code=_line_text(text, line)),
+        ]
+        return Finding(
+            rule_id="ai.prompt-injection-to-agency", file=rel, line=line, column=1,
+            code_snippet=_line_text(text, line), detector=self.id, confidence="high",
+            message=message, taint_flow=flow, metadata={},
+        )
 
     def _make(self, rel, text, src_label, src_phrase, sink_class, label, src_line, sink_line,
               sandboxed, seen, output=False) -> Optional[Finding]:

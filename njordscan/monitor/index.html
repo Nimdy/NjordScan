@@ -34,6 +34,8 @@
   .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
   .chip{padding:3px 9px;border-radius:7px;font-weight:800;font-size:12px;border:1px solid var(--line)}
   .chip.critical{color:var(--mag)}.chip.high{color:var(--red)}.chip.medium{color:var(--yellow)}.chip.low{color:var(--cyan)}.chip.clean{color:var(--green)}
+  .agentbadge{font-size:12px;color:var(--mag);border:1px solid #5a2240;border-radius:7px;padding:3px 9px;margin-bottom:10px;display:inline-block}
+  .agentbadge .chainb{color:var(--red);font-weight:700}
   .spark{display:flex;align-items:flex-end;gap:2px;height:34px;margin-bottom:10px}
   .spark .b{flex:1;background:#26304a;border-radius:2px 2px 0 0;min-height:2px}
   .spark .b.up{background:var(--red)} .spark .b.down{background:var(--green)}
@@ -136,10 +138,13 @@ function renderProjects(projects){
     const diff = p.diff ? `<span class="diff">${p.diff.new?`<span class="n">+${p.diff.new} new</span> `:""}${p.diff.fixed?`<span class="f">−${p.diff.fixed} fixed</span>`:""}</span>` : "";
     const crit = (c.critical||0)>0 ? "crit":"";
     const status = p.scanning ? '<span class="scanning"><span class="spin"></span> scanning…</span>' : `${esc(p.last_status||"")} · ${ago(p.last_scan)}`;
+    const ar = p.agent_risk||{total:0,chain:0};
+    const agent = ar.total ? `<div class="agentbadge">🤖 ${ar.total} AI agent risk${ar.total>1?"s":""}${ar.chain?` · <span class="chainb">⚠ ${ar.chain} injection chain${ar.chain>1?"s":""}</span>`:""}</div>` : "";
     return `<div class="card ${crit}" onclick="openDetail('${p.id}')">
       <h3>${esc(p.name)}</h3>
       <div class="tgt">${({path:"📁",git:"🐙",url:"🌐"})[p.mode]||""} ${esc(p.target)}</div>
       <div class="chips">${chips}</div>
+      ${agent}
       ${spark(p.trend)}
       <div class="row"><span>${status}</span><span class="spacer" style="flex:1"></span>${diff}</div>
       <div class="row" style="margin-top:8px">

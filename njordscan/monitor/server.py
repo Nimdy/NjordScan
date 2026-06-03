@@ -70,6 +70,22 @@ def _scheduler_loop() -> None:
         _stop.wait(30)
 
 
+_AGENCY_RULES = frozenset({
+    "ai.excessive-agency-command", "ai.excessive-agency-code", "ai.excessive-agency-filesystem",
+    "ai.excessive-agency-sql", "ai.tool-ssrf", "ai.improper-output-handling",
+    "ai.prompt-injection-to-agency",
+})
+
+
+def _agent_risk(snap) -> Dict[str, int]:
+    """How many AI-agent (excessive-agency) risks the latest scan found, + injection chains."""
+    if snap is None:
+        return {"total": 0, "chain": 0}
+    fs = [f for f in snap.findings if f.get("rule_id") in _AGENCY_RULES]
+    chain = sum(1 for f in fs if f.get("rule_id") == "ai.prompt-injection-to-agency")
+    return {"total": len(fs), "chain": chain}
+
+
 def build_state() -> Dict[str, Any]:
     projects = []
     for p in store.list_projects():
@@ -87,6 +103,7 @@ def build_state() -> Dict[str, Any]:
             "counts": latest.counts if latest else {}, "total": latest.total if latest else 0,
             "trend": [{"ts": s.timestamp, "total": s.total} for s in snaps[-40:]],
             "scans": len(snaps), "diff": diff,
+            "agent_risk": _agent_risk(latest),
             "scanning": p["id"] in _scanning,
         })
     return {"ts": datetime.now(timezone.utc).isoformat(), "projects": projects,

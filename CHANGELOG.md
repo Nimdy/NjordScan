@@ -14,9 +14,15 @@ All notable changes to NjordScan are documented here. This project follows
   model can run shell commands / execute code / write files via this tool — here's the exact flow
   and the fix."* Works on the JS/TS agent stack (Vercel AI SDK, LangChain.js, MCP TS, function
   calling); reuses the taint engine (incl. interprocedural one-hop), guards fixed-host fetches, and
-  downgrades sandboxed runners (vm2/isolated-vm/e2b). Validated at 0 false positives across several
-  large real apps. New rules `ai.excessive-agency-{command,code,filesystem,sql}`, `ai.tool-ssrf`,
-  `ai.improper-output-handling`.
+  downgrades sandboxed runners (vm2/isolated-vm/e2b). **Cross-file** recall follows a tool into a
+  dangerous helper imported from another module. And the **multi-hop chain** (`ai.prompt-injection-
+  to-agency`) flags the worst case — a model call that is *both* fed untrusted external content (a
+  fetched page, a RAG document, a file, request input) *and* wired to a dangerous tool: a full
+  indirect-prompt-injection → exploit chain that no free tool surfaces. Validated at 0 false
+  positives across 8 large real apps. Surfaced as an **"AI agent risks"** panel in `njordscan gui`
+  and an **agent-risk badge** (incl. injection-chain count) per project in `njordscan monitor`. New
+  rules `ai.excessive-agency-{command,code,filesystem,sql}`, `ai.tool-ssrf`,
+  `ai.improper-output-handling`, `ai.prompt-injection-to-agency`.
 - **`njordscan monitor` — a local-first operational security dashboard.** Register multiple
   projects (folders, git URLs, live URLs); NjordScan **re-scans each on a schedule** (hourly /
   daily / weekly), tracks findings **appear / get fixed / regress** over time (a trend sparkline per

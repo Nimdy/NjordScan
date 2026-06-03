@@ -76,6 +76,9 @@ rules:
   - T1190
   ai.improper-output-handling:
   - T1059.007
+  ai.prompt-injection-to-agency:
+  - T1059.007
+  - T1190
   ai.endpoint-no-auth:
   - T1190
   - T1496

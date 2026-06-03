@@ -35,6 +35,13 @@
   .hint{color:var(--dim);font-size:12px;margin-top:8px}
   .opts{margin-top:8px;font-size:13px;color:var(--dim)}
   .opts label{cursor:pointer}
+  /* AI agent risks */
+  .agentrisk{border:1px solid var(--mag);border-radius:10px;padding:12px 14px;margin:0 0 14px;
+    background:linear-gradient(90deg,rgba(247,143,255,.08),rgba(199,146,234,.04))}
+  .agentrisk .t{font-weight:800;color:var(--mag);margin-bottom:4px}
+  .agentrisk .caps{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px}
+  .agentrisk .cap{font-size:12px;padding:3px 9px;border:1px solid var(--line);border-radius:6px;color:var(--fg)}
+  .agentrisk .chain{color:var(--red);font-weight:700;margin-top:8px}
   /* summary */
   .summary{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
   .sev{padding:5px 12px;border-radius:8px;font-weight:800;border:1px solid var(--line);cursor:pointer;user-select:none}
@@ -166,6 +173,7 @@ function render(rep){
     </div>`;
   let out = head;
   if(!s.total){ out += `<div class="allclear">✅ All clear — no findings. A clean result you can trust.</div>`; }
+  out += renderAgentRisks(rep.findings||[]);
   out += renderPaths(rep.attack_paths||[]);
   out += `<div id="findwrap">${renderFindings(rep.findings||[])}</div>`;
   $("results").innerHTML = out;
@@ -175,6 +183,28 @@ function render(rep){
     c.classList.toggle("off", !FILTER.has(k));
     $("findwrap").innerHTML = renderFindings(LAST.findings||[]);
   });
+}
+
+const AI_CAP = {
+  "ai.excessive-agency-command":"run shell commands",
+  "ai.excessive-agency-code":"execute arbitrary code",
+  "ai.excessive-agency-filesystem":"read / write files",
+  "ai.excessive-agency-sql":"run raw SQL",
+  "ai.tool-ssrf":"fetch internal URLs (SSRF)",
+  "ai.improper-output-handling":"act on unverified model output",
+};
+const AI_RULES = new Set([...Object.keys(AI_CAP), "ai.prompt-injection-to-agency"]);
+function renderAgentRisks(findings){
+  const ai = findings.filter(f => AI_RULES.has(f.rule_id));
+  if(!ai.length) return "";
+  const chains = ai.filter(f=>f.rule_id==="ai.prompt-injection-to-agency").length;
+  const caps = [...new Set(ai.map(f=>AI_CAP[f.rule_id]).filter(Boolean))];
+  return `<div class="agentrisk">
+    <div class="t">🤖 AI agent risks — ${ai.length} finding${ai.length>1?"s":""}</div>
+    <div class="meta">A value your model controls reaches a dangerous operation. Anyone who can prompt-inject the model — a user, or content it reads — inherits that capability.</div>
+    <div class="caps">${caps.map(c=>`<span class="cap">model can ${esc(c)}</span>`).join("")}</div>
+    ${chains?`<div class="chain">⚠ ${chains} indirect prompt-injection → exploit chain${chains>1?"s":""}: untrusted content can drive the model straight into a dangerous tool.</div>`:""}
+  </div>`;
 }
 
 function renderPaths(paths){

@@ -192,3 +192,37 @@
   references:
     - https://genai.owasp.org/llmrisk/llm05-2025-improper-output-handling/
     - https://owasp.org/www-project-top-10-for-large-language-model-applications/
+
+- id: ai.prompt-injection-to-agency
+  title: "Untrusted content can drive your AI model into a dangerous tool (injection → exploit chain)"
+  severity: critical
+  cwe: CWE-94
+  owasp: "LLM01:2025 Prompt Injection"
+  why: |
+    This model call is BOTH (a) fed untrusted external content — a fetched web page,
+    a retrieved RAG document, a file, or request input — AND (b) wired to a tool that
+    can do something dangerous (run commands, eval code, write files, raw SQL, or fetch
+    internal URLs). Those two facts combine into the worst AI-app bug: indirect prompt
+    injection to remote code execution. An attacker doesn't talk to your model directly
+    — they plant instructions in a page or document your agent reads, the model obeys
+    them, and it calls the dangerous tool on their behalf. The model is the confused
+    deputy; the untrusted content is the attacker's keyboard.
+  fix: |
+    Break the chain at either end. Best: don't give an agent that reads untrusted
+    content a tool that can run code/commands/SQL or write files — split it into a
+    low-privilege "reader" agent and a separately-gated action step a human or your own
+    code approves. If the tool must stay, make it safe on its own (allow-list of fixed
+    actions, parameterised queries, a path jail, a host allow-list — see the specific
+    excessive-agency fix) so a prompt-injected call can't do harm. Treat everything the
+    model reads as hostile.
+  secure_example: |
+    // reader agent has NO dangerous tools; actions are gated separately
+    const { object } = await generateObject({
+      model: openai('gpt-4o'),
+      schema: z.object({ intent: z.enum(['summarize', 'flag']), id: z.string() }),
+      prompt: `Summarize this untrusted page:\n${webContent}`,   // no exec/sql/fs tools here
+    });
+    if (object.intent === 'flag') await flagForReview(object.id);  // your code decides, not the model
+  references:
+    - https://genai.owasp.org/llmrisk/llm01-prompt-injection/
+    - https://genai.owasp.org/llmrisk/llm06-excessive-agency/
