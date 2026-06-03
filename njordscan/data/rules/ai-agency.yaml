@@ -1,0 +1,194 @@
+# AI agent "excessive agency" rules — for apps that give an LLM TOOLS it can call.
+# Emitted by njordscan/detectors/ai_agency.py when a value the MODEL controls (a
+# tool-call argument, or the model's own output) reaches a genuinely dangerous
+# operation. The sink is dangerous regardless of context, so these are high-signal.
+# Voice: name the consequence in plain English first. Audience: a non-security
+# "vibe coder" wiring up an AI agent with the Vercel AI SDK / LangChain / MCP.
+
+- id: ai.excessive-agency-command
+  title: "Your AI model can run shell commands"
+  severity: critical
+  cwe: CWE-78
+  owasp: "LLM06:2025 Excessive Agency"
+  why: |
+    You gave the model a tool whose `execute` runs a shell command built from an
+    argument the MODEL picks. That means the model can run ANY command on your
+    server — and a model can be tricked. A user (or a poisoned web page / document
+    / earlier tool result the model read) can prompt-inject it into running
+    `rm -rf`, reading your secrets, or opening a reverse shell. This is remote
+    code execution triggered by text. The model deciding the command is exactly
+    the danger: you can't trust it like your own code.
+  fix: |
+    Never pass a model-chosen value to `exec`/`spawn`/`execFile`. Replace the
+    free-form command with a small, fixed set of allowed actions the model selects
+    by name, and run those with hard-coded commands + an arguments array (never a
+    shell string). If you genuinely need code/command execution, run it inside a
+    locked-down sandbox (e2b, isolated-vm) with no network, a read-only filesystem,
+    and CPU/memory limits — and treat the tool as high-risk.
+  secure_example: |
+    // model picks an ACTION by name; you control the actual command
+    const ACTIONS = { restart: ['systemctl', 'restart', 'web'], status: ['systemctl', 'status', 'web'] };
+    export const op = tool({
+      description: 'run an allowed operation',
+      parameters: z.object({ action: z.enum(['restart', 'status']) }),
+      execute: async ({ action }) => {
+        const [cmd, ...args] = ACTIONS[action];          // no shell, no model-built string
+        return execFileSync(cmd, args).toString();
+      },
+    });
+  references:
+    - https://genai.owasp.org/llmrisk/llm06-excessive-agency/
+    - https://owasp.org/www-project-top-10-for-large-language-model-applications/
+
+- id: ai.excessive-agency-code
+  title: "Your AI model can execute arbitrary code"
+  severity: critical
+  cwe: CWE-95
+  owasp: "LLM06:2025 Excessive Agency"
+  why: |
+    A tool here passes a model-chosen string into `eval()` or `new Function()` —
+    usually a "calculator" or "run this expression" tool. `eval` doesn't do just
+    math: it runs JavaScript with full access to your server (filesystem, env vars,
+    network). Because the model decides the string, anyone who can steer the model
+    — directly, or by injecting instructions into content it reads — gets remote
+    code execution. "Simple safe eval for math" is a myth; it is never safe with
+    untrusted input.
+  fix: |
+    Don't `eval` model output. For math, use a real expression evaluator that only
+    does arithmetic (e.g. `mathjs`'s `evaluate`, or `expr-eval`) — they parse a
+    grammar instead of running JS. For structured actions, have the model return
+    JSON (the AI SDK's typed tool parameters do this) and act on the fields
+    yourself. There is no case where `eval`/`Function` on model input is acceptable.
+  secure_example: |
+    import { evaluate } from 'mathjs';
+    export const calc = tool({
+      description: 'evaluate a math expression',
+      parameters: z.object({ expr: z.string() }),
+      execute: async ({ expr }) => ({ result: evaluate(expr) }),   // math grammar only, not JS
+    });
+  references:
+    - https://genai.owasp.org/llmrisk/llm06-excessive-agency/
+    - https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html
+
+- id: ai.excessive-agency-filesystem
+  title: "Your AI model can read or write arbitrary files"
+  severity: high
+  cwe: CWE-22
+  owasp: "LLM06:2025 Excessive Agency"
+  why: |
+    A tool writes, deletes, or creates files using a path or contents the MODEL
+    chooses. With a model-controlled path, a prompt-injected model can escape the
+    folder you intended (`../../etc/...`, or an absolute path), overwrite config,
+    plant a file in a web-served directory, or delete data. The model picking the
+    path is the problem — it can be talked into picking a dangerous one.
+  fix: |
+    Confine model file operations to one dedicated directory and resolve the final
+    path safely: take only the basename (or a model-chosen key you map to a fixed
+    path), join it under your base dir, and reject anything that resolves outside.
+    Never pass a raw model path to `fs.writeFile`/`unlink`/`rm`.
+  secure_example: |
+    import path from 'node:path';
+    const BASE = '/var/app/notes';
+    export const saveNote = tool({
+      description: 'save a note',
+      parameters: z.object({ name: z.string(), content: z.string() }),
+      execute: async ({ name, content }) => {
+        const safe = path.join(BASE, path.basename(name));     // basename strips ../
+        if (!safe.startsWith(BASE + path.sep)) throw new Error('bad path');
+        await fs.writeFile(safe, content);
+        return 'saved';
+      },
+    });
+  references:
+    - https://genai.owasp.org/llmrisk/llm06-excessive-agency/
+    - https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+
+- id: ai.excessive-agency-sql
+  title: "Your AI model can run raw SQL"
+  severity: critical
+  cwe: CWE-89
+  owasp: "LLM06:2025 Excessive Agency"
+  why: |
+    A tool runs a raw SQL string the model builds (e.g. `prisma.$queryRawUnsafe`,
+    `$executeRawUnsafe`). A "query the database" tool that lets the model write the
+    SQL is SQL injection by design: the model can be steered into reading every
+    table, dumping users, or dropping data — and it bypasses every ownership/tenant
+    check your app normally enforces.
+  fix: |
+    Don't let the model author SQL. Expose narrow, parameterised queries the model
+    selects by name and fills typed arguments for, and run them with parameter
+    binding (`$queryRaw` tagged template, or your ORM's typed query methods) — never
+    `$queryRawUnsafe`/`$executeRawUnsafe` with model input. Scope every query to the
+    requesting user's data.
+  secure_example: |
+    export const findOrders = tool({
+      description: 'find the current user\'s orders by status',
+      parameters: z.object({ status: z.enum(['open', 'shipped', 'cancelled']) }),
+      execute: async ({ status }) =>
+        prisma.order.findMany({ where: { status, userId: session.user.id } }),  // typed + scoped
+    });
+  references:
+    - https://genai.owasp.org/llmrisk/llm06-excessive-agency/
+    - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+
+- id: ai.tool-ssrf
+  title: "Your AI model can make the server fetch any URL (SSRF)"
+  severity: high
+  cwe: CWE-918
+  owasp: "LLM06:2025 Excessive Agency"
+  why: |
+    A tool fetches a URL the MODEL provides. Because the model picks the host, it
+    can be steered into requesting your internal services — cloud metadata
+    (`169.254.169.254`, which can hand out cloud credentials), `localhost` admin
+    panels, or internal APIs that trust anything on the network. That is
+    server-side request forgery: the attacker uses your server as a proxy into your
+    private network. (Lower confidence: a tool fetching public URLs may be the
+    intended feature — confirm it can't reach internal hosts.)
+  fix: |
+    Validate the URL before fetching: require `https`, resolve the host and reject
+    private/loopback/link-local IP ranges and cloud-metadata addresses, disable
+    redirects (or re-validate each hop), and ideally allow only a known set of
+    hosts. Apply this to every model-provided URL, not just the first one.
+  secure_example: |
+    const ALLOWED = new Set(['api.weather.com', 'api.github.com']);
+    export const fetchUrl = tool({
+      description: 'fetch a public API',
+      parameters: z.object({ url: z.string().url() }),
+      execute: async ({ url }) => {
+        const host = new URL(url).hostname;
+        if (!ALLOWED.has(host)) throw new Error('host not allowed');
+        return (await fetch(url, { redirect: 'error' })).json();
+      },
+    });
+  references:
+    - https://genai.owasp.org/llmrisk/llm06-excessive-agency/
+    - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- id: ai.improper-output-handling
+  title: "The model's output is fed into a dangerous operation"
+  severity: critical
+  cwe: CWE-94
+  owasp: "LLM05:2025 Improper Output Handling"
+  why: |
+    Text the model generated (from `generateText`/`streamText`/a completion) is
+    passed straight into something dangerous — `eval`, a shell command, a file
+    write, or raw SQL — without checking it. LLM output is untrusted: a user can
+    prompt the model into emitting whatever string they want, so "use the model's
+    answer" becomes "run the attacker's code." This is the LLM equivalent of
+    trusting raw user input.
+  fix: |
+    Treat model output like untrusted user input. Never `eval`/`exec`/`fs.write`/
+    raw-SQL it. If you need the model to choose an action, constrain it to a fixed
+    set (typed tool parameters, an enum, or structured JSON you validate) and act
+    on the validated value yourself — don't execute the free-form text. For display,
+    escape it for the context (HTML/markdown) before rendering.
+  secure_example: |
+    const { object } = await generateObject({
+      model: openai('gpt-4o'),
+      schema: z.object({ action: z.enum(['archive', 'flag']), id: z.string() }),
+      prompt,
+    });
+    if (object.action === 'archive') await archive(object.id);   // validated, not executed
+  references:
+    - https://genai.owasp.org/llmrisk/llm05-2025-improper-output-handling/
+    - https://owasp.org/www-project-top-10-for-large-language-model-applications/

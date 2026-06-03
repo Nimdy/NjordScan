@@ -23,6 +23,7 @@ _REGISTRY = [
     ("njordscan.detectors.dependencies", "DependenciesDetector"),
     ("njordscan.detectors.static_analysis", "StaticAnalysisDetector"),
     ("njordscan.detectors.taint", "TaintDetector"),
+    ("njordscan.detectors.ai_agency", "AIAgencyDetector"),
     ("njordscan.detectors.configs", "ConfigsDetector"),
     ("njordscan.detectors.pattern_engine", "PatternEngine"),
     ("njordscan.detectors.git_hygiene", "GitHygieneDetector"),

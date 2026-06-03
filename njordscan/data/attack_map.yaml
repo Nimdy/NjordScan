@@ -64,6 +64,18 @@ rules:
   - T1496
   ai.dangerously-allow-browser:
   - T1552
+  ai.excessive-agency-command:
+  - T1059
+  ai.excessive-agency-code:
+  - T1059.007
+  ai.excessive-agency-filesystem:
+  - T1190
+  ai.excessive-agency-sql:
+  - T1190
+  ai.tool-ssrf:
+  - T1190
+  ai.improper-output-handling:
+  - T1059.007
   ai.endpoint-no-auth:
   - T1190
   - T1496

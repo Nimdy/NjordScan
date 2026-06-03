@@ -6,6 +6,17 @@ All notable changes to NjordScan are documented here. This project follows
 ## 2.0.0b2 — beta
 
 ### Added
+- **AI agent "excessive agency" detection (OWASP LLM06 / LLM05).** A new detector flags when a
+  value the **LLM controls** — a `tool({execute})` argument the model chooses, or the model's own
+  output (`generateText`/`streamText`/`...completions`) — reaches a genuinely **dangerous sink**:
+  `exec`/`spawn` (command), `eval`/`Function` (code), `fs.write*` (arbitrary files),
+  `$queryRawUnsafe` (raw SQL), or `fetch` to a dynamic host (SSRF). In plain English: *"your AI
+  model can run shell commands / execute code / write files via this tool — here's the exact flow
+  and the fix."* Works on the JS/TS agent stack (Vercel AI SDK, LangChain.js, MCP TS, function
+  calling); reuses the taint engine (incl. interprocedural one-hop), guards fixed-host fetches, and
+  downgrades sandboxed runners (vm2/isolated-vm/e2b). Validated at 0 false positives across several
+  large real apps. New rules `ai.excessive-agency-{command,code,filesystem,sql}`, `ai.tool-ssrf`,
+  `ai.improper-output-handling`.
 - **`njordscan monitor` — a local-first operational security dashboard.** Register multiple
   projects (folders, git URLs, live URLs); NjordScan **re-scans each on a schedule** (hourly /
   daily / weekly), tracks findings **appear / get fixed / regress** over time (a trend sparkline per
